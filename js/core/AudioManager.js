@@ -1,33 +1,7 @@
 /**
- * AudioManager.js - 実車録音オーディオエンジン、スキール音、環境効果音、ユーロビートBGM
- * 機械的なシンセサイザー（オシレーター）を完全撤廃し、
- * 各車種（AE86, RX-7, GT-R, シルビア, チェイサー, スープラ, エボIII, シビック, アルトワークス）の
- * 本物の実車録音・排気音（48kHzスタジオ音源）を使用したリアルオーディオシステム
+ * AudioManager.js - プロシージャルエンジン音、スキール音、効果音、ユーロビートBGM
+ * Web Audio APIによって、外部音源ファイルなしでも超本格的なサウンドを完全生成
  */
-
-const SOUND_FILE_MAP = {
-    '4age': 'toyota86.m4a',       // AE86 スプリンタートレノ (4A-GEU NA高回転)
-    '13b':  'lexuslfa.m4a',       // FD3S RX-7 (13B-REW ロータリーツインターボ超高周波)
-    'rb26': 'nissangtr.m4a',     // BNR32 スカイライン GT-R (RB26DETT 直6ツインターボ重低音)
-    'sr20': 'golfgti.m4a',       // PS13 / S15 / RPS13 180SX (SR20DET 4気筒ターボ)
-    '1jz':  'm4.m4a',            // JZX100 チェイサー (1JZ-GTE 直6ターボ)
-    '2jz':  'm4.m4a',            // JZA80 スープラ (2JZ-GTE 直6ツインターボ)
-    '4g63': 'focusrs.m4a',       // CE9A ランサーエボリューションIII (4G63 ハイブーストターボ)
-    'b16b': 'ferrari458.m4a',   // EK9 シビック Type R (B16B 9000rpm超高回転VTEC)
-    'f5a':  'audittrs.m4a'        // CC72V アルトワークス RS-R (F5A 3気筒ドッカンターボ)
-};
-
-const SOUND_SPECS = {
-    '4age': { loopStart: 20.9, loopDuration: 1.4, popTime: 13.90, popDuration: 0.35, revStart: 1.5, revDuration: 7.0, popDelay: 2.4, basePitch: 1.00, idleRpm: 950, maxRpm: 11000 },
-    '13b':  { loopStart: 13.1, loopDuration: 1.5, popTime: 5.10,  popDuration: 0.40, revStart: 3.5, revDuration: 6.5, popDelay: 1.6, basePitch: 1.02, idleRpm: 900, maxRpm: 8500 },
-    'rb26': { loopStart: 2.4,  loopDuration: 1.6, popTime: 17.90, popDuration: 0.40, revStart: 13.5, revDuration: 6.5, popDelay: 2.5, basePitch: 0.95, idleRpm: 950, maxRpm: 8500 },
-    'sr20': { loopStart: 2.0,  loopDuration: 1.5, popTime: 21.45, popDuration: 0.35, revStart: 18.0, revDuration: 6.0, popDelay: 2.3, basePitch: 0.98, idleRpm: 850, maxRpm: 7800 },
-    '1jz':  { loopStart: 6.1,  loopDuration: 1.3, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.96, idleRpm: 800, maxRpm: 7800 },
-    '2jz':  { loopStart: 6.1,  loopDuration: 1.3, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.92, idleRpm: 750, maxRpm: 8200 },
-    '4g63': { loopStart: 18.1, loopDuration: 1.4, popTime: 23.65, popDuration: 0.45, revStart: 2.5, revDuration: 6.0, popDelay: 2.2, basePitch: 0.95, idleRpm: 900, maxRpm: 8200 },
-    'b16b': { loopStart: 8.3,  loopDuration: 1.4, popTime: 16.30, popDuration: 0.35, revStart: 15.5, revDuration: 6.5, popDelay: 2.3, basePitch: 1.05, idleRpm: 850, maxRpm: 9500 },
-    'f5a':  { loopStart: 8.1,  loopDuration: 1.3, popTime: 20.50, popDuration: 0.35, revStart: 2.0, revDuration: 6.0, popDelay: 2.0, basePitch: 1.10, idleRpm: 950, maxRpm: 10000 }
-};
 
 class AudioManager {
     constructor() {
@@ -40,34 +14,16 @@ class AudioManager {
         this.sfxGain = null;
         this.bgmGain = null;
 
-        // 実車オーディオバッファキャッシュ
-        this.rawBuffers = {};         // ファイル名 -> AudioBuffer (実車フル録音)
-        this.loopBuffers = {};        // soundType -> AudioBuffer (ゼロクリッククロスフェードループ)
-        this.popBuffers = {};         // soundType -> AudioBuffer (実車マフラー破裂音)
-        this.isAudioLoading = false;
-        this.audioLoaded = false;
-
-        // 走行中実車エンジン再生ノード
-        this.engineSourceNode = null;
+        // エンジンシンセ
+        this.engineOsc1 = null;
+        this.engineOsc2 = null;
         this.engineFilter = null;
         this.engineGain = null;
-        this.enginePlaying = false;
 
-        // ガレージ生音空ぶかしノード
-        this.revPreviewSource = null;
-
-        // スキール音
+        // スキール音シンセ
         this.tireNoiseNode = null;
         this.tireFilter = null;
         this.tireGain = null;
-
-        // 環境音（雨天、砂利、溝落とし）
-        this.rainGain = null;
-        this.wetSprayGain = null;
-        this.gravelGain = null;
-        this.gravelFilter = null;
-        this.gutterGain = null;
-        this.gutterFilter = null;
 
         // ユーロビートシーケンサー
         this.bgmInterval = null;
@@ -76,11 +32,9 @@ class AudioManager {
 
         this.initialized = false;
         this.soundType = '4age';
-        this.lastThrottle = 0;
-        this.lastBlowoffTime = 0;
-        this._unlockBound = false;
 
-        // あらゆるユーザー操作（クリック/キー）で即座にAudioContextをアンロック
+        // ユーザー操作によるWeb Audio自動アンロック
+        this._unlockBound = false;
         this.setupUserUnlock();
     }
 
@@ -95,12 +49,7 @@ class AudioManager {
             if (this.ctx && this.ctx.state === 'suspended') {
                 this.ctx.resume().then(() => {
                     console.log('[AudioManager] AudioContext resumed by user interaction.');
-                    if (this.audioLoaded && !this.enginePlaying) {
-                        this.startEngineLoop();
-                    }
                 });
-            } else if (this.audioLoaded && !this.enginePlaying) {
-                this.startEngineLoop();
             }
         };
 
@@ -110,14 +59,21 @@ class AudioManager {
         window.addEventListener('pointerdown', unlock, { passive: true });
     }
 
-    _base64ToArrayBuffer(base64) {
-        const binaryString = window.atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+    startEngineLoop() {
+        if (!this.initialized) {
+            this.init();
         }
-        return bytes.buffer;
+        this.resume();
+    }
+
+    onShiftChange(direction, fromGear, toGear, rpm) {
+        if (!this.initialized || !this.ctx || this.isMuted) return;
+        this.playShiftSound();
+        if (direction === 'down' && rpm > 4500) {
+            this.playAfterfireSound(0.85, false);
+        } else if (direction === 'up' && rpm > 6500) {
+            this.playAfterfireSound(0.75, false);
+        }
     }
 
     init() {
@@ -128,23 +84,20 @@ class AudioManager {
 
         // マスターゲイン
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
         this.masterGain.connect(this.ctx.destination);
 
         // SFX & BGM ゲイン
         this.sfxGain = this.ctx.createGain();
-        this.sfxGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+        this.sfxGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
         this.sfxGain.connect(this.masterGain);
 
         this.bgmGain = this.ctx.createGain();
-        this.bgmGain.gain.setValueAtTime(0.40, this.ctx.currentTime);
+        this.bgmGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
         this.bgmGain.connect(this.masterGain);
 
-        // 実車エンジン音チェーンのセットアップ
-        this.setupRealEngineAudioChain();
-
-        // 実車音源の非同期ロード
-        this.loadAllRealCarSounds();
+        // エンジンサウンドのセットアップ
+        this.setupEngineSynth();
 
         // タイヤスキール音のセットアップ
         this.setupTireSqueal();
@@ -152,543 +105,18 @@ class AudioManager {
         // 雨天サウンド＆水しぶき音のセットアップ
         this.setupRainAudio();
 
-        // 峠道砂利走行音＆小石直撃音のセットアップ
+        // ★峠道砂利走行音＆小石直撃音のセットアップ
         this.setupGravelAudio();
 
-        // 溝落としグラインド摩擦音のセットアップ
+        // ★溝落としグラインド摩擦音のセットアップ
         this.setupGutterAudio();
 
         this.initialized = true;
     }
 
-    resume() {
-        if (this.ctx && this.ctx.state === 'suspended') {
-            return this.ctx.resume().then(() => {
-                if (this.audioLoaded && !this.enginePlaying) {
-                    this.startEngineLoop();
-                }
-            });
-        }
-        return Promise.resolve();
-    }
-
-    /**
-     * 実車エンジンサウンド再生チェーン
-     * [AudioBufferSource] -> [Lowpass Filter (スロットル連動)] -> [Gain (音量連動)] -> [SFX Gain]
-     */
-    setupRealEngineAudioChain() {
-        if (!this.ctx) return;
-
-        // スロットル連動・吸気/排圧ダイナミックローパスフィルター
-        this.engineFilter = this.ctx.createBiquadFilter();
-        this.engineFilter.type = 'lowpass';
-        this.engineFilter.frequency.setValueAtTime(800, this.ctx.currentTime);
-        this.engineFilter.Q.setValueAtTime(1.8, this.ctx.currentTime);
-
-        // エンジンゲイン (アイドリング初期音量 0.35)
-        this.engineGain = this.ctx.createGain();
-        this.engineGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
-
-        this.engineFilter.connect(this.engineGain);
-        this.engineGain.connect(this.sfxGain);
-    }
-
-    /**
-     * 全車種の実車排気・エンジン音（48kHz実録音）を一括ロード＆バッファ生成
-     * Base64インラインとfetchのデュアルロード方式で、file://でもhttp://でも100%確実にロード
-     */
-    async loadAllRealCarSounds() {
-        if (this.audioLoaded) return Promise.resolve();
-        if (this.loadPromise) return this.loadPromise;
-
-        this.isAudioLoading = true;
-        this.loadPromise = (async () => {
-            const uniqueFiles = [...new Set(Object.values(SOUND_FILE_MAP))];
-            const loadPromises = uniqueFiles.map(async (fileName) => {
-                try {
-                    // 1. window.REAL_CAR_AUDIO_DATA (Base64) からの超高速・確実ロード（file:// プロトコルでも100%成功）
-                    if (window.REAL_CAR_AUDIO_DATA && window.REAL_CAR_AUDIO_DATA[fileName]) {
-                        const arrayBuffer = this._base64ToArrayBuffer(window.REAL_CAR_AUDIO_DATA[fileName]);
-                        const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
-                        this.rawBuffers[fileName] = audioBuffer;
-                        return;
-                    }
-
-                    // 2. HTTPサーバー環境での fetch フォールバック
-                    const response = await fetch('assets/sounds/' + fileName);
-                    if (!response.ok) throw new Error(`HTTP ${response.status} loading ${fileName}`);
-                    const arrayBuffer = await response.arrayBuffer();
-                    const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
-                    this.rawBuffers[fileName] = audioBuffer;
-                } catch (err) {
-                    console.warn(`[AudioManager] Failed to load real sound ${fileName}:`, err);
-                }
-            });
-
-            await Promise.all(loadPromises);
-
-            // 各車種用の「シームレスループバッファ」と「本物のアフターファイヤ破裂音」を生成
-            for (const [soundType, fileName] of Object.entries(SOUND_FILE_MAP)) {
-                const raw = this.rawBuffers[fileName];
-                if (!raw) continue;
-
-                const spec = SOUND_SPECS[soundType] || SOUND_SPECS['4age'];
-
-                // 1. ゼロクリック・イコールパワークロスフェードループバッファ（0.30秒の超滑らかクロスフェード）
-                this.loopBuffers[soundType] = this._createCrossfadeLoop(
-                    raw,
-                    spec.loopStart,
-                    spec.loopDuration,
-                    0.30
-                );
-
-                // 2. 実車マフラー破裂音（アフターファイヤ）スライス
-                this.popBuffers[soundType] = this._extractSlice(
-                    raw,
-                    spec.popTime,
-                    spec.popDuration
-                );
-            }
-
-            this.audioLoaded = true;
-            this.isAudioLoading = false;
-            console.log('[AudioManager] All real car engine sounds loaded and initialized successfully.');
-
-            // もしすでに初期化済みなら、現在の車種でループを開始
-            if (this.initialized && !this.enginePlaying) {
-                this.startEngineLoop();
-            }
-        })();
-
-        return this.loadPromise;
-    }
-
-    /**
-     * クロスフェードによるゼロクリック・シームレスループバッファ生成
-     */
-    _createCrossfadeLoop(srcBuffer, startTime, duration, crossfadeDuration = 0.25) {
-        const sRate = srcBuffer.sampleRate;
-        const channels = srcBuffer.numberOfChannels;
-        const startSample = Math.floor(startTime * sRate);
-        const loopSamples = Math.floor(duration * sRate);
-        const fadeSamples = Math.floor(crossfadeDuration * sRate);
-
-        const loopBuffer = this.ctx.createBuffer(channels, loopSamples, sRate);
-
-        for (let ch = 0; ch < channels; ch++) {
-            const src = srcBuffer.getChannelData(ch);
-            const dst = loopBuffer.getChannelData(ch);
-
-            // メイン区間のコピー
-            for (let i = 0; i < loopSamples; i++) {
-                dst[i] = src[startSample + i] || 0;
-            }
-
-            // 末尾と先頭のイコールパワークロスフェード（sin / cos）
-            for (let i = 0; i < fadeSamples; i++) {
-                const progress = i / fadeSamples;
-                const fadeIn = Math.sin(progress * Math.PI * 0.5);
-                const fadeOut = Math.cos(progress * Math.PI * 0.5);
-
-                const tailSample = src[startSample + loopSamples + i] || dst[loopSamples - fadeSamples + i] || 0;
-                dst[i] = dst[i] * fadeIn + tailSample * fadeOut;
-            }
-        }
-        return loopBuffer;
-    }
-
-    /**
-     * 実車音源から指定区間のサンプル（アフターファイヤ・過給圧等）を切り出し
-     */
-    _extractSlice(srcBuffer, startTime, duration) {
-        const sRate = srcBuffer.sampleRate;
-        const channels = srcBuffer.numberOfChannels;
-        const startSample = Math.floor(startTime * sRate);
-        const sliceSamples = Math.floor(duration * sRate);
-
-        const sliceBuffer = this.ctx.createBuffer(channels, sliceSamples, sRate);
-
-        for (let ch = 0; ch < channels; ch++) {
-            const src = srcBuffer.getChannelData(ch);
-            const dst = sliceBuffer.getChannelData(ch);
-
-            for (let i = 0; i < sliceSamples; i++) {
-                // 末尾を自然にフェードアウトさせてクリックノイズを除去
-                const fadeOut = Math.min(1.0, (sliceSamples - i) / (sRate * 0.04));
-                dst[i] = (src[startSample + i] || 0) * fadeOut;
-            }
-        }
-        return sliceBuffer;
-    }
-
-    /**
-     * 走行中の実車エンジンループ再生を開始
-     */
-    startEngineLoop() {
-        if (!this.ctx || !this.audioLoaded) return;
-        const loopBuffer = this.loopBuffers[this.soundType] || this.loopBuffers['4age'];
-        if (!loopBuffer) return;
-
-        if (this.engineSourceNode) {
-            try { this.engineSourceNode.stop(); } catch (e) {}
-            this.engineSourceNode.disconnect();
-            this.engineSourceNode = null;
-        }
-
-        this.engineSourceNode = this.ctx.createBufferSource();
-        this.engineSourceNode.buffer = loopBuffer;
-        this.engineSourceNode.loop = true;
-        this.engineSourceNode.playbackRate.setValueAtTime(1.0, this.ctx.currentTime);
-
-        if (this.engineGain) {
-            this.engineGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
-        }
-
-        this.engineSourceNode.connect(this.engineFilter);
-        this.engineSourceNode.start(0);
-        this.enginePlaying = true;
-    }
-
-    /**
-     * 車種ごとの実車エンジンサウンド切り替え
-     * @param {string} type - '4age', '13b', 'rb26', 'sr20', '1jz', '2jz', '4g63', 'b16b', 'f5a'
-     */
-    setEngineSoundType(type) {
-        const nextType = type || '4age';
-        if (this.soundType === nextType && this.enginePlaying) return;
-        this.soundType = nextType;
-
-        if (this.initialized && this.audioLoaded) {
-            this.startEngineLoop();
-        }
-    }
-
-    /**
-     * ガレージ画面用：実車エキゾースト・空ぶかしサウンド鑑賞（生音録音ワンショット再生）
-     * @param {string} carId - 車両ID
-     * @param {Function} onPopCallback - アフターファイヤ発生時のマフラー炎コールバック
-     */
-    previewRev(carId, onPopCallback = null) {
-        if (!this.initialized) {
-            this.init();
-        }
-        this.resume();
-
-        const car = window.CAR_DATABASE && window.CAR_DATABASE[carId];
-        const soundType = car && car.physics ? car.physics.engineSoundType : '4age';
-        this.setEngineSoundType(soundType);
-
-        const fileName = SOUND_FILE_MAP[soundType] || 'toyota86.m4a';
-        const rawBuffer = this.rawBuffers[fileName];
-
-        // 前回のプレビュー再生があれば停止
-        if (this.revPreviewSource) {
-            try { this.revPreviewSource.stop(); } catch (e) {}
-            this.revPreviewSource.disconnect();
-            this.revPreviewSource = null;
-        }
-
-        if (!rawBuffer) {
-            console.log('[AudioManager] Raw sound buffer not loaded yet, retrying...');
-            this.loadAllRealCarSounds().then(() => {
-                this.previewRev(carId, onPopCallback);
-            });
-            return;
-        }
-
-        const spec = SOUND_SPECS[soundType] || SOUND_SPECS['4age'];
-        const revStart = spec.revStart || 0;
-        const revDuration = spec.revDuration || 6.5;
-        const safeStart = Math.max(0, Math.min(revStart, rawBuffer.duration - 0.5));
-        const safeDuration = Math.min(revDuration, rawBuffer.duration - safeStart);
-
-        // 実車フル録音を大迫力で生音ワンショット再生（最も気持ちいい吹け上がり区間を頭出し再生）
-        this.revPreviewSource = this.ctx.createBufferSource();
-        this.revPreviewSource.buffer = rawBuffer;
-
-        const revGain = this.ctx.createGain();
-        revGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
-
-        this.revPreviewSource.connect(revGain);
-        revGain.connect(this.sfxGain);
-
-        this.revPreviewSource.start(0, safeStart, safeDuration);
-
-        // 各車種特有のアフターファイヤ発生タイミングに合わせて炎エフェクトを発火
-        const popDelayMs = (spec.popDelay || 2.2) * 1000;
-        setTimeout(() => {
-            if (onPopCallback) onPopCallback(1.4);
-        }, popDelayMs);
-
-        // プレビュー終了時にクリーンアップ
-        this.revPreviewSource.onended = () => {
-            revGain.disconnect();
-            this.revPreviewSource = null;
-        };
-    }
-
-    /**
-     * 走行中エンジン音のリアルタイム物理・音響モデリング更新
-     * 車両のRPM、アクセル開度（スロットル）にリアルタイム連動
-     */
-    updateEngine(rpm, throttle, isDrifting, driftAngle) {
-        if (!this.initialized || !this.ctx) return;
-
-        // 音源がまだロードされていない場合は再開待機
-        if (!this.enginePlaying && this.audioLoaded) {
-            this.startEngineLoop();
-        }
-        if (!this.engineSourceNode || !this.engineFilter || !this.engineGain) return;
-
-        const spec = SOUND_SPECS[this.soundType] || SOUND_SPECS['4age'];
-        const idleRpm = spec.idleRpm || 900;
-        const maxRpm = spec.maxRpm || 8500;
-        const curTime = this.ctx.currentTime;
-
-        // 1. 回転数（RPM）に応じた実車ピッチシフト (playbackRate)
-        // アイドリング（約850〜950rpm）の野太い重低音（0.62x）から
-        // パワーバンド・レッドゾーンの猛烈な高回転咆哮（2.75x〜3.25x）まで、
-        // ギアチェンジ時の回転数ドロップが耳でハッキリ分かる広大なダイナミックレンジ！
-        const rpmRatio = (rpm - idleRpm) / Math.max(1, maxRpm - idleRpm);
-        const rpmNorm = Math.max(0, Math.min(1.30, rpmRatio));
-        // アイドリング: 0.62x, 中回転(4500rpm): 1.48x, 高回転(7500rpm): 2.45x, レブ(9000-11000rpm): 2.95-3.35x!
-        const targetPitch = spec.basePitch * (0.62 + rpmNorm * 2.38);
-        this.engineSourceNode.playbackRate.setTargetAtTime(targetPitch, curTime, 0.025);
-        this.currentPitch = targetPitch;
-
-        // 2. アクセル開度（スロットル）に応じたダイナミック・吸排気ローパスフィルター
-        // アクセルOFF時は排圧低下と吸気抵抗でマフラー音がこもり（520Hz Overrun）、
-        // アクセル全開時は排気管直通でマフラーが全開で吼えるハイゲインサウンド（12,500Hz〜16,000Hz開放）！
-        let cutoff = 520 + (throttle * 9600) + (rpmNorm * 4600);
-        if (this.soundType === 'b16b' && rpm > 5800) {
-            // VTECハイカム領域：高域を一段と開放し甲高い咆哮へシフト
-            cutoff += 3500;
-        }
-        this.engineFilter.frequency.setTargetAtTime(cutoff, curTime, 0.025);
-        this.currentCutoff = cutoff;
-
-        // 3. 実車エンジン音量制御
-        // アイドリングでも低く心地よい実車の排気ビートを響かせ、アクセル全開でド迫力の音圧に到達
-        const targetGain = 0.25 + (throttle * 0.48) + (rpmNorm * 0.27);
-        if (!this.shiftDucking) {
-            this.engineGain.gain.setTargetAtTime(targetGain, curTime, 0.025);
-            this.currentGain = targetGain;
-        }
-
-        // 4. ターボ車のアクセルオフ時、ブローオフ過給圧解放（プシューン！）
-        if (['13b', 'rb26', 'sr20', '1jz', '2jz', '4g63', 'f5a'].includes(this.soundType)) {
-            if (this.lastThrottle > 0.75 && throttle < 0.15 && rpm > 4000) {
-                if (curTime - this.lastBlowoffTime > 0.45) {
-                    this.playBlowoffSound();
-                    this.lastBlowoffTime = curTime;
-                }
-            }
-        }
-        this.lastThrottle = throttle;
-
-        // 5. タイヤスキール音の更新
-        let squealVol = 0;
-        if (isDrifting) {
-            const slipIntensity = Math.min(1.0, Math.abs(driftAngle) * 2.2);
-            squealVol = 0.15 + slipIntensity * 0.35;
-            const squealPitch = 900 + slipIntensity * 1200;
-            this.tireFilter.frequency.setTargetAtTime(squealPitch, curTime, 0.04);
-        }
-        this.tireGain.gain.setTargetAtTime(squealVol, curTime, 0.05);
-    }
-
-    /**
-     * ★ギアチェンジ専用・リアル音響演出システム
-     * シフトアップ時の燃料カット・エンジン音瞬間ダッキング、実車アフターファイヤ破裂音、
-     * ターボ過給圧解放ブローオフ、メカニカルシフター音を完全同期
-     */
-    onShiftChange(direction, fromGear, toGear, rpm) {
-        if (!this.initialized || !this.ctx || this.isMuted) return;
-        const now = this.ctx.currentTime;
-        const curRpm = rpm || 6000;
-
-        if (direction === 'up') {
-            // 1. エンジン音の瞬間ダッキング（クラッチ切断時のトルク抜け 0.06秒間、音を完全に切らさずスムーズに持続）
-            if (this.engineGain) {
-                this.shiftDucking = true;
-                this.engineGain.gain.cancelScheduledValues(now);
-                this.engineGain.gain.setValueAtTime(0.40, now);
-                this.engineGain.gain.linearRampToValueAtTime(0.75, now + 0.065);
-                setTimeout(() => {
-                    this.shiftDucking = false;
-                }, 70);
-            }
-
-            // 2. 実車マフラーの強烈なアフターファイヤ・シフトポップ実音（高回転時のみ）
-            if (curRpm > 6800) {
-                const popIntensity = 0.80 + Math.min(0.40, (curRpm / 9000) * 0.40);
-                this.playAfterfireSound(popIntensity, false);
-            }
-
-            // 3. ターボ車ならブローオフバルブ（過給圧解放音「プシューーーン！」）
-            if (['13b', 'rb26', 'sr20', '1jz', '2jz', '4g63', 'f5a'].includes(this.soundType) && curRpm > 4500) {
-                this.playBlowoffSound();
-            }
-
-            // 4. メカニカルシフター音（カチッ、ガコンッ）
-            this.playShiftSound();
-        } else if (direction === 'down') {
-            // シフトダウン時：ブリッピング（回転上昇）＆アフターファイヤ
-            this.playShiftSound();
-            if (curRpm > 5500) {
-                this.playAfterfireSound(0.85, false);
-            }
-        }
-    }
-
-    /**
-     * 実車マフラー破裂音（アフターファイヤ・エキゾーストポップ）
-     * 機械的なシンセではなく、本物の実車マフラーから録音された強烈な破裂音サンプルを再生
-     */
-    playAfterfireSound(intensity = 1.0, isRival = false) {
-        if (!this.initialized || !this.ctx || this.isMuted) return;
-
-        const popBuffer = this.popBuffers[this.soundType] || this.popBuffers['4age'];
-        if (!popBuffer) return;
-
-        const now = this.ctx.currentTime;
-        const volMultiplier = (isRival ? 0.65 : 1.0) * Math.min(1.5, Math.max(0.6, intensity));
-
-        const source = this.ctx.createBufferSource();
-        source.buffer = popBuffer;
-
-        // ランダムなピッチシフト（実車のリアルな排気破裂のばらつきを再現）
-        const randomPitch = 0.94 + Math.random() * 0.16;
-        source.playbackRate.setValueAtTime(randomPitch, now);
-
-        const gainNode = this.ctx.createGain();
-        gainNode.gain.setValueAtTime(0.85 * volMultiplier, now);
-
-        source.connect(gainNode);
-        gainNode.connect(this.sfxGain);
-
-        source.start(now);
-
-        // 高強度時（アンチラグ・ミスファイアリングシステム等）は連続した二次破裂音（ババッ！）
-        if (intensity > 0.85 && Math.random() < 0.65) {
-            const delay = 0.05 + Math.random() * 0.04;
-            setTimeout(() => {
-                if (!this.ctx) return;
-                const secSource = this.ctx.createBufferSource();
-                secSource.buffer = popBuffer;
-                secSource.playbackRate.setValueAtTime(1.1 + Math.random() * 0.15, this.ctx.currentTime);
-                const secGain = this.ctx.createGain();
-                secGain.gain.setValueAtTime(0.55 * volMultiplier, this.ctx.currentTime);
-                secSource.connect(secGain);
-                secGain.connect(this.sfxGain);
-                secSource.start();
-            }, delay * 1000);
-        }
-    }
-
-    /**
-     * ターボ車のブローオフバルブ（過給圧解放・バックタービン音）
-     */
-    playBlowoffSound() {
-        if (!this.ctx || this.isMuted) return;
-        const now = this.ctx.currentTime;
-
-        // 実車の過給圧がインマニから大気開放される「プシューーーン！」というリアル音
-        const bufferSize = Math.floor(this.ctx.sampleRate * 0.35);
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            const decay = Math.exp(-i / (this.ctx.sampleRate * 0.08));
-            // タービンブレードの脈動（バックタービン フラッター）
-            const flutter = 1.0 + 0.3 * Math.sin(2 * Math.PI * 28 * (i / this.ctx.sampleRate));
-            data[i] = (Math.random() * 2 - 1) * decay * flutter;
-        }
-
-        const source = this.ctx.createBufferSource();
-        source.buffer = buffer;
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(3400, now);
-        filter.frequency.exponentialRampToValueAtTime(1600, now + 0.32);
-        filter.Q.setValueAtTime(3.2, now);
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.42, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
-
-        source.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.sfxGain);
-
-        source.start(now);
-        source.stop(now + 0.35);
-    }
-
-    /**
-     * シフトチェンジ音（メカニカルショック）
-     */
-    playShiftSound() {
-        if (!this.initialized || !this.ctx || this.isMuted) return;
-        const now = this.ctx.currentTime;
-
-        // メカニカルなシフトリンケージ・ゲート噛み合い音（本物の金属・ブッシュ衝撃アコースティック音）
-        const bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            const decay = Math.exp(-i / (this.ctx.sampleRate * 0.014));
-            const click = (i < this.ctx.sampleRate * 0.003) ? 1.0 : 0.0;
-            data[i] = ((Math.random() * 2 - 1) * 0.6 + click * 0.8) * decay;
-        }
-
-        const source = this.ctx.createBufferSource();
-        source.buffer = buffer;
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(850, now);
-        filter.Q.setValueAtTime(2.8, now);
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.36, now);
-
-        source.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.sfxGain);
-
-        source.start(now);
-    }
-
-    setupTireSqueal() {
-        const bufferSize = this.ctx.sampleRate * 2;
-        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
-        }
-
-        const whiteNoise = this.ctx.createBufferSource();
-        whiteNoise.buffer = noiseBuffer;
-        whiteNoise.loop = true;
-
-        this.tireFilter = this.ctx.createBiquadFilter();
-        this.tireFilter.type = 'bandpass';
-        this.tireFilter.frequency.setValueAtTime(1200, this.ctx.currentTime);
-        this.tireFilter.Q.setValueAtTime(4.0, this.ctx.currentTime);
-
-        this.tireGain = this.ctx.createGain();
-        this.tireGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
-
-        whiteNoise.connect(this.tireFilter);
-        this.tireFilter.connect(this.tireGain);
-        this.tireGain.connect(this.sfxGain);
-
-        whiteNoise.start();
-    }
-
     setupRainAudio() {
         if (!this.ctx) return;
+        // 雨のアンビエント環境音（低域〜中域の優しい雨音）
         const bufferSize = this.ctx.sampleRate * 2;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -716,6 +144,7 @@ class AudioManager {
 
         this.rainNoiseNode.start();
 
+        // ウェット路面走行時のタイヤ水しぶきシズル音（スピード比例）
         const sprayBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const sprayData = sprayBuffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
@@ -763,12 +192,20 @@ class AudioManager {
         this.wetSprayGain.gain.setTargetAtTime(targetGain, this.ctx.currentTime, 0.08);
     }
 
+    /**
+     * ★峠道あるある完全再現：プロシージャル砂利走行音（Gravel Road Noise & Pebble Hits）
+     * タイヤが未舗装路肩・砂利を踏んだときの「ジャリジャリッ」「ザザーッ」という粗い砂利ノイズと
+     * 小石がインナーフェンダーに当たる「パチッ、カンッ」という音をWeb Audio APIで完全プロシージャル合成
+     */
     setupGravelAudio() {
         if (!this.ctx) return;
+
         const bufferSize = this.ctx.sampleRate * 2;
+        // 砂利ノイズ用バッファ（ザラついた粗粒度クラックルノイズ）
         const gravelBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const gravelData = gravelBuffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
+            // パルス成分を混ぜた不規則な砂利摩擦ノイズ
             const rand = Math.random();
             const pulse = (Math.random() < 0.05) ? (Math.random() * 2 - 1) * 1.8 : 0;
             gravelData[i] = (rand * 2 - 1) * 0.7 + pulse;
@@ -778,6 +215,7 @@ class AudioManager {
         this.gravelSource.buffer = gravelBuffer;
         this.gravelSource.loop = true;
 
+        // バンドパスフィルター（砂利のザラザラした周波数帯 2400Hz）
         this.gravelFilter = this.ctx.createBiquadFilter();
         this.gravelFilter.type = 'bandpass';
         this.gravelFilter.frequency.setValueAtTime(2400, this.ctx.currentTime);
@@ -791,9 +229,16 @@ class AudioManager {
         this.gravelGain.connect(this.sfxGain);
 
         this.gravelSource.start();
+
+        // 小石直撃音用のクールダウン
         this.lastPebbleHitTime = 0;
     }
 
+    /**
+     * 砂利走行音のリアルタイム更新
+     * @param {number} speedKmh - 車両速度 (km/h)
+     * @param {number} intensity - 砂利踏み込み度合い (0.0〜1.0)
+     */
     updateGravel(speedKmh, intensity = 0.0) {
         if (!this.initialized || !this.gravelGain || !this.ctx) return;
 
@@ -803,19 +248,25 @@ class AudioManager {
             return;
         }
 
+        // 速度と踏み込み量に応じたゲイン（最大 0.28）
         const speedNorm = Math.min(1.2, speedKmh / 75.0);
         const targetGain = Math.min(0.28, intensity * speedNorm * 0.25);
         this.gravelGain.gain.setTargetAtTime(targetGain, now, 0.04);
 
+        // 速度に応じてフィルター周波数をシフト（高速になるほど高周波化 2000Hz〜3600Hz）
         const targetFreq = 2000 + speedNorm * 1200;
         this.gravelFilter.frequency.setTargetAtTime(targetFreq, now, 0.06);
 
+        // 高速走行時、ホイールハウスに小石が当たるランダムポップ音を時折発音
         if (speedKmh > 25 && Math.random() < (intensity * 0.22) && (now - this.lastPebbleHitTime > 0.09)) {
             this.playPebbleHit();
             this.lastPebbleHitTime = now;
         }
     }
 
+    /**
+     * 小石がインナーフェンダーやフロアパンに当たる「パチッ、カンッ」という音
+     */
     playPebbleHit() {
         if (!this.ctx || this.isMuted) return;
 
@@ -823,6 +274,7 @@ class AudioManager {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
+        // 800Hz〜2200Hzの短いインパルス
         const freq = 900 + Math.random() * 1200;
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, now);
@@ -838,6 +290,10 @@ class AudioManager {
         osc.stop(now + 0.03);
     }
 
+    /**
+     * ★溝落としグラインド摩擦音（Gutter Concrete Grind & Rattle）
+     * 側溝を駆け抜ける際の「ゴロゴロゴロ…」「ガガガガッ」という重厚なコンクリート擦過音
+     */
     setupGutterAudio() {
         if (!this.ctx) return;
 
@@ -845,6 +301,7 @@ class AudioManager {
         const gutterBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = gutterBuffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
+            // 低周波パルスとコンクリート粗面の摩擦ノイズ
             const pulse = (Math.random() < 0.12) ? (Math.random() * 2 - 1) * 1.5 : 0;
             data[i] = (Math.random() * 2 - 1) * 0.6 + pulse;
         }
@@ -853,6 +310,7 @@ class AudioManager {
         this.gutterSource.buffer = gutterBuffer;
         this.gutterSource.loop = true;
 
+        // 重厚なコンクリート溝のレゾナンス（バンドパス 450Hz〜800Hz）
         this.gutterFilter = this.ctx.createBiquadFilter();
         this.gutterFilter.type = 'bandpass';
         this.gutterFilter.frequency.setValueAtTime(520, this.ctx.currentTime);
@@ -868,6 +326,9 @@ class AudioManager {
         this.gutterSource.start();
     }
 
+    /**
+     * 溝走行グラインド音のリアルタイム更新
+     */
     updateGutterGrind(speedKmh, active = false) {
         if (!this.initialized || !this.gutterGain || !this.ctx) return;
 
@@ -877,6 +338,7 @@ class AudioManager {
             return;
         }
 
+        // 速度に応じた音量と周波数の変動
         const speedNorm = Math.min(1.4, speedKmh / 70.0);
         const targetGain = Math.min(0.35, 0.12 + speedNorm * 0.18);
         this.gutterGain.gain.setTargetAtTime(targetGain, now, 0.04);
@@ -885,10 +347,310 @@ class AudioManager {
         this.gutterFilter.frequency.setTargetAtTime(targetFreq, now, 0.05);
     }
 
+    setEngineSoundType(type) {
+        this.soundType = type || '4age';
+        if (!this.initialized || !this.engineOsc1 || !this.engineOsc2) return;
+
+        if (this.soundType === '13b') {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'sine';
+        } else if (this.soundType === 'rb26') {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'sawtooth';
+        } else if (this.soundType === '1jz') {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'triangle';
+        } else if (this.soundType === 'sr20') {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'triangle';
+        } else if (this.soundType === '4g63') {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'triangle';
+        } else if (this.soundType === 'b16b') {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'sawtooth';
+        } else if (this.soundType === 'f5a') {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'sawtooth';
+        } else if (this.soundType === '2jz') {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'sawtooth';
+        } else {
+            this.engineOsc1.type = 'sawtooth';
+            this.engineOsc2.type = 'triangle';
+        }
+    }
+
+    previewRev(carId, onPopCallback = null) {
+        if (!this.initialized) {
+            this.init();
+            this.resume();
+        }
+        const car = window.CAR_DATABASE && window.CAR_DATABASE[carId];
+        const soundType = car && car.physics ? car.physics.engineSoundType : '4age';
+        this.setEngineSoundType(soundType);
+
+        const targetRpm = (car && car.physics && car.physics.redlineRpm) ? car.physics.redlineRpm * 0.88 : 7500;
+        let currentRpm = 1000;
+        let step = 0;
+
+        const revInterval = setInterval(() => {
+            step++;
+            if (step <= 24) {
+                // スロットル全開で回転急上昇
+                currentRpm += (targetRpm - currentRpm) * 0.16;
+                this.updateEngine(currentRpm, 1.0, false, 0);
+            } else if (step <= 34) {
+                // アクセルを抜いて減速＋アフターファイヤ炸裂
+                currentRpm -= (currentRpm - 1000) * 0.22;
+                this.updateEngine(currentRpm, 0.0, false, 0);
+                if (step === 25) {
+                    this.playAfterfireSound(1.2);
+                    if (onPopCallback) onPopCallback(1.2);
+                }
+            } else {
+                this.updateEngine(1000, 0.0, false, 0);
+                this.engineGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.1);
+                clearInterval(revInterval);
+            }
+        }, 16);
+    }
+
+    resume() {
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    setupEngineSynth() {
+        // エンジンサウンドシンセ
+        this.engineOsc1 = this.ctx.createOscillator();
+        this.engineOsc1.type = 'sawtooth';
+
+        this.engineOsc2 = this.ctx.createOscillator();
+        this.engineOsc2.type = 'triangle';
+
+        this.engineFilter = this.ctx.createBiquadFilter();
+        this.engineFilter.type = 'lowpass';
+        this.engineFilter.frequency.setValueAtTime(800, this.ctx.currentTime);
+        this.engineFilter.Q.setValueAtTime(2.5, this.ctx.currentTime);
+
+        this.engineGain = this.ctx.createGain();
+        this.engineGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
+
+        this.engineOsc1.connect(this.engineFilter);
+        this.engineOsc2.connect(this.engineFilter);
+        this.engineFilter.connect(this.engineGain);
+        this.engineGain.connect(this.sfxGain);
+
+        this.engineOsc1.start();
+        this.engineOsc2.start();
+    }
+
+    setupTireSqueal() {
+        // ホワイトノイズ生成
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        this.tireFilter = this.ctx.createBiquadFilter();
+        this.tireFilter.type = 'bandpass';
+        this.tireFilter.frequency.setValueAtTime(1200, this.ctx.currentTime);
+        this.tireFilter.Q.setValueAtTime(4.0, this.ctx.currentTime);
+
+        this.tireGain = this.ctx.createGain();
+        this.tireGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
+
+        whiteNoise.connect(this.tireFilter);
+        this.tireFilter.connect(this.tireGain);
+        this.tireGain.connect(this.sfxGain);
+
+        whiteNoise.start();
+    }
+
+    updateEngine(rpm, throttle, isDrifting, driftAngle) {
+        if (!this.initialized) return;
+
+        // 車種別エンジンの気筒数・ロータリー・過給特性に応じた周波数＆音響モデリング
+        let orderMultiplier = 2.0; // 4気筒 NA
+        let maxRpmRef = 11000;
+        let cutoffBase = 500;
+        let cutoffRange = 4500;
+        let cutoffThrottle = 1500;
+
+        if (this.soundType === '13b') {
+            orderMultiplier = 3.0; // ロータリー高調波
+            maxRpmRef = 8500;
+            cutoffBase = 650;
+            cutoffRange = 4800;
+            cutoffThrottle = 2200;
+        } else if (this.soundType === 'rb26') {
+            orderMultiplier = 3.0; // 直列6気筒ツインターボ
+            maxRpmRef = 8500;
+            cutoffBase = 420;
+            cutoffRange = 3600;
+            cutoffThrottle = 2400;
+        } else if (this.soundType === '1jz') {
+            orderMultiplier = 3.0; // 2.5L 直列6気筒シングルターボ
+            maxRpmRef = 8000;
+            cutoffBase = 400;
+            cutoffRange = 3900;
+            cutoffThrottle = 2500;
+        } else if (this.soundType === 'sr20') {
+            orderMultiplier = 2.0; // 4気筒ターボ
+            maxRpmRef = 7800;
+            cutoffBase = 480;
+            cutoffRange = 4000;
+            cutoffThrottle = 1900;
+        } else if (this.soundType === '4g63') {
+            orderMultiplier = 2.0; // 2.0L 4気筒ターボ（重厚な過給ビート）
+            maxRpmRef = 8200;
+            cutoffBase = 460;
+            cutoffRange = 4200;
+            cutoffThrottle = 2400;
+        } else if (this.soundType === 'b16b') {
+            orderMultiplier = 2.0; // 1.6L 4気筒 高回転NA VTEC
+            maxRpmRef = 9500;
+            const isVtec = rpm > 5800; // 5,800rpmでVTECハイカム突入！甲高い咆哮へシフト
+            cutoffBase = isVtec ? 680 : 500;
+            cutoffRange = isVtec ? 5600 : 4200;
+            cutoffThrottle = isVtec ? 2800 : 1600;
+        } else if (this.soundType === 'f5a') {
+            orderMultiplier = 1.5; // 550cc 直列3気筒（1.5次オーダーパルス）
+            maxRpmRef = 10000;
+            const isBoost = rpm > 4500; // 4,500rpm以上でドッカン過給＆タービン過給高音
+            cutoffBase = isBoost ? 620 : 420;
+            cutoffRange = isBoost ? 5500 : 3800;
+            cutoffThrottle = isBoost ? 2900 : 1300;
+        } else if (this.soundType === '2jz') {
+            orderMultiplier = 3.0; // 3.0L 直列6気筒ツインターボ
+            maxRpmRef = 8200;
+            cutoffBase = 380; // 3Lならではの図太い重低音
+            cutoffRange = 4100;
+            cutoffThrottle = 2600; // アクセル開度で豪快に吼えるツインターボ吸排気
+        }
+
+        const baseFreq = Math.max(35, (rpm / 60) * orderMultiplier);
+        const curTime = this.ctx.currentTime;
+
+        this.engineOsc1.frequency.setTargetAtTime(baseFreq, curTime, 0.03);
+        this.engineOsc2.frequency.setTargetAtTime(baseFreq * 2.015, curTime, 0.03);
+
+        const cutoff = cutoffBase + (rpm / maxRpmRef) * cutoffRange + throttle * cutoffThrottle;
+        this.engineFilter.frequency.setTargetAtTime(cutoff, curTime, 0.04);
+
+        // 音量
+        const vol = 0.15 + (throttle * 0.25) + (rpm / maxRpmRef) * 0.22;
+        this.engineGain.gain.setTargetAtTime(vol, curTime, 0.03);
+
+        // ドリフト時のスキール音
+        let squealVol = 0;
+        if (isDrifting) {
+            const slipIntensity = Math.min(1.0, Math.abs(driftAngle) * 2.2);
+            squealVol = 0.15 + slipIntensity * 0.35;
+            const squealPitch = 900 + slipIntensity * 1200;
+            this.tireFilter.frequency.setTargetAtTime(squealPitch, curTime, 0.04);
+        }
+        this.tireGain.gain.setTargetAtTime(squealVol, curTime, 0.05);
+    }
+
+    playShiftSound() {
+        if (!this.initialized) return;
+        const now = this.ctx.currentTime;
+
+        // シフトショック・メカニカル音
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 0.09);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.09);
+    }
+
+    /**
+     * アフターファイヤ破裂音（Web Audio API プロシージャル合成）
+     * 乾いた衝撃破裂音（パンッ！）、低域の排気衝撃波、高負荷時の連続破裂（ババッ！）を忠実再現
+     */
+    playAfterfireSound(intensity = 1.0, isRival = false) {
+        if (!this.initialized) return;
+        const now = this.ctx.currentTime;
+        const volMultiplier = (isRival ? 0.65 : 1.0) * Math.min(1.4, Math.max(0.5, intensity));
+
+        // 1発目の主破裂音生成
+        this._synthesizeExhaustPop(now, volMultiplier, 1.0);
+
+        // 高強度時はランダムで「ババッ！」と追従する小気味よい二次破裂音
+        if (intensity > 0.85 && Math.random() < 0.65) {
+            const delay = 0.045 + Math.random() * 0.035;
+            this._synthesizeExhaustPop(now + delay, volMultiplier * 0.55, 1.25);
+        }
+    }
+
+    _synthesizeExhaustPop(time, volume, pitchFactor = 1.0) {
+        // A. 鋭い高圧ガス破裂ノイズ（乾いた「パンッ！」というクラック音）
+        const bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            const decay = Math.exp(-i / (this.ctx.sampleRate * 0.015));
+            data[i] = (Math.random() * 2 - 1) * decay;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const noiseFilter = this.ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.setValueAtTime(2200 * pitchFactor, time);
+        noiseFilter.Q.setValueAtTime(3.0, time);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.70 * volume, time);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.sfxGain);
+
+        noise.start(time);
+        noise.stop(time + 0.08);
+
+        // B. 排気管内の空気衝撃波・重低音キック（ドスッと腹に響くコンカッション）
+        const subOsc = this.ctx.createOscillator();
+        const subGain = this.ctx.createGain();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(170 * pitchFactor, time);
+        subOsc.frequency.exponentialRampToValueAtTime(36, time + 0.055);
+
+        subGain.gain.setValueAtTime(0.55 * volume, time);
+        subGain.gain.exponentialRampToValueAtTime(0.001, time + 0.065);
+
+        subOsc.connect(subGain);
+        subGain.connect(this.sfxGain);
+
+        subOsc.start(time);
+        subOsc.stop(time + 0.07);
+    }
+
     playWallHit(intensity = 1.0) {
         if (!this.initialized) return;
         const now = this.ctx.currentTime;
 
+        // クラッシュ衝撃ノイズ
         const bufferSize = this.ctx.sampleRate * 0.3;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -912,10 +674,15 @@ class AudioManager {
         noise.start(now);
     }
 
+    /**
+     * ★溝落とし進入衝撃音（Gutter Drop Impact）
+     * 「ガコンッ！」「ダンッ！」という車輪の溝底着地とサスペンション底突き衝撃音
+     */
     playGutterDropSound() {
         if (!this.ctx || this.isMuted) return;
         const now = this.ctx.currentTime;
 
+        // 1. 重量衝撃波（ドスッ！という低域サブベース）
         const subOsc = this.ctx.createOscillator();
         const subGain = this.ctx.createGain();
         subOsc.type = 'sine';
@@ -930,6 +697,7 @@ class AudioManager {
         subOsc.start(now);
         subOsc.stop(now + 0.16);
 
+        // 2. メタリックスプリング＆サスペンション打撃音（ガチンッ！）
         const crackOsc = this.ctx.createOscillator();
         const crackGain = this.ctx.createGain();
         crackOsc.type = 'sawtooth';
@@ -944,6 +712,7 @@ class AudioManager {
         crackOsc.start(now);
         crackOsc.stop(now + 0.10);
 
+        // 3. コンクリート縁石打撃クラックノイズ
         const bufferSize = Math.floor(this.ctx.sampleRate * 0.07);
         const buf = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buf.getChannelData(0);
@@ -969,6 +738,10 @@ class AudioManager {
         this.playGutterDropSound();
     }
 
+    /**
+     * ★溝落とし脱出音（Gutter Exit Sound）
+     * 「ガタンッ！」というサスペンション解放と路面復帰音
+     */
     playGutterExitSound() {
         if (!this.ctx || this.isMuted) return;
         const now = this.ctx.currentTime;
@@ -1009,6 +782,7 @@ class AudioManager {
     playHeadlightSwitch() {
         if (!this.initialized) return;
         const now = this.ctx.currentTime;
+        // メカニカルなリトラクタブル・ライトスイッチのリレー音（カチッ）
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'triangle';
@@ -1021,6 +795,7 @@ class AudioManager {
         osc.start(now);
         osc.stop(now + 0.045);
 
+        // セカンドリレー音
         const osc2 = this.ctx.createOscillator();
         const gain2 = this.ctx.createGain();
         osc2.type = 'square';
@@ -1034,9 +809,15 @@ class AudioManager {
         osc2.stop(now + 0.085);
     }
 
+    /**
+     * 頭文字D風 ユーロビートBGMシンセサイザー
+     * 高速155BPMのオクターブシンセベースとブラスコード、疾走感あるリフをループ生成
+     */
     startEurobeatBGM() {
         if (!this.initialized || this.bgmInterval) return;
 
+        // ユーロビートのコード進行（Am - F - G - Em パターン）
+        // 周波数テーブル
         const noteFreqs = {
             'A1': 55.0, 'A2': 110.0, 'C2': 65.4, 'C3': 130.8,
             'D2': 73.4, 'D3': 146.8, 'E2': 82.4, 'E3': 164.8,
@@ -1052,6 +833,7 @@ class AudioManager {
             'E2', 'E3', 'E2', 'E3', 'E2', 'E3', 'E2', 'E3'
         ];
 
+        // 高揚感あるユーロビートのリードシンセメロディ
         const leadPattern = [
             'A4', null, 'C4', null, 'E4', null, 'D4', 'C4',
             'F4', null, 'E4', 'D4', 'C4', null, 'A3', null,
@@ -1059,7 +841,7 @@ class AudioManager {
             'E4', null, 'F4', 'E4', 'D4', null, 'E4', null
         ];
 
-        const stepTime = (60 / this.bpm) / 4;
+        const stepTime = (60 / this.bpm) / 4; // 16分音符
         this.bgmStep = 0;
 
         this.bgmInterval = setInterval(() => {
@@ -1067,6 +849,7 @@ class AudioManager {
             const now = this.ctx.currentTime;
             const stepIdx = this.bgmStep % 32;
 
+            // 1. オクターブベース音
             const bassNote = bassPattern[stepIdx];
             if (bassNote && noteFreqs[bassNote]) {
                 const bOsc = this.ctx.createOscillator();
@@ -1083,7 +866,9 @@ class AudioManager {
                 bOsc.stop(now + stepTime * 0.9);
             }
 
+            // 2. ユーロビートのハイハット & キックドラム
             if (stepIdx % 4 === 0) {
+                // キック
                 const kOsc = this.ctx.createOscillator();
                 const kGain = this.ctx.createGain();
                 kOsc.frequency.setValueAtTime(140, now);
@@ -1095,6 +880,7 @@ class AudioManager {
                 kOsc.start(now);
                 kOsc.stop(now + 0.09);
             } else if (stepIdx % 2 === 0) {
+                // オフビート・ハイハット
                 const hBuf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.04, this.ctx.sampleRate);
                 const hData = hBuf.getChannelData(0);
                 for (let i = 0; i < hData.length; i++) hData[i] = (Math.random() * 2 - 1) * 0.2;
@@ -1108,6 +894,7 @@ class AudioManager {
                 hSrc.start(now);
             }
 
+            // 3. リードシンセ（ブラス調）
             const leadNote = leadPattern[stepIdx];
             if (leadNote && noteFreqs[leadNote]) {
                 const lOsc1 = this.ctx.createOscillator();
@@ -1118,7 +905,7 @@ class AudioManager {
                 lOsc1.type = 'sawtooth';
                 lOsc2.type = 'sawtooth';
                 lOsc1.frequency.setValueAtTime(noteFreqs[leadNote], now);
-                lOsc2.frequency.setValueAtTime(noteFreqs[leadNote] * 1.004, now);
+                lOsc2.frequency.setValueAtTime(noteFreqs[leadNote] * 1.004, now); // デチューンで太く
 
                 lFilter.type = 'lowpass';
                 lFilter.frequency.setValueAtTime(3200, now);
@@ -1154,6 +941,10 @@ class AudioManager {
         return this.isBgmEnabled;
     }
 
+    /**
+     * ★頭文字DAC仕様：コーナー接近警告サウンド (ピピッ！)
+     * @param {'blue'|'green'|'yellow'|'red'} severity 
+     */
     playCornerWarning(severity = 'yellow') {
         if (!this.ctx || this.isMuted) return;
         const now = this.ctx.currentTime;

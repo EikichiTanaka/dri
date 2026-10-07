@@ -402,20 +402,11 @@ class CarPhysics {
                 if (this.onShift) this.onShift('down', prevGear, this.gear);
             }
         } else {
-            // MTモード：手動シフトチェンジ（先行入力対応）＋ 高回転踏みっぱなし時のアシスト
+            // MTモード：完全手動シフトチェンジ（先行入力対応）
             const wantShiftUp = (this.shiftBuffer === 'up') || input.shiftUp;
             const wantShiftDown = (this.shiftBuffer === 'down') || input.shiftDown;
 
-            // MTアシスト：レブ付近（redline * 0.92以上）でアクセル全開が0.65秒続いた場合、自動でシフトアップをアシスト
-            if (this.rpm >= redline * 0.92 && this.throttle > 0.85) {
-                this.highRpmHoldTimer = (this.highRpmHoldTimer || 0) + dt;
-            } else {
-                this.highRpmHoldTimer = 0;
-            }
-            const autoAssistUp = (this.highRpmHoldTimer > 0.65);
-
-            if ((wantShiftUp || autoAssistUp) && this.gear < 5 && this.shiftTimer <= 0) {
-                this.highRpmHoldTimer = 0;
+            if (wantShiftUp && this.gear < 5 && this.shiftTimer <= 0) {
                 const prevGear = this.gear;
                 this.gear++;
                 this.shiftTimer = 0.16; // キビキビとした軽快なシフトフィーリング
