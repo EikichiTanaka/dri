@@ -18,15 +18,15 @@ const SOUND_FILE_MAP = {
 };
 
 const SOUND_SPECS = {
-    '4age': { loopStart: 3.8, loopDuration: 2.5, popTime: 13.90, popDuration: 0.35, revStart: 1.5, revDuration: 7.0, popDelay: 2.4, basePitch: 1.00, idleRpm: 950, maxRpm: 11000 },
-    '13b':  { loopStart: 1.4, loopDuration: 2.5, popTime: 5.10,  popDuration: 0.40, revStart: 3.5, revDuration: 6.5, popDelay: 1.6, basePitch: 1.02, idleRpm: 900, maxRpm: 8500 },
-    'rb26': { loopStart: 1.8, loopDuration: 2.5, popTime: 17.90, popDuration: 0.40, revStart: 13.5, revDuration: 6.5, popDelay: 2.5, basePitch: 0.95, idleRpm: 950, maxRpm: 8500 },
-    'sr20': { loopStart: 2.8, loopDuration: 2.5, popTime: 21.45, popDuration: 0.35, revStart: 18.0, revDuration: 6.0, popDelay: 2.3, basePitch: 0.98, idleRpm: 850, maxRpm: 7800 },
-    '1jz':  { loopStart: 5.6, loopDuration: 2.5, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.96, idleRpm: 800, maxRpm: 7800 },
-    '2jz':  { loopStart: 5.6, loopDuration: 2.5, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.92, idleRpm: 750, maxRpm: 8200 },
-    '4g63': { loopStart: 5.8, loopDuration: 2.5, popTime: 23.65, popDuration: 0.45, revStart: 2.5, revDuration: 6.0, popDelay: 2.2, basePitch: 0.95, idleRpm: 900, maxRpm: 8200 },
-    'b16b': { loopStart: 5.8, loopDuration: 2.5, popTime: 16.30, popDuration: 0.35, revStart: 15.5, revDuration: 6.5, popDelay: 2.3, basePitch: 1.05, idleRpm: 850, maxRpm: 9500 },
-    'f5a':  { loopStart: 5.0, loopDuration: 2.5, popTime: 20.50, popDuration: 0.35, revStart: 2.0, revDuration: 6.0, popDelay: 2.0, basePitch: 1.10, idleRpm: 950, maxRpm: 10000 }
+    '4age': { loopStart: 1.5, loopDuration: 8.5, popTime: 13.90, popDuration: 0.35, revStart: 1.5, revDuration: 7.0, popDelay: 2.4, basePitch: 1.00, idleRpm: 950, maxRpm: 11000 },
+    '13b':  { loopStart: 1.2, loopDuration: 8.5, popTime: 5.10,  popDuration: 0.40, revStart: 3.5, revDuration: 6.5, popDelay: 1.6, basePitch: 1.02, idleRpm: 900, maxRpm: 8500 },
+    'rb26': { loopStart: 1.2, loopDuration: 8.5, popTime: 17.90, popDuration: 0.40, revStart: 13.5, revDuration: 6.5, popDelay: 2.5, basePitch: 0.95, idleRpm: 950, maxRpm: 8500 },
+    'sr20': { loopStart: 1.5, loopDuration: 9.0, popTime: 21.45, popDuration: 0.35, revStart: 18.0, revDuration: 6.0, popDelay: 2.3, basePitch: 0.98, idleRpm: 850, maxRpm: 7800 },
+    '1jz':  { loopStart: 1.5, loopDuration: 8.5, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.96, idleRpm: 800, maxRpm: 7800 },
+    '2jz':  { loopStart: 1.5, loopDuration: 8.5, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.92, idleRpm: 750, maxRpm: 8200 },
+    '4g63': { loopStart: 1.5, loopDuration: 8.5, popTime: 23.65, popDuration: 0.45, revStart: 2.5, revDuration: 6.0, popDelay: 2.2, basePitch: 0.95, idleRpm: 900, maxRpm: 8200 },
+    'b16b': { loopStart: 1.5, loopDuration: 8.5, popTime: 16.30, popDuration: 0.35, revStart: 15.5, revDuration: 6.5, popDelay: 2.3, basePitch: 1.05, idleRpm: 850, maxRpm: 9500 },
+    'f5a':  { loopStart: 1.5, loopDuration: 8.5, popTime: 20.50, popDuration: 0.35, revStart: 2.0, revDuration: 6.0, popDelay: 2.0, basePitch: 1.10, idleRpm: 950, maxRpm: 10000 }
 };
 
 class AudioManager {
@@ -198,64 +198,69 @@ class AudioManager {
      * Base64インラインとfetchのデュアルロード方式で、file://でもhttp://でも100%確実にロード
      */
     async loadAllRealCarSounds() {
-        if (this.isAudioLoading || this.audioLoaded) return;
-        this.isAudioLoading = true;
+        if (this.audioLoaded) return Promise.resolve();
+        if (this.loadPromise) return this.loadPromise;
 
-        const uniqueFiles = [...new Set(Object.values(SOUND_FILE_MAP))];
-        const loadPromises = uniqueFiles.map(async (fileName) => {
-            try {
-                // 1. window.REAL_CAR_AUDIO_DATA (Base64) からの超高速・確実ロード（file:// プロトコルでも100%成功）
-                if (window.REAL_CAR_AUDIO_DATA && window.REAL_CAR_AUDIO_DATA[fileName]) {
-                    const arrayBuffer = this._base64ToArrayBuffer(window.REAL_CAR_AUDIO_DATA[fileName]);
+        this.isAudioLoading = true;
+        this.loadPromise = (async () => {
+            const uniqueFiles = [...new Set(Object.values(SOUND_FILE_MAP))];
+            const loadPromises = uniqueFiles.map(async (fileName) => {
+                try {
+                    // 1. window.REAL_CAR_AUDIO_DATA (Base64) からの超高速・確実ロード（file:// プロトコルでも100%成功）
+                    if (window.REAL_CAR_AUDIO_DATA && window.REAL_CAR_AUDIO_DATA[fileName]) {
+                        const arrayBuffer = this._base64ToArrayBuffer(window.REAL_CAR_AUDIO_DATA[fileName]);
+                        const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+                        this.rawBuffers[fileName] = audioBuffer;
+                        return;
+                    }
+
+                    // 2. HTTPサーバー環境での fetch フォールバック
+                    const response = await fetch('assets/sounds/' + fileName);
+                    if (!response.ok) throw new Error(`HTTP ${response.status} loading ${fileName}`);
+                    const arrayBuffer = await response.arrayBuffer();
                     const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
                     this.rawBuffers[fileName] = audioBuffer;
-                    return;
+                } catch (err) {
+                    console.warn(`[AudioManager] Failed to load real sound ${fileName}:`, err);
                 }
+            });
 
-                // 2. HTTPサーバー環境での fetch フォールバック
-                const response = await fetch('assets/sounds/' + fileName);
-                if (!response.ok) throw new Error(`HTTP ${response.status} loading ${fileName}`);
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
-                this.rawBuffers[fileName] = audioBuffer;
-            } catch (err) {
-                console.warn(`[AudioManager] Failed to load real sound ${fileName}:`, err);
+            await Promise.all(loadPromises);
+
+            // 各車種用の「シームレスループバッファ」と「本物のアフターファイヤ破裂音」を生成
+            for (const [soundType, fileName] of Object.entries(SOUND_FILE_MAP)) {
+                const raw = this.rawBuffers[fileName];
+                if (!raw) continue;
+
+                const spec = SOUND_SPECS[soundType] || SOUND_SPECS['4age'];
+
+                // 1. ゼロクリック・イコールパワークロスフェードループバッファ（0.45秒の超滑らかクロスフェード）
+                this.loopBuffers[soundType] = this._createCrossfadeLoop(
+                    raw,
+                    spec.loopStart,
+                    spec.loopDuration,
+                    0.45
+                );
+
+                // 2. 実車マフラー破裂音（アフターファイヤ）スライス
+                this.popBuffers[soundType] = this._extractSlice(
+                    raw,
+                    spec.popTime,
+                    spec.popDuration
+                );
             }
-        });
 
-        await Promise.all(loadPromises);
+            this.audioLoaded = true;
+            this.isAudioLoading = false;
+            console.log('[AudioManager] All real car engine sounds loaded and initialized successfully.');
 
-        // 各車種用の「シームレスループバッファ」と「本物のアフターファイヤ破裂音」を生成
-        for (const [soundType, fileName] of Object.entries(SOUND_FILE_MAP)) {
-            const raw = this.rawBuffers[fileName];
-            if (!raw) continue;
+            // もしすでに初期化済みなら、現在の車種でループを開始
+            if (this.initialized && !this.enginePlaying) {
+                this.startEngineLoop();
+            }
+        })();
 
-            const spec = SOUND_SPECS[soundType] || SOUND_SPECS['4age'];
-
-            // 1. ゼロクリック・イコールパワークロスフェードループバッファ
-            this.loopBuffers[soundType] = this._createCrossfadeLoop(
-                raw,
-                spec.loopStart,
-                spec.loopDuration,
-                0.28
-            );
-
-            // 2. 実車マフラー破裂音（アフターファイヤ）スライス
-            this.popBuffers[soundType] = this._extractSlice(
-                raw,
-                spec.popTime,
-                spec.popDuration
-            );
-        }
-
-        this.audioLoaded = true;
-        this.isAudioLoading = false;
-        console.log('[AudioManager] All real car engine sounds loaded and initialized successfully.');
-
-        // もしすでに初期化済みなら、現在の車種でループを開始
-        if (this.initialized && !this.enginePlaying) {
-            this.startEngineLoop();
-        }
+        return this.loadPromise;
     }
 
     /**
@@ -441,27 +446,34 @@ class AudioManager {
         const curTime = this.ctx.currentTime;
 
         // 1. 回転数（RPM）に応じた実車ピッチシフト (playbackRate)
-        const rpmNorm = Math.max(0, Math.min(1.25, (rpm - idleRpm) / (maxRpm - idleRpm)));
-        // アイドリング時 0.80x 〜 最高回転時 2.15x
-        const targetPitch = spec.basePitch * (0.80 + rpmNorm * 1.35);
-        this.engineSourceNode.playbackRate.setTargetAtTime(targetPitch, curTime, 0.035);
+        // アイドリング（約850〜950rpm）の野太い重低音（0.62x）から
+        // パワーバンド・レッドゾーンの猛烈な高回転咆哮（2.75x〜3.25x）まで、
+        // ギアチェンジ時の回転数ドロップが耳でハッキリ分かる広大なダイナミックレンジ！
+        const rpmRatio = (rpm - idleRpm) / Math.max(1, maxRpm - idleRpm);
+        const rpmNorm = Math.max(0, Math.min(1.30, rpmRatio));
+        // アイドリング: 0.62x, 中回転(4500rpm): 1.48x, 高回転(7500rpm): 2.45x, レブ(9000-11000rpm): 2.95-3.35x!
+        const targetPitch = spec.basePitch * (0.62 + rpmNorm * 2.38);
+        this.engineSourceNode.playbackRate.setTargetAtTime(targetPitch, curTime, 0.025);
         this.currentPitch = targetPitch;
 
         // 2. アクセル開度（スロットル）に応じたダイナミック・吸排気ローパスフィルター
-        // アクセルOFF時は排圧低下と吸気抵抗でマフラー音がこもり、アクセル全開時は排気管直通の爆音咆哮へ解放！
-        let cutoff = 650 + (throttle * 8000) + (rpmNorm * 3800);
+        // アクセルOFF時は排圧低下と吸気抵抗でマフラー音がこもり（520Hz Overrun）、
+        // アクセル全開時は排気管直通でマフラーが全開で吼えるハイゲインサウンド（12,500Hz〜16,000Hz開放）！
+        let cutoff = 520 + (throttle * 9600) + (rpmNorm * 4600);
         if (this.soundType === 'b16b' && rpm > 5800) {
             // VTECハイカム領域：高域を一段と開放し甲高い咆哮へシフト
-            cutoff += 3000;
+            cutoff += 3500;
         }
-        this.engineFilter.frequency.setTargetAtTime(cutoff, curTime, 0.04);
+        this.engineFilter.frequency.setTargetAtTime(cutoff, curTime, 0.025);
         this.currentCutoff = cutoff;
 
         // 3. 実車エンジン音量制御
         // アイドリングでも低く心地よい実車の排気ビートを響かせ、アクセル全開でド迫力の音圧に到達
-        const targetGain = 0.28 + (throttle * 0.42) + (rpmNorm * 0.28);
-        this.engineGain.gain.setTargetAtTime(targetGain, curTime, 0.035);
-        this.currentGain = targetGain;
+        const targetGain = 0.25 + (throttle * 0.48) + (rpmNorm * 0.27);
+        if (!this.shiftDucking) {
+            this.engineGain.gain.setTargetAtTime(targetGain, curTime, 0.025);
+            this.currentGain = targetGain;
+        }
 
         // 4. ターボ車のアクセルオフ時、ブローオフ過給圧解放（プシューン！）
         if (['13b', 'rb26', 'sr20', '1jz', '2jz', '4g63', 'f5a'].includes(this.soundType)) {
@@ -483,6 +495,48 @@ class AudioManager {
             this.tireFilter.frequency.setTargetAtTime(squealPitch, curTime, 0.04);
         }
         this.tireGain.gain.setTargetAtTime(squealVol, curTime, 0.05);
+    }
+
+    /**
+     * ★ギアチェンジ専用・リアル音響演出システム
+     * シフトアップ時の燃料カット・エンジン音瞬間ダッキング、実車アフターファイヤ破裂音、
+     * ターボ過給圧解放ブローオフ、メカニカルシフター音を完全同期
+     */
+    onShiftChange(direction, fromGear, toGear, rpm) {
+        if (!this.initialized || !this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const curRpm = rpm || 6000;
+
+        if (direction === 'up') {
+            // 1. エンジン音の瞬間ダッキング（クラッチ解放＆燃料カット 0.08秒間）
+            if (this.engineGain) {
+                this.shiftDucking = true;
+                this.engineGain.gain.cancelScheduledValues(now);
+                this.engineGain.gain.setValueAtTime(0.08, now);
+                this.engineGain.gain.linearRampToValueAtTime(0.75, now + 0.085);
+                setTimeout(() => {
+                    this.shiftDucking = false;
+                }, 90);
+            }
+
+            // 2. 実車マフラーの強烈なアフターファイヤ・シフトポップ実音（パンッ！ババッ！）
+            const popIntensity = 0.95 + Math.min(0.60, (curRpm / 8000) * 0.60);
+            this.playAfterfireSound(popIntensity, false);
+
+            // 3. ターボ車ならブローオフバルブ（過給圧解放音「プシューーーン！」）
+            if (['13b', 'rb26', 'sr20', '1jz', '2jz', '4g63', 'f5a'].includes(this.soundType) && curRpm > 3800) {
+                this.playBlowoffSound();
+            }
+
+            // 4. メカニカルシフター音（カチッ、ガコンッ）
+            this.playShiftSound();
+        } else if (direction === 'down') {
+            // シフトダウン時：ブリッピング（回転上昇）＆アフターファイヤ
+            this.playShiftSound();
+            if (curRpm > 4200) {
+                this.playAfterfireSound(0.85, false);
+            }
+        }
     }
 
     /**
@@ -573,27 +627,35 @@ class AudioManager {
      * シフトチェンジ音（メカニカルショック）
      */
     playShiftSound() {
-        if (!this.initialized) return;
+        if (!this.initialized || !this.ctx || this.isMuted) return;
         const now = this.ctx.currentTime;
 
-        // シフトチェンジ時の小気味よいアフターファイヤを低確率で誘発
-        if (Math.random() < 0.45) {
-            this.playAfterfireSound(0.7);
+        // メカニカルなシフトリンケージ・ゲート噛み合い音（本物の金属・ブッシュ衝撃アコースティック音）
+        const bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            const decay = Math.exp(-i / (this.ctx.sampleRate * 0.014));
+            const click = (i < this.ctx.sampleRate * 0.003) ? 1.0 : 0.0;
+            data[i] = ((Math.random() * 2 - 1) * 0.6 + click * 0.8) * decay;
         }
 
-        const osc = this.ctx.createOscillator();
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(850, now);
+        filter.Q.setValueAtTime(2.8, now);
+
         const gain = this.ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+        gain.gain.setValueAtTime(0.36, now);
 
-        gain.gain.setValueAtTime(0.28, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-
-        osc.connect(gain);
+        source.connect(filter);
+        filter.connect(gain);
         gain.connect(this.sfxGain);
-        osc.start(now);
-        osc.stop(now + 0.08);
+
+        source.start(now);
     }
 
     setupTireSqueal() {

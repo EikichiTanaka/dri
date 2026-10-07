@@ -370,6 +370,7 @@ class CarPhysics {
             const downShiftRpm = Math.max(this.idleRpm + 400, redline * 0.32);
 
             if (this.rpm > upShiftRpm && this.gear < 5 && this.shiftTimer <= 0) {
+                const prevGear = this.gear;
                 this.gear++;
                 this.shiftTimer = 0.20;
                 this.downshiftBrakeTimer = 0; // シフトアップ時はエンブレタイマーを即解除
@@ -379,18 +380,26 @@ class CarPhysics {
                 const newGearRatio = this.gearRatios[this.gear];
                 const wheelCircum = this.wheelCircumference || 1.95;
                 const targetUpRpm = Math.max(this.idleRpm, (this.speedMs / wheelCircum) * newGearRatio * this.finalDrive * 60);
-                this.rpm = Math.min(this.rpm, targetUpRpm + 350);
+                this.rpm = Math.min(this.rpm, targetUpRpm + 80);
 
                 if (this.onAfterfire && this.rpm > redline * 0.65) {
                     this.onAfterfire(1.05);
                 }
-                if (this.onShift) this.onShift('up');
+                if (this.onShift) this.onShift('up', prevGear, this.gear);
             } else if (this.rpm < downShiftRpm && this.gear > 1 && this.shiftTimer <= 0) {
+                const prevGear = this.gear;
                 this.gear--;
                 this.shiftTimer = 0.20;
                 this.downshiftBrakeTimer = 0.5; // シフトダウンによるバックトルク
                 this.isRevLimiterCut = false; // ★レブカット状態を即座に完全解除！
-                if (this.onShift) this.onShift('down');
+
+                // シフトダウン時のブリッピング・回転数跳ね上がり
+                const newGearRatio = this.gearRatios[this.gear];
+                const wheelCircum = this.wheelCircumference || 1.95;
+                const targetDownRpm = (this.speedMs / wheelCircum) * newGearRatio * this.finalDrive * 60;
+                this.rpm = Math.max(this.rpm, Math.min(this.maxRpm - 150, targetDownRpm));
+
+                if (this.onShift) this.onShift('down', prevGear, this.gear);
             }
         } else {
             // MTモード：手動シフトチェンジ（矢印キー左右 ← / → 等、先行入力対応）
@@ -398,6 +407,7 @@ class CarPhysics {
             const wantShiftDown = (this.shiftBuffer === 'down') || input.shiftDown;
 
             if (wantShiftUp && this.gear < 5 && this.shiftTimer <= 0) {
+                const prevGear = this.gear;
                 this.gear++;
                 this.shiftTimer = 0.16; // キビキビとした軽快なシフトフィーリング
                 this.shiftBuffer = null;
@@ -409,14 +419,15 @@ class CarPhysics {
                 const newGearRatio = this.gearRatios[this.gear];
                 const wheelCircum = this.wheelCircumference || 1.95;
                 const targetUpRpm = Math.max(this.idleRpm, (this.speedMs / wheelCircum) * newGearRatio * this.finalDrive * 60);
-                this.rpm = Math.min(this.rpm, targetUpRpm + 350);
+                this.rpm = Math.min(this.rpm, targetUpRpm + 80);
 
                 if (this.rpm > redline * 0.65) {
                     const intensity = 0.80 + Math.min(0.55, (this.rpm - redline * 0.65) / (redline * 0.35) * 0.55);
                     if (this.onAfterfire) this.onAfterfire(intensity);
                 }
-                if (this.onShift) this.onShift('up');
+                if (this.onShift) this.onShift('up', prevGear, this.gear);
             } else if (wantShiftDown && this.gear > 1 && this.shiftTimer <= 0) {
+                const prevGear = this.gear;
                 this.gear--;
                 this.shiftTimer = 0.16;
                 this.shiftBuffer = null;
@@ -437,7 +448,7 @@ class CarPhysics {
                 if (this.speed > 30 && Math.abs(this.steerAngle) > 0.07) {
                     this.triggerDrift('SHIFT_DOWN');
                 }
-                if (this.onShift) this.onShift('down');
+                if (this.onShift) this.onShift('down', prevGear, this.gear);
             }
         }
     }

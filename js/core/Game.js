@@ -368,8 +368,12 @@ class Game {
             this.particles.emitSparks(this.playerPhysics.position, Math.floor(intensity * 22));
         };
 
-        this.playerPhysics.onShift = () => {
-            this.audio.playShiftSound();
+        this.playerPhysics.onShift = (direction, fromGear, toGear) => {
+            if (this.audio && this.audio.onShiftChange) {
+                this.audio.onShiftChange(direction, fromGear, toGear, this.playerPhysics.rpm);
+            } else if (this.audio) {
+                this.audio.playShiftSound();
+            }
         };
 
         // ★プレイヤー アフターファイヤ コールバック（火炎パーティクル＋瞬間ライト＋Web Audio破裂音）
