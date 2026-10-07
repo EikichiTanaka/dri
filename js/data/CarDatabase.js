@@ -41,7 +41,7 @@ const CAR_DATABASE = {
             corneringStiffnessRear: 36000,
             tireGripLimit: 1.08,
             drivetrain: 'FR',
-            gearRatios: [0, 3.587, 2.022, 1.384, 1.000, 0.861],
+            gearRatios: [0, 3.166, 1.904, 1.392, 1.082, 0.861],
             finalDrive: 4.300,
             wheelCircumference: 1.82,
             gearAccelMap: [0, 5.4, 4.0, 2.9, 1.9, 1.3],

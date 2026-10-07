@@ -18,15 +18,15 @@ const SOUND_FILE_MAP = {
 };
 
 const SOUND_SPECS = {
-    '4age': { loopStart: 1.5, loopDuration: 8.5, popTime: 13.90, popDuration: 0.35, revStart: 1.5, revDuration: 7.0, popDelay: 2.4, basePitch: 1.00, idleRpm: 950, maxRpm: 11000 },
-    '13b':  { loopStart: 1.2, loopDuration: 8.5, popTime: 5.10,  popDuration: 0.40, revStart: 3.5, revDuration: 6.5, popDelay: 1.6, basePitch: 1.02, idleRpm: 900, maxRpm: 8500 },
-    'rb26': { loopStart: 1.2, loopDuration: 8.5, popTime: 17.90, popDuration: 0.40, revStart: 13.5, revDuration: 6.5, popDelay: 2.5, basePitch: 0.95, idleRpm: 950, maxRpm: 8500 },
-    'sr20': { loopStart: 1.5, loopDuration: 9.0, popTime: 21.45, popDuration: 0.35, revStart: 18.0, revDuration: 6.0, popDelay: 2.3, basePitch: 0.98, idleRpm: 850, maxRpm: 7800 },
-    '1jz':  { loopStart: 1.5, loopDuration: 8.5, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.96, idleRpm: 800, maxRpm: 7800 },
-    '2jz':  { loopStart: 1.5, loopDuration: 8.5, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.92, idleRpm: 750, maxRpm: 8200 },
-    '4g63': { loopStart: 1.5, loopDuration: 8.5, popTime: 23.65, popDuration: 0.45, revStart: 2.5, revDuration: 6.0, popDelay: 2.2, basePitch: 0.95, idleRpm: 900, maxRpm: 8200 },
-    'b16b': { loopStart: 1.5, loopDuration: 8.5, popTime: 16.30, popDuration: 0.35, revStart: 15.5, revDuration: 6.5, popDelay: 2.3, basePitch: 1.05, idleRpm: 850, maxRpm: 9500 },
-    'f5a':  { loopStart: 1.5, loopDuration: 8.5, popTime: 20.50, popDuration: 0.35, revStart: 2.0, revDuration: 6.0, popDelay: 2.0, basePitch: 1.10, idleRpm: 950, maxRpm: 10000 }
+    '4age': { loopStart: 20.9, loopDuration: 1.4, popTime: 13.90, popDuration: 0.35, revStart: 1.5, revDuration: 7.0, popDelay: 2.4, basePitch: 1.00, idleRpm: 950, maxRpm: 11000 },
+    '13b':  { loopStart: 13.1, loopDuration: 1.5, popTime: 5.10,  popDuration: 0.40, revStart: 3.5, revDuration: 6.5, popDelay: 1.6, basePitch: 1.02, idleRpm: 900, maxRpm: 8500 },
+    'rb26': { loopStart: 2.4,  loopDuration: 1.6, popTime: 17.90, popDuration: 0.40, revStart: 13.5, revDuration: 6.5, popDelay: 2.5, basePitch: 0.95, idleRpm: 950, maxRpm: 8500 },
+    'sr20': { loopStart: 2.0,  loopDuration: 1.5, popTime: 21.45, popDuration: 0.35, revStart: 18.0, revDuration: 6.0, popDelay: 2.3, basePitch: 0.98, idleRpm: 850, maxRpm: 7800 },
+    '1jz':  { loopStart: 6.1,  loopDuration: 1.3, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.96, idleRpm: 800, maxRpm: 7800 },
+    '2jz':  { loopStart: 6.1,  loopDuration: 1.3, popTime: 16.75, popDuration: 0.40, revStart: 15.0, revDuration: 6.5, popDelay: 2.4, basePitch: 0.92, idleRpm: 750, maxRpm: 8200 },
+    '4g63': { loopStart: 18.1, loopDuration: 1.4, popTime: 23.65, popDuration: 0.45, revStart: 2.5, revDuration: 6.0, popDelay: 2.2, basePitch: 0.95, idleRpm: 900, maxRpm: 8200 },
+    'b16b': { loopStart: 8.3,  loopDuration: 1.4, popTime: 16.30, popDuration: 0.35, revStart: 15.5, revDuration: 6.5, popDelay: 2.3, basePitch: 1.05, idleRpm: 850, maxRpm: 9500 },
+    'f5a':  { loopStart: 8.1,  loopDuration: 1.3, popTime: 20.50, popDuration: 0.35, revStart: 2.0, revDuration: 6.0, popDelay: 2.0, basePitch: 1.10, idleRpm: 950, maxRpm: 10000 }
 };
 
 class AudioManager {
@@ -234,12 +234,12 @@ class AudioManager {
 
                 const spec = SOUND_SPECS[soundType] || SOUND_SPECS['4age'];
 
-                // 1. ゼロクリック・イコールパワークロスフェードループバッファ（0.45秒の超滑らかクロスフェード）
+                // 1. ゼロクリック・イコールパワークロスフェードループバッファ（0.30秒の超滑らかクロスフェード）
                 this.loopBuffers[soundType] = this._createCrossfadeLoop(
                     raw,
                     spec.loopStart,
                     spec.loopDuration,
-                    0.45
+                    0.30
                 );
 
                 // 2. 実車マフラー破裂音（アフターファイヤ）スライス
@@ -508,23 +508,25 @@ class AudioManager {
         const curRpm = rpm || 6000;
 
         if (direction === 'up') {
-            // 1. エンジン音の瞬間ダッキング（クラッチ解放＆燃料カット 0.08秒間）
+            // 1. エンジン音の瞬間ダッキング（クラッチ切断時のトルク抜け 0.06秒間、音を完全に切らさずスムーズに持続）
             if (this.engineGain) {
                 this.shiftDucking = true;
                 this.engineGain.gain.cancelScheduledValues(now);
-                this.engineGain.gain.setValueAtTime(0.08, now);
-                this.engineGain.gain.linearRampToValueAtTime(0.75, now + 0.085);
+                this.engineGain.gain.setValueAtTime(0.40, now);
+                this.engineGain.gain.linearRampToValueAtTime(0.75, now + 0.065);
                 setTimeout(() => {
                     this.shiftDucking = false;
-                }, 90);
+                }, 70);
             }
 
-            // 2. 実車マフラーの強烈なアフターファイヤ・シフトポップ実音（パンッ！ババッ！）
-            const popIntensity = 0.95 + Math.min(0.60, (curRpm / 8000) * 0.60);
-            this.playAfterfireSound(popIntensity, false);
+            // 2. 実車マフラーの強烈なアフターファイヤ・シフトポップ実音（高回転時のみ）
+            if (curRpm > 6800) {
+                const popIntensity = 0.80 + Math.min(0.40, (curRpm / 9000) * 0.40);
+                this.playAfterfireSound(popIntensity, false);
+            }
 
             // 3. ターボ車ならブローオフバルブ（過給圧解放音「プシューーーン！」）
-            if (['13b', 'rb26', 'sr20', '1jz', '2jz', '4g63', 'f5a'].includes(this.soundType) && curRpm > 3800) {
+            if (['13b', 'rb26', 'sr20', '1jz', '2jz', '4g63', 'f5a'].includes(this.soundType) && curRpm > 4500) {
                 this.playBlowoffSound();
             }
 
@@ -533,7 +535,7 @@ class AudioManager {
         } else if (direction === 'down') {
             // シフトダウン時：ブリッピング（回転上昇）＆アフターファイヤ
             this.playShiftSound();
-            if (curRpm > 4200) {
+            if (curRpm > 5500) {
                 this.playAfterfireSound(0.85, false);
             }
         }

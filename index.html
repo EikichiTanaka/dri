@@ -172,8 +172,8 @@
                             <div class="setting-compact-item">
                                 <span class="setting-label-compact">MISSION</span>
                                 <div class="btn-group compact-btn-group">
-                                    <button id="btn-mt" class="toggle-btn active">MT</button>
-                                    <button id="btn-at" class="toggle-btn">AT</button>
+                                    <button id="btn-mt" class="toggle-btn">MT</button>
+                                    <button id="btn-at" class="toggle-btn active">AT</button>
                                 </div>
                             </div>
                             <div class="setting-compact-item">
@@ -454,6 +454,7 @@
                 btnAt.classList.remove('active');
                 game.playerPhysics.isAutomatic = false;
             });
+            if (game.playerPhysics) game.playerPhysics.isAutomatic = true;
 
             // BGM
             const btnBgmOn = document.getElementById('btn-bgm-on');

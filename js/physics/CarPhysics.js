@@ -33,10 +33,10 @@ class CarPhysics {
         this.handbrake = false;
         this.isLocked = false; // カウントダウン用
 
-        // トランスミッション (AE86 5速MT)
+        // トランスミッション (AE86 5速)
         this.gear = 1;
-        this.isAutomatic = false;
-        this.gearRatios = [0, 3.587, 2.022, 1.384, 1.000, 0.861];
+        this.isAutomatic = true;
+        this.gearRatios = [0, 3.166, 1.904, 1.392, 1.082, 0.861];
         this.finalDrive = 4.300;
         this.wheelCircumference = 1.82;
         this.rpm = 1000;
@@ -364,10 +364,10 @@ class CarPhysics {
         if (this.isAutomatic) {
             this.shiftBuffer = null;
             this.shiftBufferTimer = 0;
-            // 各車種のトルクバンドピーク (redline * 0.80) で小気味よく自動シフトアップ！
-            const upShiftRpm = redline * 0.80;
+            // 各車種のトルクバンドピーク (redline * 0.90) で気持ちよく高回転まで引っ張ってシフトアップ！
+            const upShiftRpm = redline * 0.90;
             // 速度とギア比に応じた適正シフトダウン回転数（不要なキックダウンのハンチングを防止）
-            const downShiftRpm = Math.max(this.idleRpm + 400, redline * 0.32);
+            const downShiftRpm = Math.max(this.idleRpm + 400, redline * 0.35);
 
             if (this.rpm > upShiftRpm && this.gear < 5 && this.shiftTimer <= 0) {
                 const prevGear = this.gear;
@@ -402,11 +402,20 @@ class CarPhysics {
                 if (this.onShift) this.onShift('down', prevGear, this.gear);
             }
         } else {
-            // MTモード：手動シフトチェンジ（矢印キー左右 ← / → 等、先行入力対応）
+            // MTモード：手動シフトチェンジ（先行入力対応）＋ 高回転踏みっぱなし時のアシスト
             const wantShiftUp = (this.shiftBuffer === 'up') || input.shiftUp;
             const wantShiftDown = (this.shiftBuffer === 'down') || input.shiftDown;
 
-            if (wantShiftUp && this.gear < 5 && this.shiftTimer <= 0) {
+            // MTアシスト：レブ付近（redline * 0.92以上）でアクセル全開が0.65秒続いた場合、自動でシフトアップをアシスト
+            if (this.rpm >= redline * 0.92 && this.throttle > 0.85) {
+                this.highRpmHoldTimer = (this.highRpmHoldTimer || 0) + dt;
+            } else {
+                this.highRpmHoldTimer = 0;
+            }
+            const autoAssistUp = (this.highRpmHoldTimer > 0.65);
+
+            if ((wantShiftUp || autoAssistUp) && this.gear < 5 && this.shiftTimer <= 0) {
+                this.highRpmHoldTimer = 0;
                 const prevGear = this.gear;
                 this.gear++;
                 this.shiftTimer = 0.16; // キビキビとした軽快なシフトフィーリング
@@ -811,9 +820,9 @@ class CarPhysics {
 
             engineForce = baseAccel * torqueFactor * this.throttle;
 
-            // レブリミッター作動時は推進力を適度に制限（完全に0にせず車速をキープしてバウンス）
+            // レブリミッター作動時は推進力を滑らかに制御（急減速によるバウンス・息継ぎ振動を排除）
             if (this.isRevLimiterCut) {
-                engineForce *= 0.35;
+                engineForce *= 0.82;
             }
 
             // ★スタート前高回転クラッチミート（ロケットスタート）ブースト
@@ -1373,14 +1382,14 @@ class CarPhysics {
             }
 
             if (this.isRevLimiterCut) {
-                desiredRpm = Math.min(this.maxRpm, Math.max(revThreshold - 150, revThreshold - 120 + (Math.random() - 0.5) * 100)); // リアルな微小バウンス
+                desiredRpm = Math.min(this.maxRpm, revThreshold - 25 + Math.sin(Date.now() * 0.015) * 15);
                 this.revLimiterPopTimer -= dt;
                 if (this.revLimiterPopTimer <= 0) {
-                    this.revLimiterPopTimer = 0.08 + Math.random() * 0.04;
-                    if (this.onAfterfire) this.onAfterfire(0.70);
+                    this.revLimiterPopTimer = 0.85 + Math.random() * 0.35;
+                    if (this.onAfterfire) this.onAfterfire(0.65);
                 }
             } else {
-                this.revLimiterPopTimer = 0.04;
+                this.revLimiterPopTimer = 0.85;
             }
 
             // 車種固有のエンジンフライホイール慣性レスポンス（ドリフト中のホイールスピンは瞬時に吹け上がる鋭いレスポンス）
