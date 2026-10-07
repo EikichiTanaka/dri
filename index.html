@@ -313,9 +313,16 @@
     <script src="js/core/Game.js"></script>
 
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            const game = new Game();
-            window.game = game;
+        function initApp() {
+            if (window.__appInitialized) return;
+            window.__appInitialized = true;
+            try {
+                const game = new Game();
+                window.game = game;
+            } catch (err) {
+                console.error('initApp Error:', err);
+                window.__lastErr = err.toString() + '\\n' + err.stack;
+            }
 
             // コース選択 (8大名峠)
             const btnAkina = document.getElementById('btn-akina');
@@ -573,7 +580,13 @@
                     }
                 }, 150);
             }
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
     </script>
 </body>
 </html>
