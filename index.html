@@ -306,6 +306,7 @@
     <script src="js/entities/RivalCar.js"></script>
     <script src="js/entities/ParticleSystem.js"></script>
     <script src="js/core/Input.js"></script>
+    <script src="js/data/RealCarAudioData.js"></script>
     <script src="js/core/AudioManager.js"></script>
     <script src="js/ui/CornerGuide.js"></script>
     <script src="js/ui/HUD.js"></script>
@@ -501,6 +502,7 @@
             const btnOpenGarage = document.getElementById('btn-open-garage');
             if (btnOpenGarage) {
                 btnOpenGarage.addEventListener('click', () => {
+                    if (game.audio) game.audio.resume();
                     game.garageUI.open();
                 });
             }
@@ -508,11 +510,13 @@
             // スタート & リトライ
             const btnStart = document.getElementById('btn-start');
             btnStart.addEventListener('click', () => {
+                if (game.audio) game.audio.resume();
                 game.startRace();
             });
 
             const btnRetry = document.getElementById('btn-retry');
             btnRetry.addEventListener('click', () => {
+                if (game.audio) game.audio.resume();
                 game.playerPhysics.resetToTrack(0.003, -1.8);
                 game.rivalCar.resetPosition();
                 game.hud.currentTime = 0;

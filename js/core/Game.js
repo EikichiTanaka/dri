@@ -76,6 +76,7 @@ class Game {
         this.particles = new ParticleSystem(this.scene);
         this.input = new InputManager();
         this.audio = new AudioManager();
+        this.audio.init();
         this.hud = new HUD(this.track, this.playerPhysics, this.rivalCar, this.audio);
         this.garageUI = new GarageUI(this);
 
@@ -395,6 +396,7 @@ class Game {
     startRace() {
         this.audio.init();
         this.audio.resume();
+        this.audio.startEngineLoop();
         this.audio.startEurobeatBGM();
 
         this.applyEnvironment();

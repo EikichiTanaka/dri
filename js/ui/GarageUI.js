@@ -105,6 +105,10 @@ class GarageUI {
         if (this.container) this.container.style.display = 'flex';
         document.getElementById('start-overlay').style.display = 'none';
 
+        if (this.game && this.game.audio) {
+            this.game.audio.resume();
+        }
+
         // ガレージ位置にプレイヤー車を配置（原点付近）
         this.game.enterGarageMode();
         this.updateCarDisplay();
@@ -225,6 +229,7 @@ class GarageUI {
     revEngine() {
         const carId = this.carIds[this.currentIndex];
         if (this.game && this.game.audio) {
+            this.game.audio.resume();
             this.game.audio.previewRev(carId, (intensity) => {
                 const exhaust = this.game.playerCar.getExhaustPosition();
                 this.game.particles.emitAfterfire(exhaust.position, exhaust.direction, intensity, false);

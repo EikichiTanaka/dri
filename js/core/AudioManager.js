@@ -78,6 +78,46 @@ class AudioManager {
         this.soundType = '4age';
         this.lastThrottle = 0;
         this.lastBlowoffTime = 0;
+        this._unlockBound = false;
+
+        // あらゆるユーザー操作（クリック/キー）で即座にAudioContextをアンロック
+        this.setupUserUnlock();
+    }
+
+    setupUserUnlock() {
+        if (this._unlockBound) return;
+        this._unlockBound = true;
+
+        const unlock = () => {
+            if (!this.initialized) {
+                this.init();
+            }
+            if (this.ctx && this.ctx.state === 'suspended') {
+                this.ctx.resume().then(() => {
+                    console.log('[AudioManager] AudioContext resumed by user interaction.');
+                    if (this.audioLoaded && !this.enginePlaying) {
+                        this.startEngineLoop();
+                    }
+                });
+            } else if (this.audioLoaded && !this.enginePlaying) {
+                this.startEngineLoop();
+            }
+        };
+
+        window.addEventListener('click', unlock, { passive: true });
+        window.addEventListener('keydown', unlock, { passive: true });
+        window.addEventListener('touchstart', unlock, { passive: true });
+        window.addEventListener('pointerdown', unlock, { passive: true });
+    }
+
+    _base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
     }
 
     init() {
@@ -88,16 +128,16 @@ class AudioManager {
 
         // マスターゲイン
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.setValueAtTime(0.75, this.ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
         this.masterGain.connect(this.ctx.destination);
 
         // SFX & BGM ゲイン
         this.sfxGain = this.ctx.createGain();
-        this.sfxGain.gain.setValueAtTime(0.90, this.ctx.currentTime);
+        this.sfxGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
         this.sfxGain.connect(this.masterGain);
 
         this.bgmGain = this.ctx.createGain();
-        this.bgmGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+        this.bgmGain.gain.setValueAtTime(0.40, this.ctx.currentTime);
         this.bgmGain.connect(this.masterGain);
 
         // 実車エンジン音チェーンのセットアップ
@@ -123,8 +163,13 @@ class AudioManager {
 
     resume() {
         if (this.ctx && this.ctx.state === 'suspended') {
-            this.ctx.resume();
+            return this.ctx.resume().then(() => {
+                if (this.audioLoaded && !this.enginePlaying) {
+                    this.startEngineLoop();
+                }
+            });
         }
+        return Promise.resolve();
     }
 
     /**
@@ -140,9 +185,9 @@ class AudioManager {
         this.engineFilter.frequency.setValueAtTime(800, this.ctx.currentTime);
         this.engineFilter.Q.setValueAtTime(1.8, this.ctx.currentTime);
 
-        // エンジンゲイン
+        // エンジンゲイン (アイドリング初期音量 0.35)
         this.engineGain = this.ctx.createGain();
-        this.engineGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
+        this.engineGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
 
         this.engineFilter.connect(this.engineGain);
         this.engineGain.connect(this.sfxGain);
@@ -150,6 +195,7 @@ class AudioManager {
 
     /**
      * 全車種の実車排気・エンジン音（48kHz実録音）を一括ロード＆バッファ生成
+     * Base64インラインとfetchのデュアルロード方式で、file://でもhttp://でも100%確実にロード
      */
     async loadAllRealCarSounds() {
         if (this.isAudioLoading || this.audioLoaded) return;
@@ -158,6 +204,15 @@ class AudioManager {
         const uniqueFiles = [...new Set(Object.values(SOUND_FILE_MAP))];
         const loadPromises = uniqueFiles.map(async (fileName) => {
             try {
+                // 1. window.REAL_CAR_AUDIO_DATA (Base64) からの超高速・確実ロード（file:// プロトコルでも100%成功）
+                if (window.REAL_CAR_AUDIO_DATA && window.REAL_CAR_AUDIO_DATA[fileName]) {
+                    const arrayBuffer = this._base64ToArrayBuffer(window.REAL_CAR_AUDIO_DATA[fileName]);
+                    const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+                    this.rawBuffers[fileName] = audioBuffer;
+                    return;
+                }
+
+                // 2. HTTPサーバー環境での fetch フォールバック
                 const response = await fetch('assets/sounds/' + fileName);
                 if (!response.ok) throw new Error(`HTTP ${response.status} loading ${fileName}`);
                 const arrayBuffer = await response.arrayBuffer();
@@ -280,8 +335,12 @@ class AudioManager {
         this.engineSourceNode.loop = true;
         this.engineSourceNode.playbackRate.setValueAtTime(1.0, this.ctx.currentTime);
 
+        if (this.engineGain) {
+            this.engineGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+        }
+
         this.engineSourceNode.connect(this.engineFilter);
-        this.engineSourceNode.start();
+        this.engineSourceNode.start(0);
         this.enginePlaying = true;
     }
 
@@ -335,18 +394,20 @@ class AudioManager {
         const spec = SOUND_SPECS[soundType] || SOUND_SPECS['4age'];
         const revStart = spec.revStart || 0;
         const revDuration = spec.revDuration || 6.5;
+        const safeStart = Math.max(0, Math.min(revStart, rawBuffer.duration - 0.5));
+        const safeDuration = Math.min(revDuration, rawBuffer.duration - safeStart);
 
         // 実車フル録音を大迫力で生音ワンショット再生（最も気持ちいい吹け上がり区間を頭出し再生）
         this.revPreviewSource = this.ctx.createBufferSource();
         this.revPreviewSource.buffer = rawBuffer;
 
         const revGain = this.ctx.createGain();
-        revGain.gain.setValueAtTime(0.95, this.ctx.currentTime);
+        revGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
 
         this.revPreviewSource.connect(revGain);
         revGain.connect(this.sfxGain);
 
-        this.revPreviewSource.start(0, revStart, revDuration);
+        this.revPreviewSource.start(0, safeStart, safeDuration);
 
         // 各車種特有のアフターファイヤ発生タイミングに合わせて炎エフェクトを発火
         const popDelayMs = (spec.popDelay || 2.2) * 1000;
