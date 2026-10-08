@@ -752,12 +752,19 @@ class AudioManager {
             const screechFreq = 1750 + (driftIntensity * 400) + (Math.min(1.0, speed / 120.0) * 200);
             this.tireScreechFilter.frequency.setTargetAtTime(screechFreq, curTime, 0.04);
 
+            // ドリフト突入の瞬間に「キキッ」を1回だけ鳴らす
+            if (driftIntensity > 0.35 && (this.prevDriftIntensity || 0) < 0.16 && speed > 24) {
+                this.playTireOnset(driftIntensity);
+            }
+
             // 車輪回転フラッター変調（控えめな4〜5%で自然な揺らぎを維持）
             if (this.tireFlutterOsc) {
                 const flutterRate = 14.0 + Math.min(6.0, (speed / 100.0) * 4.0 + driftIntensity * 2.0);
                 this.tireFlutterOsc.frequency.setTargetAtTime(flutterRate, curTime, 0.04);
             }
         }
+
+        this.prevDriftIntensity = driftIntensity;
 
         if (this.tireGain) {
             this.tireGain.gain.setTargetAtTime(squealVol, curTime, 0.035);
@@ -973,35 +980,56 @@ class AudioManager {
     }
 
     async _loadTireSample() {
-        const names = ['skid.wav', 'skid.mp3', 'skid.m4a', 'skid.ogg'];
-        for (const name of names) {
+        const fetchBuf = async (name) => {
             try {
                 const resp = await fetch('assets/sounds/' + name);
-                if (!resp.ok) continue;
-                const buf = await this.ctx.decodeAudioData(await resp.arrayBuffer());
-                const src = this.ctx.createBufferSource();
-                src.buffer = buf;
-                src.loop = true;
-                // 録音の継ぎ目を避けるため中央部分をループ
-                src.loopStart = buf.duration * 0.15;
-                src.loopEnd = buf.duration * 0.85;
-                src.connect(this.tireNoiseGain);
-                const old = this.tireNoiseSource;
-                this.tireNoiseSource = src;
-                src.start(0, src.loopStart);
-                try { old.stop(); } catch (e) { /* noop */ }
-                // 録音をそのまま活かすため合成用EQを無効化
-                const t = this.ctx.currentTime;
-                this.tireBodyFilter.gain.setValueAtTime(0, t);
-                this.tireScreechFilter.gain.setValueAtTime(0, t);
-                this.tireSizzleFilter.gain.setValueAtTime(0, t);
-                this.tireLowpassFilter.frequency.setValueAtTime(16000, t);
-                this.tireNoiseGain.gain.setValueAtTime(1.0, t);
-                this.tireFlutterModGain.gain.setValueAtTime(0, t);
-                console.log('[AudioManager] Tire skid sample loaded: ' + name);
-                return;
-            } catch (e) { /* 次の拡張子を試す */ }
+                if (!resp.ok) return null;
+                return await this.ctx.decodeAudioData(await resp.arrayBuffer());
+            } catch (e) { return null; }
+        };
+
+        // ドリフト突入の「キキッ」用ワンショット（効果音ラボ: 車の急ブレーキ1）
+        this.tireOnsetBuffer = await fetchBuf('car-sudden-braking1.mp3');
+
+        // 持続ループ音（ユーザー録音 skid.* を優先、なければ 効果音ラボ: 車の急ブレーキ2）
+        const names = ['skid.wav', 'skid.mp3', 'skid.m4a', 'skid.ogg', 'car-sudden-braking2.mp3'];
+        for (const name of names) {
+            const buf = await fetchBuf(name);
+            if (!buf) continue;
+            const src = this.ctx.createBufferSource();
+            src.buffer = buf;
+            src.loop = true;
+            // 頭の立ち上がりと終わりの減衰を避け、安定した中央部分のみをループ
+            src.loopStart = buf.duration * 0.25;
+            src.loopEnd = buf.duration * 0.80;
+            src.connect(this.tireNoiseGain);
+            const old = this.tireNoiseSource;
+            this.tireNoiseSource = src;
+            src.start(0, src.loopStart);
+            try { old.stop(); } catch (e) { /* noop */ }
+            // 録音をそのまま活かすため合成用EQを無効化
+            const t = this.ctx.currentTime;
+            this.tireBodyFilter.gain.setValueAtTime(0, t);
+            this.tireScreechFilter.gain.setValueAtTime(0, t);
+            this.tireSizzleFilter.gain.setValueAtTime(0, t);
+            this.tireLowpassFilter.frequency.setValueAtTime(16000, t);
+            this.tireNoiseGain.gain.setValueAtTime(1.0, t);
+            this.tireFlutterModGain.gain.setValueAtTime(0, t);
+            console.log('[AudioManager] Tire skid sample loaded: ' + name);
+            return;
         }
+    }
+
+    playTireOnset(intensity = 0.6) {
+        if (!this.initialized || !this.tireOnsetBuffer) return;
+        const now = this.ctx.currentTime;
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.tireOnsetBuffer;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(Math.min(0.9, 0.45 + intensity * 0.45), now);
+        src.connect(g);
+        g.connect(this.sfxGain);
+        src.start(now);
     }
 
     playShiftSound() {
