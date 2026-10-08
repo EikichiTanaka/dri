@@ -959,9 +959,49 @@ class AudioManager {
         this.tireFlutterGain.connect(this.tireGain);
         this.tireGain.connect(this.sfxGain);
 
+        // 合成音のフォールバック：高域の耳障りさ（金属的・電子的な響き）を抑える
+        this.tireScreechFilter.gain.setValueAtTime(2.0, this.ctx.currentTime);
+        this.tireSizzleFilter.gain.setValueAtTime(-3.0, this.ctx.currentTime);
+        this.tireLowpassFilter.frequency.setValueAtTime(4800, this.ctx.currentTime);
+
         // 発振開始
         this.tireNoiseSource.start();
         this.tireFlutterOsc.start();
+
+        // 実録音(assets/sounds/skid.*)があれば差し替える
+        this._loadTireSample();
+    }
+
+    async _loadTireSample() {
+        const names = ['skid.wav', 'skid.mp3', 'skid.m4a', 'skid.ogg'];
+        for (const name of names) {
+            try {
+                const resp = await fetch('assets/sounds/' + name);
+                if (!resp.ok) continue;
+                const buf = await this.ctx.decodeAudioData(await resp.arrayBuffer());
+                const src = this.ctx.createBufferSource();
+                src.buffer = buf;
+                src.loop = true;
+                // 録音の継ぎ目を避けるため中央部分をループ
+                src.loopStart = buf.duration * 0.15;
+                src.loopEnd = buf.duration * 0.85;
+                src.connect(this.tireNoiseGain);
+                const old = this.tireNoiseSource;
+                this.tireNoiseSource = src;
+                src.start(0, src.loopStart);
+                try { old.stop(); } catch (e) { /* noop */ }
+                // 録音をそのまま活かすため合成用EQを無効化
+                const t = this.ctx.currentTime;
+                this.tireBodyFilter.gain.setValueAtTime(0, t);
+                this.tireScreechFilter.gain.setValueAtTime(0, t);
+                this.tireSizzleFilter.gain.setValueAtTime(0, t);
+                this.tireLowpassFilter.frequency.setValueAtTime(16000, t);
+                this.tireNoiseGain.gain.setValueAtTime(1.0, t);
+                this.tireFlutterModGain.gain.setValueAtTime(0, t);
+                console.log('[AudioManager] Tire skid sample loaded: ' + name);
+                return;
+            } catch (e) { /* 次の拡張子を試す */ }
+        }
     }
 
     playShiftSound() {
