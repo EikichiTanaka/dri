@@ -1332,15 +1332,18 @@ class CarPhysics {
             // スロットルオン時の駆動スリップ・トルクコンプライアンス（各車のレッドラインに応じた自然な針の跳ね上がり）
             const throttleSlip = this.throttle * (redline * 0.045 / Math.sqrt(this.gear));
 
-            // ★ドリフト中のリアルなホイールスピン回転数（アクセルを踏むと一気にパワーバンド〜レッドゾーンへ跳ね上がる！）
-            let driftWheelspinRpm = 0;
-            if (this.isDrifting && this.throttle > 0.05) {
-                // 車輪空転により、アクセル開度に応じてレッドラインの62%〜97%までダイナミックに跳ね上がり、タコメーターが吼える！
-                const powerbandRpm = redline * (0.62 + this.throttle * 0.35);
-                driftWheelspinRpm = Math.max(driveRpm, powerbandRpm);
+            // ★リアルなドリフト・ホイールスピン物理：
+            // 車速・ギア比の駆動回転数 (driveRpm) をベースに、スリップアングルとアクセル開度に応じた自然な空転スリップを加算
+            // （車速やギアに関係なく勝手にレブリミット手前まで不自然に跳ね上がる現象を完全に撤廃！）
+            let driftSpinBoost = 0;
+            if (this.isDrifting && this.throttle > 0.08) {
+                const driftIntensity = Math.min(1.0, Math.abs(this.driftAngle) * 2.2);
+                // 後輪空転スリップ率（車速回転数に対して約+12%〜28%の自然でリアルな吹き上がり）
+                const spinFactor = 0.12 + (driftIntensity * 0.08) + (this.throttle * 0.10);
+                driftSpinBoost = driveRpm * spinFactor;
             }
 
-            const directRpm = Math.max(this.idleRpm, driveRpm + throttleSlip, driftWheelspinRpm);
+            const directRpm = Math.max(this.idleRpm, driveRpm + throttleSlip + driftSpinBoost);
             let desiredRpm = directRpm;
 
             // ★発進時のクラッチスリップ＆高回転ロケットスタート物理
