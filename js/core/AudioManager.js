@@ -75,8 +75,12 @@ class AudioManager {
         this.tireOnsetBuffer = null;    // 最初に添付したブレーキ音（ドリフト初期・突入音）
         this.tireLoopBuffer = null;     // 後の１つ（メイン持続ドリフト音）
         this.tireLoopSource = null;     // メイン持続ループ音源
+        this.tireLoopPlaying = false;
         this.tireSampleReady = false;
         this.prevDriftIntensity = 0;
+        this.wasDrifting = false;
+        this.wasBrakingHard = false;
+        this._lastOnsetPlayTime = 0;
 
         // 環境音（ウェット水しぶき / 砂利 / 溝落とし）
         this.wetTireGain = null;
@@ -157,7 +161,11 @@ class AudioManager {
 
     resume() {
         if (this.ctx && this.ctx.state === 'suspended') {
-            this.ctx.resume();
+            this.ctx.resume().then(() => {
+                this._ensureTireLoopPlaying();
+            });
+        } else {
+            this._ensureTireLoopPlaying();
         }
     }
 
@@ -642,14 +650,15 @@ class AudioManager {
         const absAngle = Math.abs(driftAngle || 0);
         let driftIntensity = 0;
         if (isDrifting) {
-            driftIntensity = Math.min(1.0, Math.max(0.35, absAngle * 2.2));
-        } else if (absAngle > 0.08) {
+            driftIntensity = Math.min(1.0, Math.max(0.40, absAngle * 2.4));
+        } else if (absAngle > 0.06 && speed > 16) {
             // ドリフト突入直前または限界コーナリング時のタイヤスクラブ摩擦
-            driftIntensity = Math.min(0.48, (absAngle - 0.08) * 2.4);
-        } else if ((brake > 0.55 || handbrake) && speed > 22) {
+            driftIntensity = Math.min(0.60, (absAngle - 0.06) * 3.0);
+        } else if ((brake > 0.20 || handbrake) && speed > 15) {
             // 急制動・サイド引きによるブレーキングスキッド摩擦
-            const brakeSkid = handbrake ? 0.65 : Math.min(0.70, (brake - 0.55) * 1.6);
-            driftIntensity = Math.min(0.70, brakeSkid * Math.min(1.0, speed / 50.0));
+            const brakeFactor = handbrake ? 0.85 : Math.min(0.95, brake * 1.3);
+            const speedRatio = Math.min(1.0, (speed - 12) / 25.0);
+            driftIntensity = Math.min(0.85, brakeFactor * speedRatio);
         }
 
         // 3. サブベース＆高域金属音ゲイン（ドリフト中はタイヤスキールを濁らせないよう適正化）
@@ -729,25 +738,35 @@ class AudioManager {
         let squealVol = 0;
 
         if (driftIntensity > 0) {
-            // 車速に応じたフェード（低速15km/h以下ではカット、35km/h以上で全開）
-            const speedFactor = Math.min(1.0, Math.max(0.0, (speed - 15) / 20));
+            // ループ音源が停止していれば即時起動
+            this._ensureTireLoopPlaying();
+
+            // 車速に応じたフェード（低速12km/h以下ではカット、26km/h以上で全開）
+            const speedFactor = Math.min(1.0, Math.max(0.0, (speed - 12) / 14.0));
 
             // メイン持続音量（後の１つを主に再生）
-            squealVol = (0.55 + driftIntensity * 0.45) * Math.max(0.75, (0.75 + throttle * 0.25)) * speedFactor;
+            squealVol = (0.65 + driftIntensity * 0.45) * speedFactor;
 
-            // 車速・ドリフト強度に応じたplaybackRate動的推移（0.92〜1.14）
+            // 車速・ドリフト強度に応じたplaybackRate動的推移（0.94〜1.12）
             if (this.tireLoopSource && this.tireLoopSource.playbackRate) {
-                const speedNorm = Math.min(1.0, Math.max(0.0, speed / 130.0));
-                const targetRate = 0.92 + (speedNorm * 0.16) + (driftIntensity * 0.06);
+                const speedNorm = Math.min(1.0, Math.max(0.0, speed / 120.0));
+                const targetRate = 0.94 + (speedNorm * 0.14) + (driftIntensity * 0.04);
                 this.tireLoopSource.playbackRate.setTargetAtTime(targetRate, curTime, 0.04);
-            }
-
-            // ★ドリフト突入の瞬間に「最初に添付したブレーキ音」を1回鳴らす
-            if (driftIntensity > 0.32 && (this.prevDriftIntensity || 0) < 0.16 && speed > 20) {
-                this.playTireOnset(driftIntensity);
             }
         }
 
+        // ★ドリフト突入・急ブレーキ開始の瞬間に「最初に添付したブレーキ音」を1回鳴らす
+        const isBrakingHard = (brake > 0.30 || handbrake) && speed > 18;
+        const driftStarted = isDrifting && !this.wasDrifting && speed > 18;
+        const brakeStarted = isBrakingHard && !this.wasBrakingHard;
+        const suddenSlide = (driftIntensity > 0.28 && (this.prevDriftIntensity || 0) < 0.12 && speed > 18);
+
+        if (driftStarted || brakeStarted || suddenSlide) {
+            this.playTireOnset(Math.max(driftIntensity, isBrakingHard ? 0.85 : 0.6));
+        }
+
+        this.wasDrifting = isDrifting;
+        this.wasBrakingHard = isBrakingHard;
         this.prevDriftIntensity = driftIntensity;
 
         if (this.tireGain) {
@@ -812,6 +831,32 @@ class AudioManager {
         this._loadTireSample();
     }
 
+    _ensureTireLoopPlaying() {
+        if (!this.ctx || !this.tireLoopBuffer || !this.tireGain) return;
+        if (this.tireLoopSource && this.tireLoopPlaying) return;
+
+        try {
+            if (this.tireLoopSource) {
+                try { this.tireLoopSource.stop(); } catch (e) {}
+                try { this.tireLoopSource.disconnect(); } catch (e) {}
+            }
+            const src = this.ctx.createBufferSource();
+            src.buffer = this.tireLoopBuffer;
+            src.loop = true;
+            src.connect(this.tireGain);
+            src.onended = () => {
+                this.tireLoopPlaying = false;
+            };
+            src.start(0);
+            this.tireLoopSource = src;
+            this.tireLoopPlaying = true;
+            this.tireSampleReady = true;
+            console.log('[AudioManager] Tire skid loop source active.');
+        } catch (e) {
+            console.warn('[AudioManager] Failed to ensure tire loop playing:', e);
+        }
+    }
+
     async _loadTireSample() {
         const fetchBuf = async (candidates) => {
             for (const name of candidates) {
@@ -839,28 +884,30 @@ class AudioManager {
         ]);
 
         if (this.tireLoopBuffer) {
-            // メイン持続音ループ再生ノード
-            const src = this.ctx.createBufferSource();
-            src.buffer = this.tireLoopBuffer;
-            src.loop = true;
-            src.connect(this.tireGain);
-            src.start(0);
-            this.tireLoopSource = src;
             this.tireSampleReady = true;
+            this._ensureTireLoopPlaying();
             console.log('[AudioManager] Attached tire skid sound ready: onset=' + (this.tireOnsetBuffer ? 'OK' : 'none') + ', main_loop=OK');
         }
     }
 
     playTireOnset(intensity = 0.6) {
         if (!this.initialized || !this.tireOnsetBuffer || !this.ctx) return;
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
         const now = this.ctx.currentTime;
+        if (this._lastOnsetPlayTime && (now - this._lastOnsetPlayTime < 0.20)) {
+            return;
+        }
+        this._lastOnsetPlayTime = now;
+
         const src = this.ctx.createBufferSource();
         src.buffer = this.tireOnsetBuffer;
         // わずかなピッチ変化（0.97〜1.03）で自然なバリエーション
         src.playbackRate.setValueAtTime(0.97 + Math.random() * 0.06, now);
 
         const g = this.ctx.createGain();
-        const vol = Math.min(1.0, 0.70 + intensity * 0.30);
+        const vol = Math.min(1.2, 0.85 + intensity * 0.35);
         g.gain.setValueAtTime(vol, now);
 
         src.connect(g);
