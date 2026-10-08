@@ -73,6 +73,11 @@ class AudioManager {
         // ドリフトタイヤスキール音
         this.tireGain = null;
         this.tireFilter = null;
+        this.tireHighFilter = null;
+        this.tireNoiseGain = null;
+        this.tireOsc = null;
+        this.tireOscFilter = null;
+        this.tireOscGain = null;
 
         // 環境音（ウェット水しぶき / 砂利 / 溝落とし）
         this.wetTireGain = null;
@@ -634,12 +639,19 @@ class AudioManager {
         this.engineOscHigh.frequency.setTargetAtTime(baseFreq * 3.015, curTime, 0.025);
 
         // ドリフト状態の強度 (0.0 〜 1.0)
-        const driftIntensity = isDrifting ? Math.min(1.0, Math.abs(driftAngle) * 2.2) : 0;
+        // ドリフト中または横滑り角が大きい場合にスムーズに立ち上がる
+        const absAngle = Math.abs(driftAngle || 0);
+        let driftIntensity = 0;
+        if (isDrifting) {
+            driftIntensity = Math.min(1.0, Math.max(0.35, absAngle * 2.2));
+        } else if (absAngle > 0.12) {
+            // ドリフト突入直前またはハード旋回時のタイヤスクラブ摩擦
+            driftIntensity = Math.min(0.45, (absAngle - 0.12) * 2.2);
+        }
 
-        // 3. サブベース＆高域金属音ゲイン（ドリフト中の横G・駆動負荷トルクを底上げ）
-        const driftSubBoost = driftIntensity * 0.16;
-        this.subGain.gain.setTargetAtTime(subBassWeight * (0.85 + throttle * 0.35 + driftSubBoost), curTime, 0.03);
-        this.highGain.gain.setTargetAtTime(highRaspWeight * (0.50 + rpmNorm * 0.70 + throttle * 0.35), curTime, 0.03);
+        // 3. サブベース＆高域金属音ゲイン（ドリフト中はタイヤスキールを濁らせないよう適正化）
+        this.subGain.gain.setTargetAtTime(subBassWeight * (0.80 + throttle * 0.32), curTime, 0.03);
+        this.highGain.gain.setTargetAtTime(highRaspWeight * (0.45 + rpmNorm * 0.65 + throttle * 0.30), curTime, 0.03);
 
         // 4. マフラー・エキゾースト管共鳴フォルマントのダイナミック追従
         const bodyFreq = 135 + rpmNorm * 45;
@@ -648,9 +660,9 @@ class AudioManager {
         const raspFreq = 700 + rpmNorm * 260;
         this.engineRaspFilter.frequency.setTargetAtTime(raspFreq, curTime, 0.04);
 
-        // タコ足金属鳴き（ドリフト高回転ホールド時はタコ足が激しく共鳴して甲高く咆哮！）
+        // タコ足金属鳴き（通常時は金属音を響かせ、ドリフト時はタイヤスキール(2.2〜3.5kHz)の周波数帯を空けるため控えめに抑制）
         const ringFreq = 2300 + rpmNorm * 400;
-        const ringGainVal = ringGainWeight * (isDrifting ? 24.0 : 16.0);
+        const ringGainVal = ringGainWeight * (isDrifting ? 8.0 : 16.0);
         this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
         this.engineRingFilter.gain.setTargetAtTime(ringGainVal, curTime, 0.04);
 
@@ -658,9 +670,8 @@ class AudioManager {
         const targetCutoff = baseCutoff + (rpmNorm * rangeCutoff) + (throttle * throttleCutoff);
         this.engineFilter.frequency.setTargetAtTime(targetCutoff, curTime, 0.03);
 
-        // 6. 吸気サージタンク・4連スロットル咆哮（ドリフト中の全開掻きむしり吸気圧力をブースト）
-        const driftIntake = driftIntensity * throttle * 0.18;
-        const intakeVol = Math.max(0, (throttle * 0.32) + (rpmNorm * 0.15 * throttle) + driftIntake);
+        // 6. 吸気サージタンク・4連スロットル咆哮
+        const intakeVol = Math.max(0, (throttle * 0.30) + (rpmNorm * 0.14 * throttle));
         const intakeFreq = 260 + (throttle * 240) + (rpmNorm * 180);
         this.intakeFilter.frequency.setTargetAtTime(intakeFreq, curTime, 0.03);
         this.intakeGain.gain.setTargetAtTime(intakeVol, curTime, 0.03);
@@ -696,7 +707,7 @@ class AudioManager {
         // 9. ターボチャージャー過給スピナー音
         if (isTurbo && throttle > 0.12 && rpm > 3200) {
             const turboFreq = 1400 + (rpmNorm * 2200) + (throttle * 600);
-            const turboVol = Math.min(0.22, 0.05 + (throttle * 0.12) + (rpmNorm * 0.07) + (driftIntensity * 0.05));
+            const turboVol = Math.min(0.20, 0.05 + (throttle * 0.12) + (rpmNorm * 0.06));
             this.turboOsc.frequency.setTargetAtTime(turboFreq, curTime, 0.04);
             this.turboFilter.frequency.setTargetAtTime(turboFreq, curTime, 0.04);
             this.turboGain.gain.setTargetAtTime(turboVol, curTime, 0.04);
@@ -704,22 +715,33 @@ class AudioManager {
             this.turboGain.gain.setTargetAtTime(0.0, curTime, 0.06);
         }
 
-        // 10. エンジンマスター音量
-        const masterVol = 0.24 + (throttle * 0.36) + (rpmNorm * 0.28);
+        // 10. エンジンマスター音量（ドリフト時の動的サイドチェイン・ダッキングでスキール音を主役に）
+        const baseEngineVol = 0.22 + (throttle * 0.30) + (rpmNorm * 0.24);
+        // ドリフト強度に応じてエンジン音量を最大35%ダッキング（-3.7dB）
+        const driftDucking = 1.0 - (driftIntensity * 0.35);
+        const masterVol = baseEngineVol * driftDucking;
         this.engineGain.gain.setTargetAtTime(masterVol, curTime, 0.025);
 
-        // 11. ドリフト時のタイヤスキール音（アスファルト・スティックスリップ摩擦）
+        // 11. ドリフト時のタイヤスキール音（アスファルト・スティックスリップ摩擦＆自励鳴き）
         let squealVol = 0;
-        if (isDrifting && this.tireFilter) {
-            squealVol = (0.16 + driftIntensity * 0.38) * (0.6 + throttle * 0.4);
-            const squealPitch = 920 + driftIntensity * 1250;
-            this.tireFilter.frequency.setTargetAtTime(squealPitch, curTime, 0.035);
+        if (driftIntensity > 0 && this.tireFilter) {
+            // スキール音量：ドリフトの激しさとスロットルに応じて力強く突き抜ける（最大約0.88）
+            squealVol = (0.28 + driftIntensity * 0.58) * (0.75 + throttle * 0.25);
+
+            // スリップ角と速度に応じたスキール周波数の動的追従
+            const squealPitch = 880 + driftIntensity * 580;
+            this.tireFilter.frequency.setTargetAtTime(squealPitch, curTime, 0.03);
             if (this.tireHighFilter) {
-                this.tireHighFilter.frequency.setTargetAtTime(squealPitch * 1.95, curTime, 0.035);
+                const screechPitch = Math.min(3800, squealPitch * 2.2);
+                this.tireHighFilter.frequency.setTargetAtTime(screechPitch, curTime, 0.03);
+            }
+            if (this.tireOsc && this.tireOscFilter) {
+                this.tireOsc.frequency.setTargetAtTime(squealPitch, curTime, 0.03);
+                this.tireOscFilter.frequency.setTargetAtTime(squealPitch, curTime, 0.03);
             }
         }
         if (this.tireGain) {
-            this.tireGain.gain.setTargetAtTime(squealVol, curTime, 0.04);
+            this.tireGain.gain.setTargetAtTime(squealVol, curTime, 0.035);
         }
     }
 
@@ -771,41 +793,73 @@ class AudioManager {
     }
 
     setupTireSqueal() {
-        const bufferSize = this.ctx.sampleRate * 2;
-        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const sampleRate = this.ctx.sampleRate;
+        const bufferSize = sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, sampleRate);
         const output = noiseBuffer.getChannelData(0);
         // アスファルト粒状摩擦（スティックスリップ・テクスチャノイズ）
         for (let i = 0; i < bufferSize; i++) {
             const w = Math.random() * 2 - 1;
-            output[i] = (Math.random() < 0.28) ? w * 0.95 : w * 0.38;
+            // 粗いゴムの引き摺りパルス
+            output[i] = (Math.random() < 0.32) ? w * 0.95 : w * 0.42;
         }
 
         const tireNoise = this.ctx.createBufferSource();
         tireNoise.buffer = noiseBuffer;
         tireNoise.loop = true;
 
-        // 第1共鳴帯：タイヤブロックの強烈な引き摺り低中音 (950Hz, Q: 3.2)
+        // ノイズのバンドパス減衰を補償する強力なメイクアップ・ゲイン (3.6x)
+        this.tireNoiseGain = this.ctx.createGain();
+        this.tireNoiseGain.gain.setValueAtTime(3.6, this.ctx.currentTime);
+
+        // 第1共鳴帯：タイヤブロックの強烈な引き摺り低中音 (950Hz, Q: 2.8)
         this.tireFilter = this.ctx.createBiquadFilter();
         this.tireFilter.type = 'bandpass';
         this.tireFilter.frequency.setValueAtTime(950, this.ctx.currentTime);
-        this.tireFilter.Q.setValueAtTime(3.2, this.ctx.currentTime);
+        this.tireFilter.Q.setValueAtTime(2.8, this.ctx.currentTime);
 
-        // 第2共鳴帯：アスファルト超高周波スクリーチ（「キキキキィィィン！」 1950Hz, Q: 4.5）
+        // 第2共鳴帯：アスファルト超高周波スクリーチ（「キキキキィィィン！」 2600Hz, +15dB, Q: 3.2）
         this.tireHighFilter = this.ctx.createBiquadFilter();
         this.tireHighFilter.type = 'peaking';
-        this.tireHighFilter.frequency.setValueAtTime(1950, this.ctx.currentTime);
-        this.tireHighFilter.gain.setValueAtTime(8.5, this.ctx.currentTime);
-        this.tireHighFilter.Q.setValueAtTime(4.5, this.ctx.currentTime);
+        this.tireHighFilter.frequency.setValueAtTime(2600, this.ctx.currentTime);
+        this.tireHighFilter.gain.setValueAtTime(15.0, this.ctx.currentTime);
+        this.tireHighFilter.Q.setValueAtTime(3.2, this.ctx.currentTime);
 
+        // 第3レイヤー：タイヤブロックの固有スティックスリップ自励振動オシレーター（「ギャァァァン！」という鳴き音トーン）
+        this.tireOsc = this.ctx.createOscillator();
+        this.tireOsc.type = 'sawtooth';
+        this.tireOsc.frequency.setValueAtTime(950, this.ctx.currentTime);
+
+        this.tireOscFilter = this.ctx.createBiquadFilter();
+        this.tireOscFilter.type = 'bandpass';
+        this.tireOscFilter.frequency.setValueAtTime(950, this.ctx.currentTime);
+        this.tireOscFilter.Q.setValueAtTime(3.8, this.ctx.currentTime);
+
+        this.tireOscGain = this.ctx.createGain();
+        this.tireOscGain.gain.setValueAtTime(0.26, this.ctx.currentTime);
+
+        this.tireOsc.connect(this.tireOscFilter);
+        this.tireOscFilter.connect(this.tireOscGain);
+
+        // マスタータイヤゲイン
         this.tireGain = this.ctx.createGain();
         this.tireGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
 
-        tireNoise.connect(this.tireFilter);
+        // ルーティング
+        // [Tire Noise] -> [Make-up Gain] -> [Tire Filter] -> [Tire High Filter] -> [Tire Gain]
+        tireNoise.connect(this.tireNoiseGain);
+        this.tireNoiseGain.connect(this.tireFilter);
         this.tireFilter.connect(this.tireHighFilter);
         this.tireHighFilter.connect(this.tireGain);
+
+        // [Tire Osc] -> [Tire Osc Filter] -> [Tire Osc Gain] -> [Tire Gain]
+        this.tireOscGain.connect(this.tireGain);
+
+        // [Tire Gain] -> [sfxGain]
         this.tireGain.connect(this.sfxGain);
 
         tireNoise.start();
+        this.tireOsc.start();
     }
 
     playShiftSound() {
