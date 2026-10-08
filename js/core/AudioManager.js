@@ -348,13 +348,13 @@ class AudioManager {
         this.engineFilter.frequency.setValueAtTime(800, now);
         this.engineFilter.Q.setValueAtTime(2.2, now);
 
-        // 7. レブリミッター・スタッターチョッパー (18〜24Hz 点火カット変調)
+        // 7. レブリミッター・スタッターチョッパー (10〜13Hz 実車点火カット変調)
         this.revChopperGain = this.ctx.createGain();
         this.revChopperGain.gain.setValueAtTime(1.0, now);
 
         this.revLfo = this.ctx.createOscillator();
         this.revLfo.type = 'sawtooth'; // 急峻なカット＆急激な再点火
-        this.revLfo.frequency.setValueAtTime(21, now); // AE86デフォルト 21Hz
+        this.revLfo.frequency.setValueAtTime(11.5, now); // AE86デフォルト 11.5Hz
         this.revModGain = this.ctx.createGain();
         this.revModGain.gain.setValueAtTime(0.0, now); // 通常時は0（変調なし）
         this.revLfo.connect(this.revModGain);
@@ -471,33 +471,33 @@ class AudioManager {
             this.engineOscMain1.type = 'sawtooth';
             this.engineOscMain2.type = 'sine';
             this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.0);
-            this.revLfo.frequency.setValueAtTime(24, this.ctx.currentTime); // ロータリー高速レブ打ち 24Hz
+            this.revLfo.frequency.setValueAtTime(13.5, this.ctx.currentTime); // ロータリー高速レブ打ち 13.5Hz
         } else if (this.soundType === 'rb26') {
             this.engineOscMain1.type = 'sawtooth';
             this.engineOscMain2.type = 'triangle';
             this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(3.2);
-            this.revLfo.frequency.setValueAtTime(18, this.ctx.currentTime); // 直6重厚レブ打ち 18Hz
+            this.revLfo.frequency.setValueAtTime(10.5, this.ctx.currentTime); // 直6重厚レブ打ち 10.5Hz
         } else if (this.soundType === '1jz' || this.soundType === '2jz') {
             this.engineOscMain1.type = 'sawtooth';
             this.engineOscMain2.type = 'triangle';
             this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.8);
-            this.revLfo.frequency.setValueAtTime(18.5, this.ctx.currentTime);
+            this.revLfo.frequency.setValueAtTime(10.5, this.ctx.currentTime);
         } else if (this.soundType === 'b16b') {
             this.engineOscMain1.type = 'sawtooth';
             this.engineOscMain2.type = 'sawtooth';
             this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.9);
-            this.revLfo.frequency.setValueAtTime(22, this.ctx.currentTime); // VTEC鋭利レブ打ち 22Hz
+            this.revLfo.frequency.setValueAtTime(12.0, this.ctx.currentTime); // VTEC鋭利レブ打ち 12.0Hz
         } else if (this.soundType === 'f5a') {
             this.engineOscMain1.type = 'sawtooth';
             this.engineOscMain2.type = 'triangle';
             this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.4);
-            this.revLfo.frequency.setValueAtTime(20, this.ctx.currentTime);
+            this.revLfo.frequency.setValueAtTime(11.0, this.ctx.currentTime);
         } else {
             // 4A-GE (AE86) / SR20
             this.engineOscMain1.type = 'sawtooth';
             this.engineOscMain2.type = 'triangle';
             this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.7);
-            this.revLfo.frequency.setValueAtTime(21, this.ctx.currentTime); // AE86 21Hz
+            this.revLfo.frequency.setValueAtTime(11.5, this.ctx.currentTime); // AE86 11.5Hz
         }
     }
 
@@ -521,7 +521,7 @@ class AudioManager {
         let highRaspWeight = 0.24;
         let ringGainWeight = 0.20;
         let isTurbo = false;
-        let revBounceHz = 21.0;
+        let revBounceHz = 11.5;
 
         if (this.soundType === '4age') {
             // AE86 トレノ: 4A-GEU 1.6L 4気筒 4連スロットル NA高回転 (11,000rpm)
@@ -534,7 +534,7 @@ class AudioManager {
             highRaspWeight = (rpm > 6500) ? 0.40 : 0.25;
             ringGainWeight = (rpm > 7000) ? 0.45 : 0.22; // 高回転でタコ足金属鳴きが強烈に抜ける！
             isTurbo = false;
-            revBounceHz = 21.0;
+            revBounceHz = 11.5;
         } else if (this.soundType === '13b') {
             // FD3S RX-7: 13B-REW 2ローター・シーケンシャルツインターボ
             orderMult = 3.0;
@@ -546,7 +546,7 @@ class AudioManager {
             highRaspWeight = 0.38;
             ringGainWeight = 0.30;
             isTurbo = true;
-            revBounceHz = 24.0;
+            revBounceHz = 13.5;
         } else if (this.soundType === 'rb26') {
             // BNR32 GT-R: RB26DETT 2.6L 直6ツインターボ
             orderMult = 3.0;
@@ -558,7 +558,7 @@ class AudioManager {
             highRaspWeight = 0.28;
             ringGainWeight = 0.25;
             isTurbo = true;
-            revBounceHz = 18.0;
+            revBounceHz = 10.5;
         } else if (this.soundType === 'sr20') {
             // S13 / S15 シルビア: SR20DET 2.0L 4気筒ターボ
             orderMult = 2.0;
@@ -570,7 +570,7 @@ class AudioManager {
             highRaspWeight = 0.24;
             ringGainWeight = 0.24;
             isTurbo = true;
-            revBounceHz = 19.5;
+            revBounceHz = 11.0;
         } else if (this.soundType === '1jz' || this.soundType === '2jz') {
             // JZX100 チェイサー / JZA80 スープラ: 1JZ/2JZ 直6ターボ
             orderMult = 3.0;
@@ -582,7 +582,7 @@ class AudioManager {
             highRaspWeight = 0.30;
             ringGainWeight = 0.28;
             isTurbo = true;
-            revBounceHz = 18.5;
+            revBounceHz = 10.5;
         } else if (this.soundType === '4g63') {
             // CE9A エボIII: 4G63 2.0L ハイブースト4気筒ターボ
             orderMult = 2.0;
@@ -594,7 +594,7 @@ class AudioManager {
             highRaspWeight = 0.27;
             ringGainWeight = 0.26;
             isTurbo = true;
-            revBounceHz = 19.0;
+            revBounceHz = 11.0;
         } else if (this.soundType === 'b16b') {
             // EK9 シビック Type R: B16B 1.6L 9000rpm VTEC
             orderMult = 2.0;
@@ -607,7 +607,7 @@ class AudioManager {
             highRaspWeight = isVtec ? 0.48 : 0.24; // VTEC領域で超高域が激変！
             ringGainWeight = isVtec ? 0.55 : 0.20;
             isTurbo = false;
-            revBounceHz = 22.0;
+            revBounceHz = 12.0;
         } else if (this.soundType === 'f5a') {
             // アルトワークス: F5A 550cc 3気筒ドッカンターボ
             orderMult = 1.5;
@@ -620,7 +620,7 @@ class AudioManager {
             highRaspWeight = 0.32;
             ringGainWeight = 0.25;
             isTurbo = true;
-            revBounceHz = 20.0;
+            revBounceHz = 11.0;
         }
 
         // 1. 基本点火周波数 (Firing Frequency) の物理計算
@@ -665,12 +665,12 @@ class AudioManager {
         this.intakeFilter.frequency.setTargetAtTime(intakeFreq, curTime, 0.03);
         this.intakeGain.gain.setTargetAtTime(intakeVol, curTime, 0.03);
 
-        // 7. ★レブリミッター・スタッターバウンス (点火カット・高速チョッピング変調)
+        // 7. ★レブリミッター・スタッターバウンス (点火カット・チョッピング変調)
         this.revLfo.frequency.setValueAtTime(revBounceHz, curTime);
 
         if (isRevLimiter && throttle > 0.45) {
             // レブリミット到達＆アクセル踏み続け中：
-            // 毎秒18〜24Hzの高速スクエア／パルス変調で激しい点火カット・スタッターを炸裂！
+            // 毎秒約10〜13Hzの実車ECU点火カット周期でリアルなレブ打ちスタッターを炸裂！
             this.revModGain.gain.setValueAtTime(0.88, curTime);
             // 点火カットと再着火の荒々しい高域スパイク
             this.engineFilter.frequency.setValueAtTime(targetCutoff * 1.45, curTime);
@@ -746,16 +746,16 @@ class AudioManager {
                 // スロットル全開で一気に吹け上がり
                 currentRpm += (redline * 0.95 - currentRpm) * 0.24;
                 this.updateEngine(currentRpm, 1.0, false, 0, false, redline);
-            } else if (step <= 32) {
+            } else if (step <= 36) {
                 // レッドゾーン到達：爽快なレブ打ちバウンス！
                 const isBounce = true;
                 currentRpm = redline - Math.random() * 140;
                 this.updateEngine(currentRpm, 1.0, false, 0, isBounce, redline);
-                if (step % 2 === 0) {
+                if (step % 5 === 0) {
                     this.playAfterfireSound(0.75);
                     if (onPopCallback) onPopCallback(0.75);
                 }
-            } else if (step <= 44) {
+            } else if (step <= 48) {
                 // アクセル全閉＆減速クラックル＋アフターファイヤ
                 currentRpm -= (currentRpm - 1000) * 0.24;
                 this.updateEngine(currentRpm, 0.0, false, 0, false, redline);
