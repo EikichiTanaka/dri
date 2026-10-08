@@ -81,6 +81,9 @@ class AudioManager {
         this.tireBiteGain = null;
         this.tireMixBus = null;
         this.tireWaveShaper = null;
+        this.tireFlutterOsc = null;
+        this.tireFlutterModGain = null;
+        this.tireFlutterGain = null;
 
         // 環境音（ウェット水しぶき / 砂利 / 溝落とし）
         this.wetTireGain = null;
@@ -683,8 +686,23 @@ class AudioManager {
         this.intakeFilter.frequency.setTargetAtTime(intakeFreq, curTime, 0.03);
         this.intakeGain.gain.setTargetAtTime(intakeVol, curTime, 0.03);
 
-        // 7. 高回転域・レッドゾーン音響（伸びやかで力強いスムーズな連続エンジン音）
-        this.revModGain.gain.setValueAtTime(0.0, curTime);
+        // 7. ★レブリミッター・スタッターバウンス (点火カット・チョッピング変調)
+        this.revLfo.frequency.setValueAtTime(revBounceHz, curTime);
+
+        if (isRevLimiter && throttle > 0.45) {
+            // レブリミット到達＆アクセル踏み続け中：
+            // 毎秒約10〜13Hzの実車ECU点火カット周期でリアルなレブ打ちスタッターを炸裂！
+            this.revModGain.gain.setValueAtTime(0.88, curTime);
+            // 点火カットと再着火の荒々しい高域スパイク
+            this.engineFilter.frequency.setValueAtTime(targetCutoff * 1.45, curTime);
+            this.engineRingFilter.gain.setValueAtTime(ringGainWeight * 26.0, curTime);
+            // 点火抜けによる微小ピッチドロップ変調
+            const bouncePitchFactor = 0.94 + Math.sin(curTime * revBounceHz * Math.PI * 2) * 0.06;
+            this.engineOscMain1.frequency.setValueAtTime(baseFreq * bouncePitchFactor, curTime);
+        } else {
+            // 通常走行時：変調オフ（スムーズなエンジン回転音）
+            this.revModGain.gain.setValueAtTime(0.0, curTime);
+        }
 
         // 8. 減速時デセル・クラックル（エンジンブレーキ・アクセル急閉時のランブル）
         const throttleDrop = (this.prevThrottle > 0.35 && throttle < 0.15);
@@ -714,7 +732,7 @@ class AudioManager {
         const masterVol = baseEngineVol * driftDucking;
         this.engineGain.gain.setTargetAtTime(masterVol, curTime, 0.025);
 
-        // 11. ドリフト時のタイヤスキール音（実車スティックスリップ3バンド共鳴）
+        // 11. ドリフト時のタイヤスキール音（実車スティックスリップ3バンド共鳴＆回転フラッター制御）
         let squealVol = 0;
         if (driftIntensity > 0 && this.tireBodyFilter) {
             // スキール音量：ドリフトの激しさとスロットル開度に応じて力強く突き抜ける（最大約0.92）
@@ -730,6 +748,12 @@ class AudioManager {
             this.tireBodyFilter.frequency.setTargetAtTime(bodyPitch, curTime, 0.03);
             this.tireScreechFilter.frequency.setTargetAtTime(screechPitch, curTime, 0.03);
             this.tireBiteFilter.frequency.setTargetAtTime(bitePitch, curTime, 0.03);
+
+            // タイヤ回転に伴うフラッター変調周波数（実車輪回転数・ホイールスピン連動：16Hz〜28Hz）
+            if (this.tireFlutterOsc) {
+                const flutterRate = 16.0 + Math.min(12.0, (speed / 100.0) * 8.0 + driftIntensity * 4.0);
+                this.tireFlutterOsc.frequency.setTargetAtTime(flutterRate, curTime, 0.04);
+            }
         }
         if (this.tireGain) {
             this.tireGain.gain.setTargetAtTime(squealVol, curTime, 0.035);
@@ -760,9 +784,14 @@ class AudioManager {
                 currentRpm += (redline * 0.95 - currentRpm) * 0.24;
                 this.updateEngine(currentRpm, 1.0, false, 0, false, redline);
             } else if (step <= 36) {
-                // レッドゾーン到達：高回転キープ
-                currentRpm = redline;
-                this.updateEngine(currentRpm, 1.0, false, 0, false, redline);
+                // レッドゾーン到達：爽快なレブ打ちバウンス！
+                const isBounce = true;
+                currentRpm = redline - Math.random() * 140;
+                this.updateEngine(currentRpm, 1.0, false, 0, isBounce, redline);
+                if (step % 5 === 0) {
+                    this.playAfterfireSound(0.75);
+                    if (onPopCallback) onPopCallback(0.75);
+                }
             } else if (step <= 48) {
                 // アクセル全閉＆減速クラックル＋アフターファイヤ
                 currentRpm -= (currentRpm - 1000) * 0.24;
@@ -886,16 +915,36 @@ class AudioManager {
         this.tireMixBus.connect(this.tireWaveShaper);
 
         // =========================================================================
+        // ★回転スリップ・フラッター変調（Wheel-Spin Rotational Flutter LFO）
+        // 実車オンボードで響く「ギャギャギャギャギャァァ！」というタイヤ回転周期の鼓動
+        // =========================================================================
+        this.tireFlutterOsc = this.ctx.createOscillator();
+        this.tireFlutterOsc.type = 'sine';
+        this.tireFlutterOsc.frequency.setValueAtTime(21, this.ctx.currentTime); // 初期21Hz
+
+        this.tireFlutterModGain = this.ctx.createGain();
+        this.tireFlutterModGain.gain.setValueAtTime(0.24, this.ctx.currentTime); // 変調深さ
+
+        this.tireFlutterGain = this.ctx.createGain();
+        this.tireFlutterGain.gain.setValueAtTime(0.82, this.ctx.currentTime); // ベースゲイン
+
+        this.tireFlutterOsc.connect(this.tireFlutterModGain);
+        this.tireFlutterModGain.connect(this.tireFlutterGain.gain);
+
+        this.tireWaveShaper.connect(this.tireFlutterGain);
+
+        // =========================================================================
         // ★マスタータイヤスキールゲイン -> SFX Master
         // =========================================================================
         this.tireGain = this.ctx.createGain();
         this.tireGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
 
-        this.tireWaveShaper.connect(this.tireGain);
+        this.tireFlutterGain.connect(this.tireGain);
         this.tireGain.connect(this.sfxGain);
 
         // 発振開始
         tireNoise.start();
+        this.tireFlutterOsc.start();
     }
 
     playShiftSound() {
