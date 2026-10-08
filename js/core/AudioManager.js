@@ -91,6 +91,8 @@ class AudioManager {
 
         this.initialized = false;
         this.soundType = '4age';
+        this.isBgmEnabled = true;
+        this.currentWeather = 'dry';
 
         // ユーザー操作による即座のWeb Audio自動アンロック
         this._unlockBound = false;
@@ -153,6 +155,95 @@ class AudioManager {
         if (this.ctx && this.ctx.state === 'suspended') {
             this.ctx.resume();
         }
+    }
+
+    startEngineLoop() {
+        if (!this.initialized) this.init();
+        this.resume();
+    }
+
+    startEurobeatBGM() {
+        if (!this.isBgmEnabled) return;
+        this.startBGM();
+    }
+
+    stopEurobeatBGM() {
+        this.stopBGM();
+    }
+
+    setWeather(weather) {
+        this.currentWeather = weather || 'dry';
+    }
+
+    playWallHit(intensity = 1.0) {
+        this.playCrashSound(intensity * 90);
+    }
+
+    playCornerWarning(severity = 'yellow') {
+        if (!this.initialized) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(severity === 'red' ? 1200 : 880, now);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.13);
+    }
+
+    playHeadlightSwitch() {
+        if (!this.initialized) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1100, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.04);
+        gain.gain.setValueAtTime(0.20, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.05);
+    }
+
+    playGutterDropSound() {
+        if (!this.initialized) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.12);
+        gain.gain.setValueAtTime(0.40, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.14);
+    }
+
+    playGutterExitSound() {
+        if (!this.initialized) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 0.09);
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.11);
+    }
+
+    onShiftChange(direction, fromGear, toGear, rpm) {
+        this.playShiftSound();
     }
 
     /**
