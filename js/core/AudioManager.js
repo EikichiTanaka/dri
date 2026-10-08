@@ -749,10 +749,15 @@ class AudioManager {
             this.tireScreechFilter.frequency.setTargetAtTime(screechPitch, curTime, 0.03);
             this.tireBiteFilter.frequency.setTargetAtTime(bitePitch, curTime, 0.03);
 
-            // タイヤ回転に伴うフラッター変調周波数（実車輪回転数・ホイールスピン連動：16Hz〜28Hz）
+            // タイヤ回転に伴うフラッター変調周波数（実車輪回転数・ホイールスピン連動：控えめな14Hz〜22Hz）
             if (this.tireFlutterOsc) {
-                const flutterRate = 16.0 + Math.min(12.0, (speed / 100.0) * 8.0 + driftIntensity * 4.0);
+                const flutterRate = 14.0 + Math.min(8.0, (speed / 100.0) * 5.0 + driftIntensity * 3.0);
                 this.tireFlutterOsc.frequency.setTargetAtTime(flutterRate, curTime, 0.04);
+            }
+            if (this.tireFlutterModGain) {
+                // 変調深さを控えめ（0.04〜0.065）に維持し、過剰なバタつき感を抑えて滑らかなスキール音に
+                const flutterMod = 0.04 + driftIntensity * 0.025;
+                this.tireFlutterModGain.gain.setTargetAtTime(flutterMod, curTime, 0.04);
             }
         }
         if (this.tireGain) {
@@ -916,17 +921,17 @@ class AudioManager {
 
         // =========================================================================
         // ★回転スリップ・フラッター変調（Wheel-Spin Rotational Flutter LFO）
-        // 実車オンボードで響く「ギャギャギャギャギャァァ！」というタイヤ回転周期の鼓動
+        // タイヤ回転に伴う微細な摩擦の揺らぎ（控えめな変調で自然なテクスチャを付与）
         // =========================================================================
         this.tireFlutterOsc = this.ctx.createOscillator();
         this.tireFlutterOsc.type = 'sine';
-        this.tireFlutterOsc.frequency.setValueAtTime(21, this.ctx.currentTime); // 初期21Hz
+        this.tireFlutterOsc.frequency.setValueAtTime(18, this.ctx.currentTime); // 初期18Hz
 
         this.tireFlutterModGain = this.ctx.createGain();
-        this.tireFlutterModGain.gain.setValueAtTime(0.24, this.ctx.currentTime); // 変調深さ
+        this.tireFlutterModGain.gain.setValueAtTime(0.05, this.ctx.currentTime); // 控えめな変調深さ (約6%)
 
         this.tireFlutterGain = this.ctx.createGain();
-        this.tireFlutterGain.gain.setValueAtTime(0.82, this.ctx.currentTime); // ベースゲイン
+        this.tireFlutterGain.gain.setValueAtTime(0.85, this.ctx.currentTime); // ベースゲイン
 
         this.tireFlutterOsc.connect(this.tireFlutterModGain);
         this.tireFlutterModGain.connect(this.tireFlutterGain.gain);
