@@ -739,13 +739,20 @@ class AudioManager {
 
             // 実車＆アーケード基準の力強い音量（最大約0.95）
             squealVol = (0.35 + driftIntensity * 0.65) * (0.80 + throttle * 0.20) * speedFactor;
+            if (this.tireSampleReady) squealVol *= 1.5;
 
             // 車速・ドリフト強度に応じた実車物理サンプルのplaybackRate動的推移（0.88〜1.16）
             // 偽のシンセ音ではなく、摩擦テクスチャ自体の再生速度が滑らかに追従
-            if (this.tireNoiseSource && this.tireNoiseSource.playbackRate) {
+            {
                 const speedNorm = Math.min(1.0, Math.max(0.0, speed / 130.0));
-                const targetRate = 0.88 + (speedNorm * 0.20) + (driftIntensity * 0.08);
-                this.tireNoiseSource.playbackRate.setTargetAtTime(targetRate, curTime, 0.04);
+                const targetRate = 0.92 + (speedNorm * 0.14) + (driftIntensity * 0.06);
+                if (this.tireLayers && this.tireLayers.length) {
+                    for (const L of this.tireLayers) {
+                        L.src.playbackRate.setTargetAtTime(targetRate * L.rateScale, curTime, 0.05);
+                    }
+                } else if (this.tireNoiseSource && this.tireNoiseSource.playbackRate) {
+                    this.tireNoiseSource.playbackRate.setTargetAtTime(0.88 + (speedNorm * 0.20) + (driftIntensity * 0.08), curTime, 0.04);
+                }
             }
 
             // トレッド破裂スクリーチ帯域の自然な推移（1,750Hz〜2,350Hz）
@@ -979,45 +986,88 @@ class AudioManager {
         this._loadTireSample();
     }
 
+    /**
+     * 録音を「音量正規化＋クロスフェードで継ぎ目なしのループ」バッファへ加工する
+     */
+    _makeSeamlessLoop(buf, startSec, endSec, xfadeSec, targetRms = 0.22) {
+        const sr = buf.sampleRate;
+        const s0 = Math.floor(startSec * sr);
+        const s1 = Math.min(buf.length, Math.floor(endSec * sr));
+        const xf = Math.min(Math.floor(xfadeSec * sr), Math.floor((s1 - s0) / 3));
+        const len = (s1 - s0) - xf;
+        const out = this.ctx.createBuffer(buf.numberOfChannels, len, sr);
+        for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+            const src = buf.getChannelData(ch);
+            const dst = out.getChannelData(ch);
+            for (let i = 0; i < len; i++) dst[i] = src[s0 + i];
+            // 末尾の続きに先頭を等パワーでクロスフェード → ループ境界が連続になる
+            for (let i = 0; i < xf; i++) {
+                const t = i / xf;
+                const fadeOut = Math.cos(t * Math.PI / 2);
+                const fadeIn = Math.sin(t * Math.PI / 2);
+                const idx = len - xf + i;
+                dst[idx] = src[s0 + idx] * fadeOut + src[s0 + len + i] * fadeIn;
+            }
+            // RMS正規化（素材が小さいので持ち上げる）＋ピークリミット
+            let sum = 0, peak = 0.0001;
+            for (let i = 0; i < len; i++) { sum += dst[i] * dst[i]; peak = Math.max(peak, Math.abs(dst[i])); }
+            const rms = Math.sqrt(sum / len) || 0.0001;
+            const gain = Math.min(targetRms / rms, 0.95 / peak);
+            for (let i = 0; i < len; i++) dst[i] *= gain;
+        }
+        return out;
+    }
+
     async _loadTireSample() {
         const fetchBuf = async (name) => {
             try {
-                const resp = await fetch('assets/sounds/' + name);
+                const resp = await fetch('assets/sounds/' + name + '?v=3');
                 if (!resp.ok) return null;
                 return await this.ctx.decodeAudioData(await resp.arrayBuffer());
-            } catch (e) { return null; }
+            } catch (e) {
+                console.warn('[AudioManager] failed to load ' + name, e);
+                return null;
+            }
         };
 
-        // ドリフト突入の「キキッ」用ワンショット（効果音ラボ: 車の急ブレーキ1）
-        this.tireOnsetBuffer = await fetchBuf('car-sudden-braking1.mp3');
+        // 効果音ラボ: 車の急ブレーキ1 / 2
+        const b1 = await fetchBuf('car-sudden-braking1.mp3');
+        const b2 = (await fetchBuf('skid.wav')) || (await fetchBuf('skid.mp3')) || (await fetchBuf('car-sudden-braking2.mp3'));
+        if (!b1 && !b2) { console.warn('[AudioManager] no tire samples found; using synth fallback'); return; }
 
-        // 持続ループ音（ユーザー録音 skid.* を優先、なければ 効果音ラボ: 車の急ブレーキ2）
-        const names = ['skid.wav', 'skid.mp3', 'skid.m4a', 'skid.ogg', 'car-sudden-braking2.mp3'];
-        for (const name of names) {
-            const buf = await fetchBuf(name);
-            if (!buf) continue;
+        // ドリフト突入の「キキッ」ワンショット（正規化のみ）
+        if (b1) this.tireOnsetBuffer = this._makeSeamlessLoop(b1, 0, b1.duration, 0.0001, 0.25);
+
+        // 持続ループ：レイヤーA（急ブレーキ2の安定部）＋レイヤーB（急ブレーキ1の中央部）
+        const layers = [];
+        if (b2) layers.push({ buf: this._makeSeamlessLoop(b2, 0.30, b2.duration - 0.35, 0.30), gain: 1.0, rate: 1.0 });
+        if (b1) layers.push({ buf: this._makeSeamlessLoop(b1, 0.12, b1.duration - 0.05, 0.22), gain: 0.55, rate: 1.06 });
+
+        this.tireLayers = [];
+        for (const L of layers) {
             const src = this.ctx.createBufferSource();
-            src.buffer = buf;
+            src.buffer = L.buf;
             src.loop = true;
-            // 頭の立ち上がりと終わりの減衰を避け、安定した中央部分のみをループ
-            src.loopStart = buf.duration * 0.25;
-            src.loopEnd = buf.duration * 0.80;
-            src.connect(this.tireNoiseGain);
-            const old = this.tireNoiseSource;
-            this.tireNoiseSource = src;
-            src.start(0, src.loopStart);
-            try { old.stop(); } catch (e) { /* noop */ }
-            // 録音をそのまま活かすため合成用EQを無効化
-            const t = this.ctx.currentTime;
-            this.tireBodyFilter.gain.setValueAtTime(0, t);
-            this.tireScreechFilter.gain.setValueAtTime(0, t);
-            this.tireSizzleFilter.gain.setValueAtTime(0, t);
-            this.tireLowpassFilter.frequency.setValueAtTime(16000, t);
-            this.tireNoiseGain.gain.setValueAtTime(1.0, t);
-            this.tireFlutterModGain.gain.setValueAtTime(0, t);
-            console.log('[AudioManager] Tire skid sample loaded: ' + name);
-            return;
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(L.gain, this.ctx.currentTime);
+            src.connect(g);
+            g.connect(this.tireNoiseGain);
+            src.start();
+            this.tireLayers.push({ src, rateScale: L.rate });
         }
+
+        // 合成ノイズを停止し、合成用EQ/フラッターを無効化して録音音をそのまま出す
+        try { this.tireNoiseSource.stop(); } catch (e) { /* noop */ }
+        const t = this.ctx.currentTime;
+        this.tireBodyFilter.gain.setValueAtTime(0, t);
+        this.tireScreechFilter.gain.setValueAtTime(0, t);
+        this.tireSizzleFilter.gain.setValueAtTime(0, t);
+        this.tireLowpassFilter.frequency.setValueAtTime(16000, t);
+        this.tireNoiseGain.gain.setValueAtTime(1.0, t);
+        this.tireFlutterModGain.gain.setValueAtTime(0, t);
+        this.tireWaveShaper.curve = null; // 録音を歪ませない
+        this.tireSampleReady = true;
+        console.log('[AudioManager] Tire skid samples ready (layers: ' + this.tireLayers.length + ')');
     }
 
     playTireOnset(intensity = 0.6) {
@@ -1025,8 +1075,9 @@ class AudioManager {
         const now = this.ctx.currentTime;
         const src = this.ctx.createBufferSource();
         src.buffer = this.tireOnsetBuffer;
+        src.playbackRate.setValueAtTime(0.96 + Math.random() * 0.10, now);
         const g = this.ctx.createGain();
-        g.gain.setValueAtTime(Math.min(0.9, 0.45 + intensity * 0.45), now);
+        g.gain.setValueAtTime(Math.min(1.0, 0.55 + intensity * 0.45), now);
         src.connect(g);
         g.connect(this.sfxGain);
         src.start(now);
