@@ -235,16 +235,24 @@ class CarPhysics {
             } else {
                 this.rpm -= maxR * 0.85 * dt;
             }
-            if (this.rpm > this.maxRpm) {
-                this.rpm = this.maxRpm - Math.random() * 200;
+            const revThreshold = (this.redlineRpm || 9100);
+            if (this.rpm >= revThreshold && curThrottle > 0.4) {
+                this.isRevLimiterCut = true;
+                const bounceHz = (this.carId === 'fd3s') ? 24 : ((this.carId === 'bnr32' || this.carId === 'jzx100') ? 18 : 21);
+                const bouncePhase = (Date.now() * 0.001 * bounceHz) % 1.0;
+                const bounceDip = (bouncePhase < 0.45) ? (bouncePhase / 0.45) * 190 : (1.0 - (bouncePhase - 0.45) / 0.55) * 190;
+                this.rpm = Math.min(this.maxRpm, revThreshold - bounceDip);
+
                 this.revLimiterPopTimer -= dt;
                 if (this.revLimiterPopTimer <= 0) {
-                    this.revLimiterPopTimer = 0.12;
-                    if (this.onAfterfire) this.onAfterfire(0.70);
+                    this.revLimiterPopTimer = 0.055 + Math.random() * 0.035;
+                    if (this.onAfterfire) this.onAfterfire(0.70 + Math.random() * 0.35);
                 }
             } else {
-                this.revLimiterPopTimer = 0.05;
+                this.isRevLimiterCut = false;
+                this.revLimiterPopTimer = 0.06;
             }
+            if (this.rpm > this.maxRpm) this.rpm = this.maxRpm;
             if (this.rpm < this.idleRpm) this.rpm = this.idleRpm;
             return;
         }
@@ -1373,20 +1381,26 @@ class CarPhysics {
             }
 
             if (this.isRevLimiterCut) {
-                desiredRpm = Math.min(this.maxRpm, revThreshold - 25 + Math.sin(Date.now() * 0.015) * 15);
+                // 車種別のレブ打ち点火カット周波数 (AE86: 21Hz, FD3S: 24Hz, GT-R/JZX: 18Hz, EK9: 22Hz)
+                const bounceHz = (this.carId === 'fd3s') ? 24 : ((this.carId === 'bnr32' || this.carId === 'jzx100') ? 18 : 21);
+                // 周期パルス（点火遮断の瞬間急降下し、即座に跳ね上がる高速ノコギリ／パルス波）
+                const bouncePhase = (Date.now() * 0.001 * bounceHz) % 1.0;
+                const bounceDip = (bouncePhase < 0.45) ? (bouncePhase / 0.45) * 190 : (1.0 - (bouncePhase - 0.45) / 0.55) * 190;
+                desiredRpm = Math.min(this.maxRpm, revThreshold - bounceDip);
+
                 this.revLimiterPopTimer -= dt;
                 if (this.revLimiterPopTimer <= 0) {
-                    this.revLimiterPopTimer = 0.85 + Math.random() * 0.35;
-                    if (this.onAfterfire) this.onAfterfire(0.65);
+                    this.revLimiterPopTimer = 0.055 + Math.random() * 0.035; // 毎秒約14〜18回の連続排気破裂！
+                    if (this.onAfterfire) this.onAfterfire(0.70 + Math.random() * 0.35);
                 }
             } else {
-                this.revLimiterPopTimer = 0.85;
+                this.revLimiterPopTimer = 0.06;
             }
 
-            // 車種固有のエンジンフライホイール慣性レスポンス（ドリフト中のホイールスピンは瞬時に吹け上がる鋭いレスポンス）
+            // 車種固有のエンジンフライホイール慣性レスポンス
             const baseResponse = this.engineResponse || 22.0;
             const responseUp = (this.isDrifting && this.throttle > 0.08) ? 34.0 : baseResponse;
-            const rpmResponse = (desiredRpm > this.rpm) ? responseUp : 22.0;
+            const rpmResponse = this.isRevLimiterCut ? 48.0 : ((desiredRpm > this.rpm) ? responseUp : 22.0);
             this.rpm += (desiredRpm - this.rpm) * Math.min(1.0, rpmResponse * dt);
         }
 

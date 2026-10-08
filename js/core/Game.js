@@ -536,7 +536,9 @@ class Game {
             this.playerPhysics.rpm,
             this.playerPhysics.throttle,
             this.playerPhysics.isDrifting,
-            this.playerPhysics.driftAngle
+            this.playerPhysics.driftAngle,
+            this.playerPhysics.isRevLimiterCut,
+            this.playerPhysics.redlineRpm
         );
 
         if (this.audio && this.audio.updateWetTireHiss) {
