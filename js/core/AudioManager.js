@@ -59,6 +59,8 @@ class AudioManager {
         this.decelNoiseGain = null;
         this.decelFilter = null;
         this.prevThrottle = 0;
+        this._lastBlowOffTime = 0;
+        this._lastMisfireTime = 0;
 
         // 4連スロットル吸気インダクション咆哮
         this.intakeNoiseNode = null;
@@ -484,42 +486,182 @@ class AudioManager {
         this.turboOsc.start();
     }
 
+    _createEnginePeriodicWave(type) {
+        if (!this.ctx) return null;
+        const nCoeffs = 32;
+        const real = new Float32Array(nCoeffs);
+        const imag = new Float32Array(nCoeffs);
+
+        // 各車種固有のシリンダー爆発圧力パルス フーリエ級数倍音プロファイル
+        if (type === '13b') {
+            // FD3S ロータリー: ピストン衝撃がなく、偶数・奇数の調和が滑らかな高回転唸り
+            imag[1] = 0.55;
+            imag[2] = 0.80;
+            imag[3] = 1.00; // 主排気
+            imag[4] = 0.35;
+            imag[5] = 0.15;
+            imag[6] = 0.30;
+            imag[9] = 0.12;
+        } else if (type === 'rb26') {
+            // BNR32 直6: 3次・6次・9次・12次の直6調和倍音（シルキーかつ重厚）
+            imag[1] = 0.65;
+            imag[2] = 0.30;
+            imag[3] = 1.00; // 直6主点火
+            imag[4] = 0.20;
+            imag[5] = 0.15;
+            imag[6] = 0.72; // 直6第2次（高回転咆哮）
+            imag[7] = 0.10;
+            imag[8] = 0.12;
+            imag[9] = 0.40; // 直6第3次
+            imag[12] = 0.22; // 直6第4次
+        } else if (type === '1jz' || type === '2jz') {
+            // JZX100/JZA80 直6: 直6の美しい倍音＋大排気量の太い低中域トルク感
+            imag[1] = 0.80;
+            imag[2] = 0.35;
+            imag[3] = 1.00;
+            imag[4] = 0.25;
+            imag[6] = 0.65;
+            imag[8] = 0.18;
+            imag[9] = 0.34;
+            imag[12] = 0.18;
+        } else if (type === 'b16b') {
+            // EK9 VTEC: 鋭利で高回転まで突き抜ける4気筒レーシングパルス
+            imag[1] = 0.50;
+            imag[2] = 1.00; // 4気筒主点火
+            imag[3] = 0.45;
+            imag[4] = 0.65;
+            imag[5] = 0.30;
+            imag[6] = 0.45;
+            imag[7] = 0.25;
+            imag[8] = 0.35;
+            imag[10] = 0.20;
+        } else if (type === 'f5a') {
+            // アルトワークス 3気筒: 1.5次の不均等ビート
+            imag[1] = 0.85;
+            imag[2] = 0.70;
+            imag[3] = 0.95;
+            imag[4] = 0.40;
+            imag[5] = 0.30;
+            imag[6] = 0.35;
+        } else if (type === '4g63') {
+            // CE9A エボIII 4気筒ターボ: 高圧縮・ハイブースト打撃感
+            imag[1] = 0.72;
+            imag[2] = 1.00;
+            imag[3] = 0.35;
+            imag[4] = 0.62;
+            imag[5] = 0.26;
+            imag[6] = 0.42;
+            imag[8] = 0.22;
+        } else if (type === 'sr20') {
+            // S13/180SX 4気筒ターボ: やや乾いたラフな排気脈動
+            imag[1] = 0.68;
+            imag[2] = 1.00;
+            imag[3] = 0.30;
+            imag[4] = 0.56;
+            imag[5] = 0.28;
+            imag[6] = 0.38;
+            imag[7] = 0.18;
+            imag[8] = 0.22;
+        } else {
+            // AE86 4A-GE: 4連スロットル・等長タコ足 NA高回転（鋭い金属倍音）
+            imag[1] = 0.60;
+            imag[2] = 1.00; // 4気筒主点火
+            imag[3] = 0.52;
+            imag[4] = 0.55;
+            imag[5] = 0.35;
+            imag[6] = 0.45; // エキマニ共鳴
+            imag[7] = 0.24;
+            imag[8] = 0.32; // タコ足金属鳴き
+            imag[10] = 0.20;
+            imag[12] = 0.15;
+        }
+
+        try {
+            return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+        } catch (e) {
+            return null;
+        }
+    }
+
     setEngineSoundType(type) {
         this.soundType = type || '4age';
         if (!this.initialized || !this.engineOscMain1) return;
 
-        // 車種別の波形＆非対称歪みカーブ設定
-        if (this.soundType === '13b') {
-            this.engineOscMain1.type = 'sawtooth';
-            this.engineOscMain2.type = 'sine';
-            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.0);
-            this.revLfo.frequency.setValueAtTime(13.5, this.ctx.currentTime); // ロータリー高速レブ打ち 13.5Hz
-        } else if (this.soundType === 'rb26') {
-            this.engineOscMain1.type = 'sawtooth';
-            this.engineOscMain2.type = 'triangle';
-            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(3.2);
-            this.revLfo.frequency.setValueAtTime(10.5, this.ctx.currentTime); // 直6重厚レブ打ち 10.5Hz
+        const now = this.ctx.currentTime;
+
+        // 1. 車種専用のシリンダー爆発パルス波形（PeriodicWave）をオシレーターへ即時適用
+        const wave = this._createEnginePeriodicWave(this.soundType);
+        if (wave) {
+            try {
+                this.engineOscMain1.setPeriodicWave(wave);
+                this.engineOscMain2.setPeriodicWave(wave);
+            } catch (e) {}
+        }
+
+        // 2. 車種別のマフラー・エキマニ共鳴フォルマント＆レブ打ち周期の個別最適化
+        if (this.soundType === 'rb26') {
+            // BNR32 GT-R: 直6重低音ランブル（115Hz）＋シルキーな直6喉鳴り（580Hz）
+            this.engineBodyFilter.frequency.setValueAtTime(115, now);
+            this.engineBodyFilter.gain.setValueAtTime(7.5, now);
+            this.engineRaspFilter.frequency.setValueAtTime(580, now);
+            this.engineRaspFilter.Q.setValueAtTime(2.0, now);
+            this.engineRingFilter.frequency.setValueAtTime(2300, now);
+            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.3);
+            this.revLfo.frequency.setValueAtTime(10.5, now); // 直6重厚レブ打ち 10.5Hz
         } else if (this.soundType === '1jz' || this.soundType === '2jz') {
-            this.engineOscMain1.type = 'sawtooth';
-            this.engineOscMain2.type = 'triangle';
-            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.8);
-            this.revLfo.frequency.setValueAtTime(10.5, this.ctx.currentTime);
+            // JZX100/JZA80: 大排気量直6の太い低音（120Hz）＋豪快なターボ排気
+            this.engineBodyFilter.frequency.setValueAtTime(120, now);
+            this.engineBodyFilter.gain.setValueAtTime(8.0, now);
+            this.engineRaspFilter.frequency.setValueAtTime(620, now);
+            this.engineRingFilter.frequency.setValueAtTime(2450, now);
+            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.5);
+            this.revLfo.frequency.setValueAtTime(10.5, now);
+        } else if (this.soundType === '13b') {
+            // FD3S: ロータリー特有のスムースな排気（胴鳴り控えめ、高周波唸り840Hz）
+            this.engineBodyFilter.frequency.setValueAtTime(160, now);
+            this.engineBodyFilter.gain.setValueAtTime(4.5, now);
+            this.engineRaspFilter.frequency.setValueAtTime(840, now);
+            this.engineRingFilter.frequency.setValueAtTime(2100, now);
+            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(1.8);
+            this.revLfo.frequency.setValueAtTime(13.5, now); // ロータリー高速レブ打ち 13.5Hz
         } else if (this.soundType === 'b16b') {
-            this.engineOscMain1.type = 'sawtooth';
-            this.engineOscMain2.type = 'sawtooth';
-            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.9);
-            this.revLfo.frequency.setValueAtTime(12.0, this.ctx.currentTime); // VTEC鋭利レブ打ち 12.0Hz
+            // EK9 VTEC: 鋭利な高回転NA（超高域金属鳴き 3100Hz）
+            this.engineBodyFilter.frequency.setValueAtTime(150, now);
+            this.engineRaspFilter.frequency.setValueAtTime(780, now);
+            this.engineRingFilter.frequency.setValueAtTime(3100, now);
+            this.engineRingFilter.gain.setValueAtTime(8.5, now);
+            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.8);
+            this.revLfo.frequency.setValueAtTime(12.0, now); // VTEC鋭利レブ打ち 12.0Hz
         } else if (this.soundType === 'f5a') {
-            this.engineOscMain1.type = 'sawtooth';
-            this.engineOscMain2.type = 'triangle';
-            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.4);
-            this.revLfo.frequency.setValueAtTime(11.0, this.ctx.currentTime);
-        } else {
-            // 4A-GE (AE86) / SR20
-            this.engineOscMain1.type = 'sawtooth';
-            this.engineOscMain2.type = 'triangle';
+            // アルトワークス: 3気筒ドッカンターボ（胴鳴り 185Hz）
+            this.engineBodyFilter.frequency.setValueAtTime(185, now);
+            this.engineRaspFilter.frequency.setValueAtTime(520, now);
+            this.engineRingFilter.frequency.setValueAtTime(2600, now);
+            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.2);
+            this.revLfo.frequency.setValueAtTime(11.0, now);
+        } else if (this.soundType === '4g63') {
+            // CE9A エボIII: ハイブースト4気筒ターボ（パンチのある135Hz胴鳴り）
+            this.engineBodyFilter.frequency.setValueAtTime(135, now);
+            this.engineBodyFilter.gain.setValueAtTime(7.0, now);
+            this.engineRaspFilter.frequency.setValueAtTime(700, now);
+            this.engineRingFilter.frequency.setValueAtTime(2500, now);
+            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.9);
+            this.revLfo.frequency.setValueAtTime(11.2, now);
+        } else if (this.soundType === 'sr20') {
+            // S13/180SX: 荒々しい王道SRサウンド（140Hz胴鳴り、720Hzテールパイプ）
+            this.engineBodyFilter.frequency.setValueAtTime(140, now);
+            this.engineRaspFilter.frequency.setValueAtTime(720, now);
+            this.engineRingFilter.frequency.setValueAtTime(2550, now);
             this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.7);
-            this.revLfo.frequency.setValueAtTime(11.5, this.ctx.currentTime); // AE86 11.5Hz
+            this.revLfo.frequency.setValueAtTime(11.0, now);
+        } else {
+            // AE86 4A-GE: 等長タコ足鳴き（2700Hz）＋4連スロットルNAサウンド
+            this.engineBodyFilter.frequency.setValueAtTime(145, now);
+            this.engineRaspFilter.frequency.setValueAtTime(680, now);
+            this.engineRingFilter.frequency.setValueAtTime(2700, now);
+            this.engineRingFilter.gain.setValueAtTime(7.5, now);
+            this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.6);
+            this.revLfo.frequency.setValueAtTime(11.5, now); // AE86 11.5Hz
         }
     }
 
@@ -692,9 +834,29 @@ class AudioManager {
         const targetCutoff = baseCutoff + (rpmNorm * rangeCutoff) + (throttle * throttleCutoff);
         this.engineFilter.frequency.setTargetAtTime(targetCutoff, curTime, 0.03);
 
-        // 6. 吸気サージタンク・4連スロットル咆哮
-        const intakeVol = Math.max(0, (throttle * 0.30) + (rpmNorm * 0.14 * throttle));
-        const intakeFreq = 260 + (throttle * 240) + (rpmNorm * 180);
+        // 6. 吸気サージタンク・インダクション咆哮（4連スロットル vs VTEC vs ターボ）
+        let intakeVol = 0;
+        let intakeFreq = 280;
+        if (this.soundType === '4age') {
+            // AE86 4連独立スロットル: アクセルを踏み込んだ瞬間に剥き出しファンネルが「クォォォォォン！」と猛烈に吠える！
+            intakeVol = Math.max(0, (throttle * 0.45) + (rpmNorm * 0.24 * throttle));
+            intakeFreq = 360 + (throttle * 440) + (rpmNorm * 260);
+            this.intakeFilter.Q.setTargetAtTime(3.2, curTime, 0.03);
+        } else if (this.soundType === 'b16b') {
+            // EK9 VTEC: 5,800rpm以上でハイカム吸気が一気に炸裂！
+            const isVtec = (rpm > 5800);
+            intakeVol = Math.max(0, (throttle * (isVtec ? 0.50 : 0.26)) + (rpmNorm * 0.18 * throttle));
+            intakeFreq = isVtec ? (640 + throttle * 520) : (300 + throttle * 280);
+            this.intakeFilter.Q.setTargetAtTime(isVtec ? 3.8 : 2.0, curTime, 0.03);
+        } else if (isTurbo) {
+            // ターボ車: スロットルONでコンプレッサー吸気サージ
+            intakeVol = Math.max(0, (throttle * 0.32) + (rpmNorm * 0.16 * throttle));
+            intakeFreq = 280 + (throttle * 300) + (rpmNorm * 180);
+            this.intakeFilter.Q.setTargetAtTime(2.2, curTime, 0.03);
+        } else {
+            intakeVol = Math.max(0, (throttle * 0.28) + (rpmNorm * 0.14 * throttle));
+            intakeFreq = 280 + (throttle * 240) + (rpmNorm * 160);
+        }
         this.intakeFilter.frequency.setTargetAtTime(intakeFreq, curTime, 0.03);
         this.intakeGain.gain.setTargetAtTime(intakeVol, curTime, 0.03);
 
@@ -703,12 +865,10 @@ class AudioManager {
 
         if (isRevLimiter && throttle > 0.45) {
             // レブリミット到達＆アクセル踏み続け中：
-            // 毎秒約10〜13Hzの実車ECU点火カット周期でリアルなレブ打ちスタッターを炸裂！
+            // 車種固有のECU点火カット周期でリアルなレブ打ちスタッターを炸裂！
             this.revModGain.gain.setValueAtTime(0.88, curTime);
-            // 点火カットと再着火の荒々しい高域スパイク
             this.engineFilter.frequency.setValueAtTime(targetCutoff * 1.45, curTime);
             this.engineRingFilter.gain.setValueAtTime(ringGainWeight * 26.0, curTime);
-            // 点火抜けによる微小ピッチドロップ変調
             const bouncePitchFactor = 0.94 + Math.sin(curTime * revBounceHz * Math.PI * 2) * 0.06;
             this.engineOscMain1.frequency.setValueAtTime(baseFreq * bouncePitchFactor, curTime);
         } else {
@@ -716,26 +876,39 @@ class AudioManager {
             this.revModGain.gain.setValueAtTime(0.0, curTime);
         }
 
-        // 8. 減速時デセル・クラックル（エンジンブレーキ・アクセル急閉時のランブル）
+        // 8. 減速時デセル・クラックル ＆ CE9Aミスファイアリングシステム
         const throttleDrop = (this.prevThrottle > 0.35 && throttle < 0.15);
-        if (throttleDrop || (throttle < 0.12 && rpm > 3600)) {
-            const decelVol = Math.min(0.22, (rpm / maxRpmRef) * 0.26);
+        if (throttleDrop || (throttle < 0.12 && rpm > 3400)) {
+            const decelVol = Math.min(0.24, (rpm / maxRpmRef) * 0.28);
             this.decelNoiseGain.gain.setTargetAtTime(decelVol, curTime, 0.02);
+
+            // ★CE9A エボIII（須藤京一）ミスファイアリングシステム（アンチラグ・二次エア供給）
+            if (this.soundType === '4g63' && throttle < 0.10 && rpm > 3200) {
+                if (Math.random() < 0.28) {
+                    this.playAntiLagPop(rpmNorm);
+                }
+            }
         } else {
             this.decelNoiseGain.gain.setTargetAtTime(0.0, curTime, 0.06);
         }
-        this.prevThrottle = throttle;
 
-        // 9. ターボチャージャー過給スピナー音
-        if (isTurbo && throttle > 0.12 && rpm > 3200) {
-            const turboFreq = 1400 + (rpmNorm * 2200) + (throttle * 600);
-            const turboVol = Math.min(0.20, 0.05 + (throttle * 0.12) + (rpmNorm * 0.06));
+        // 9. ターボチャージャー過給スピナー音 ＆ ブローオフバルブ
+        if (isTurbo && throttle > 0.12 && rpm > 2800) {
+            const turboFreq = 1600 + (rpmNorm * 2400) + (throttle * 800);
+            const turboVol = Math.min(0.22, 0.05 + (throttle * 0.12) + (rpmNorm * 0.07));
             this.turboOsc.frequency.setTargetAtTime(turboFreq, curTime, 0.04);
             this.turboFilter.frequency.setTargetAtTime(turboFreq, curTime, 0.04);
             this.turboGain.gain.setTargetAtTime(turboVol, curTime, 0.04);
         } else {
             this.turboGain.gain.setTargetAtTime(0.0, curTime, 0.06);
         }
+
+        // ★ターボ車のブローオフバルブ過給圧開放（アクセル急閉時）
+        if (isTurbo && throttleDrop && rpm > 3000) {
+            const isTwinTurbo = (this.soundType === '13b' || this.soundType === 'rb26' || this.soundType === '2jz');
+            this.playBlowOffSound(rpmNorm, isTwinTurbo);
+        }
+        this.prevThrottle = throttle;
 
         // 10. エンジンマスター音量（ドリフト時の動的サイドチェイン・ダッキングでスキール音を主役に）
         const baseEngineVol = 0.22 + (throttle * 0.30) + (rpmNorm * 0.24);
@@ -1102,6 +1275,72 @@ class AudioManager {
         filter.connect(gain);
         gain.connect(this.sfxGain);
         src.start(now);
+    }
+
+    playBlowOffSound(intensity = 1.0, isTwinTurbo = false) {
+        if (!this.initialized || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (this._lastBlowOffTime && (now - this._lastBlowOffTime < 0.35)) return;
+        this._lastBlowOffTime = now;
+
+        // 1. 高圧エアー瞬間開放シューッ音（0.22秒）
+        const bufLen = Math.floor(this.ctx.sampleRate * 0.25);
+        const buf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) {
+            const decay = Math.exp(-i / (this.ctx.sampleRate * 0.040));
+            data[i] = (Math.random() * 2 - 1) * decay;
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(isTwinTurbo ? 3200 : 2500, now);
+        filter.Q.setValueAtTime(2.0, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.35 * Math.min(1.2, 0.7 + intensity * 0.4), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.sfxGain);
+        src.start(now);
+
+        // 2. バックタービン・サージフラッター「ピロロロロ！」
+        const surgeLen = Math.floor(this.ctx.sampleRate * 0.30);
+        const surgeBuf = this.ctx.createBuffer(1, surgeLen, this.ctx.sampleRate);
+        const sData = surgeBuf.getChannelData(0);
+        const flutterHz = isTwinTurbo ? 26.0 : 20.0;
+        const baseFreq = isTwinTurbo ? 1650 : 1400;
+        for (let i = 0; i < surgeLen; i++) {
+            const t = i / this.ctx.sampleRate;
+            const decay = Math.exp(-t * 7.0);
+            const flutter = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * flutterHz);
+            const carrier = Math.sin(t * Math.PI * 2 * (baseFreq - t * 900));
+            sData[i] = carrier * flutter * decay * 0.40;
+        }
+        const sSrc = this.ctx.createBufferSource();
+        sSrc.buffer = surgeBuf;
+        const sGain = this.ctx.createGain();
+        sGain.gain.setValueAtTime(0.28 * Math.min(1.2, intensity), now);
+        sSrc.connect(sGain);
+        sGain.connect(this.sfxGain);
+        sSrc.start(now);
+    }
+
+    playAntiLagPop(intensity = 1.0) {
+        if (!this.initialized || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (this._lastMisfireTime && (now - this._lastMisfireTime < 0.080)) return;
+        this._lastMisfireTime = now;
+
+        // CE9AエボIII エキマニ内二次エア爆発（乾いた金属的爆裂音「パンッ！」）
+        this._synthesizeExhaustPop(now, 0.85 * Math.min(1.2, intensity), 1.35);
+        if (Math.random() < 0.45) {
+            this._synthesizeExhaustPop(now + 0.038, 0.60 * intensity, 1.55);
+        }
     }
 
     playShiftSound() {
