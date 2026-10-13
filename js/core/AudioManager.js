@@ -1,30 +1,29 @@
 /**
- * AudioManager.js - 超リアル・プロシージャル・エンジン音響物理モデリング 2.0 ＆ 総合音響システム
+ * AudioManager.js - 超リアル・プロシージャル・エンジン音響物理モデリング 3.0 ＆ 総合音響システム
  * 
  * 【音響物理モデリングの革新アーキテクチャ（録音データ一切不使用）】
- * 1. 離散シリンダー燃焼パルス合成 (Discrete Cylinder Power Stroke Impulse Engine):
- *    平坦な連続波を排し、各気筒のスパークプラグ点火・急峻燃焼圧力波（PeriodicWave カスタム倍音）
- *    および4ストローク単室爆発打撃（クランク半次数サブベース）を点火周波数（Firing Frequency: rpm/60 * orderMult）で駆動。
- * 2. 高圧排気ガスパフ・インパルス乱流 (High-Pressure Gas Puff Turbulence AM Burst) ★音階感を消す決定打:
- *    排気ガスが音速近くでマフラーから噴き出す気流乱流（Turbulence Pink Noise）を、
- *    シリンダー開弁エンベロープで高速AM変調（振幅パルス化）！
- *    オシレーター特有のシンセ臭・電子音感を根絶し、本物の排気管から高圧ガスが「ボボボボッ！」「ズバババッ！」と吹き出す風圧衝撃を生成。
- * 3. エキゾーストマニホールド Comb Filter（櫛状音響管物理遅延）:
- *    各気筒排気管から集合部・テールパイプまでの排気管内往復音波遅延（3.5ms〜8.2ms）をシミュレート。
- *    タコ足の金属反響（Header Ringing）と気筒間排気干渉をリアルタイム物理合成。
- * 4. 3バンド排気管ヘルムホルツ共鳴フォルマント:
+ * 1. 4ストローク 720°全周期音響物理モデリング (Full 720° Combustion Cycle Impulse Engine):
+ *    平坦な連続オシレーター（単調な音階・ブザー音）を完全根絶！
+ *    クランク2回転（720度）における全気筒の点火順序・爆発衝撃波（Dirac Shock Pulse）・
+ *    等長/不等長エキマニ管長差・気筒間バラつき（IMEP Covariance）をタイムドメインで忠実に合成。
+ *    基本周波数をクランク全周期（rpm / 120）に設定することで、アイドリング時は可聴域以下の
+ *    「ドスッ！ドスッ！」という個別のシリンダー爆発打撃音となり、シンセ音階臭が完全に消滅。
+ * 2. 単極性高圧排気ガススラグ噴射 (Gated High-Pressure Gas Slug Turbulence AM Burst):
+ *    排気バルブ開口時（サイクル約30%）のみ高圧排気ガスを噴射し、残り70%は完全無音となる
+ *    単極性ゲートWaveShaperで乱流ノイズを音速チョッピング！
+ *    アイドリングでの「ボフッ、ボフッ」という風圧排気パフから、全開時の暴力的排気嵐を完全再現。
+ * 3. 吸気インダクション・サクション波形連動 (Intake Induction Roar):
+ *    スロットル開度にダイレクト連動し、位相反転した吸気サクション波がファンネルから猛烈に吠える。
+ * 4. エキゾーストマニホールド Comb Filter（櫛状音響管物理遅延）:
+ *    各気筒排気管から集合部・テールパイプまでの往復音波遅延（3.2ms〜8.0ms）とタコ足金属反響。
+ * 5. 3バンド排気管ヘルムホルツ共鳴フォルマント:
  *    - マフラー太鼓（メインサイレンサー膨張室）の重厚な地響き低音 (90〜160Hz)
- *    - テールパイプ出口の乾いた喉鳴り (480〜780Hz)
- *    - 高回転時にステンレス・チタン管が激しく共鳴する甲高い金属鳴き (2100〜3200Hz)
- * 5. メカニカル・エンジンノイズ（動弁系バルブクラッター ＆ 補機類ワーリング）:
- *    カムシャフトがリフターを叩く微細なタペット音（Valve Clatter）と回転数連動の機械駆動音を薄くレイヤーし、
- *    エンジン本体が激しく回っている質量感を再現。
- * 6. 燃焼サイクル・ジッター (Combustion Cycle Random Jitter LFO):
- *    毎サイクルの爆発周期に微小カオス揺らぎを注入し、本物の内燃機関の有機的な脈動を再現。
- * 7. 吸気サージタンク・インダクション咆哮 (Intake Induction Roar):
- *    スロットル全開時に吸気ファンネル／エアクリから猛烈に空気を吸い込むインダクション咆哮。
- * 8. 車種別完全個別プロファイル (4A-GE, 13B, RB26, SR20, 1JZ/2JZ, 4G63, B16B, F5A):
- *    気筒数・点火特性・VTECハイカム・ターボ過給機・レブ打ち周期の個別精密チューニング。
+ *    - テールパイプ出口の乾いた喉鳴り (500〜820Hz)
+ *    - 高回転時にステンレス・チタン管が激しく共鳴する甲高い金属鳴き (2200〜3200Hz)
+ * 6. 有機的アイドリング・ワンダリング (0.8Hz Organic Thermal Drift):
+ *    電子的なFMビブラート（高周波変調）を排除し、内燃機関特有の有機的揺らぎのみを注入。
+ * 7. 車種別完全個別プロファイル (4A-GE, 13B, RB26, SR20, 1JZ/2JZ, 4G63, B16B, F5A):
+ *    直4等長タコ足、直6重低音シルキー、2ローター高速ポート排気、3気筒不均等ビート等の完全個別化。
  */
 
 // 車種別エンジン音響物理プロファイル
@@ -32,18 +31,19 @@ const ENGINE_PROFILES = {
     '4age': {
         name: '4A-GEU (AE86)',
         orderMult: 2.0,       // 4気筒: 1回転あたり2回点火
+        cycleFreqRatio: 1 / 120, // 4ストローク720°全周期 (クランク2回転/1サイクル)
         combDelay: 0.0040,    // 等長タコ足遅延 4.0ms
-        combFeedback: 0.38,   // 等長タコ足乾いた金属反響
+        combFeedback: 0.40,   // 等長タコ足乾いた金属反響
         idleRpm: 950,
         redlineRpm: 8000,
         maxRpm: 11000,
         subWeight: 0.50,      // アイドリング低域パルス
-        mainWeight: 0.58,
-        noiseBurstWeight: 0.65, // 排気ガス噴射風圧
+        mainWeight: 0.62,
+        noiseBurstWeight: 0.68, // 排気ガス噴射風圧
         bodyFreq: 135, bodyGain: 7.5,
-        raspFreq: 650, raspGain: 8.0,
-        ringFreq: 2800, ringGain: 8.5, // 4A-GE等長タコ足高域鳴き
-        intakePeak: 380, intakeQ: 3.2,
+        raspFreq: 640, raspGain: 8.5,
+        ringFreq: 2850, ringGain: 8.5, // 4A-GE等長タコ足高域鳴き
+        intakePeak: 420, intakeQ: 3.2,
         mechWhineRatio: 1.5,
         mechClatterWeight: 0.14,
         revBounceHz: 11.5,
@@ -52,6 +52,7 @@ const ENGINE_PROFILES = {
     '13b': {
         name: '13B-REW (FD3S)',
         orderMult: 3.0,       // 2ローター・偏心軸: 1回転あたり3回排気
+        cycleFreqRatio: 1 / 60, // 360°基準 (偏心軸1回転で3回排気)
         combDelay: 0.0032,    // ロータリースムース管 3.2ms
         combFeedback: 0.28,
         idleRpm: 900,
@@ -59,13 +60,13 @@ const ENGINE_PROFILES = {
         maxRpm: 8800,
         subWeight: 0.38,
         mainWeight: 0.64,
-        noiseBurstWeight: 0.52,
+        noiseBurstWeight: 0.55,
         bodyFreq: 155, bodyGain: 5.5,
         raspFreq: 820, raspGain: 9.0,
         ringFreq: 2200, ringGain: 6.5,
         intakePeak: 320, intakeQ: 2.2,
         mechWhineRatio: 2.0,
-        mechClatterWeight: 0.06, // ロータリーはピストン・タペット打撃なし
+        mechClatterWeight: 0.02, // ロータリーはピストン・タペット打撃なし
         revBounceHz: 13.5,
         isTurbo: true,
         isTwinTurbo: true
@@ -73,15 +74,16 @@ const ENGINE_PROFILES = {
     'rb26': {
         name: 'RB26DETT (BNR32)',
         orderMult: 3.0,       // 直6: 1回転あたり3回点火
+        cycleFreqRatio: 1 / 120,
         combDelay: 0.0056,    // 直6排気管 5.6ms
-        combFeedback: 0.42,
+        combFeedback: 0.44,
         idleRpm: 950,
         redlineRpm: 8000,
         maxRpm: 8500,
         subWeight: 0.72,      // 直6重低音ランブル
-        mainWeight: 0.62,
-        noiseBurstWeight: 0.68,
-        bodyFreq: 110, bodyGain: 9.0,
+        mainWeight: 0.64,
+        noiseBurstWeight: 0.70,
+        bodyFreq: 110, bodyGain: 9.5,
         raspFreq: 560, raspGain: 7.5,
         ringFreq: 2350, ringGain: 8.0,
         intakePeak: 340, intakeQ: 2.6,
@@ -94,17 +96,18 @@ const ENGINE_PROFILES = {
     'sr20': {
         name: 'SR20DET (S13/180SX)',
         orderMult: 2.0,       // 4気筒ターボ
+        cycleFreqRatio: 1 / 120,
         combDelay: 0.0066,    // 不等長排気干渉 6.6ms
         combFeedback: 0.40,
         idleRpm: 850,
         redlineRpm: 7500,
         maxRpm: 8000,
         subWeight: 0.58,
-        mainWeight: 0.56,
-        noiseBurstWeight: 0.72, // 荒々しいラフな排気脈動
-        bodyFreq: 130, bodyGain: 7.5,
-        raspFreq: 700, raspGain: 8.0,
-        ringFreq: 2500, ringGain: 7.0,
+        mainWeight: 0.58,
+        noiseBurstWeight: 0.74, // 荒々しいラフな排気脈動
+        bodyFreq: 125, bodyGain: 8.0,
+        raspFreq: 680, raspGain: 8.0,
+        ringFreq: 2450, ringGain: 7.0,
         intakePeak: 300, intakeQ: 2.2,
         mechWhineRatio: 1.4,
         mechClatterWeight: 0.16,
@@ -115,16 +118,17 @@ const ENGINE_PROFILES = {
     '1jz': {
         name: '1JZ-GTE (JZX100)',
         orderMult: 3.0,       // 直6ターボ
+        cycleFreqRatio: 1 / 120,
         combDelay: 0.0052,    // 極太直管 5.2ms
-        combFeedback: 0.44,
+        combFeedback: 0.45,
         idleRpm: 800,
         redlineRpm: 7500,
         maxRpm: 8000,
         subWeight: 0.75,
-        mainWeight: 0.60,
-        noiseBurstWeight: 0.66,
+        mainWeight: 0.62,
+        noiseBurstWeight: 0.68,
         bodyFreq: 115, bodyGain: 9.0,
-        raspFreq: 600, raspGain: 8.0,
+        raspFreq: 600, raspGain: 8.5,
         ringFreq: 2400, ringGain: 7.5,
         intakePeak: 320, intakeQ: 2.5,
         mechWhineRatio: 1.8,
@@ -136,16 +140,17 @@ const ENGINE_PROFILES = {
     '2jz': {
         name: '2JZ-GTE (JZA80)',
         orderMult: 3.0,       // 3.0L 直6ツインターボ
+        cycleFreqRatio: 1 / 120,
         combDelay: 0.0054,
-        combFeedback: 0.46,
+        combFeedback: 0.48,
         idleRpm: 750,
         redlineRpm: 7800,
         maxRpm: 8300,
         subWeight: 0.80,      // 3.0L大排気量重低音
-        mainWeight: 0.58,
-        noiseBurstWeight: 0.70,
-        bodyFreq: 105, bodyGain: 9.5,
-        raspFreq: 580, raspGain: 8.0,
+        mainWeight: 0.60,
+        noiseBurstWeight: 0.72,
+        bodyFreq: 105, bodyGain: 10.0,
+        raspFreq: 570, raspGain: 8.0,
         ringFreq: 2350, ringGain: 7.5,
         intakePeak: 340, intakeQ: 2.6,
         mechWhineRatio: 1.8,
@@ -157,17 +162,18 @@ const ENGINE_PROFILES = {
     '4g63': {
         name: '4G63 (CE9A エボIII)',
         orderMult: 2.0,       // 4気筒ハイブースト
+        cycleFreqRatio: 1 / 120,
         combDelay: 0.0046,
-        combFeedback: 0.38,
+        combFeedback: 0.40,
         idleRpm: 900,
         redlineRpm: 7800,
         maxRpm: 8300,
         subWeight: 0.62,
-        mainWeight: 0.62,
-        noiseBurstWeight: 0.76, // ラリー仕様の強烈打撃感
+        mainWeight: 0.64,
+        noiseBurstWeight: 0.78, // ラリー仕様の強烈打撃感
         bodyFreq: 125, bodyGain: 8.5,
         raspFreq: 680, raspGain: 8.5,
-        ringFreq: 2450, ringGain: 7.5,
+        ringFreq: 2450, ringGain: 8.0,
         intakePeak: 310, intakeQ: 2.8,
         mechWhineRatio: 1.5,
         mechClatterWeight: 0.15,
@@ -178,18 +184,19 @@ const ENGINE_PROFILES = {
     'b16b': {
         name: 'B16B (EK9 Type R)',
         orderMult: 2.0,       // 1.6L 9000rpm VTEC
+        cycleFreqRatio: 1 / 120,
         combDelay: 0.0036,    // 等長チタン管 3.6ms
-        combFeedback: 0.45,
+        combFeedback: 0.46,
         idleRpm: 850,
         redlineRpm: 9000,
         maxRpm: 9800,
         subWeight: 0.42,
-        mainWeight: 0.66,
-        noiseBurstWeight: 0.62,
+        mainWeight: 0.68,
+        noiseBurstWeight: 0.64,
         bodyFreq: 145, bodyGain: 6.5,
-        raspFreq: 760, raspGain: 9.0,
-        ringFreq: 3200, ringGain: 10.5, // VTEC超高域突き抜け鳴き
-        intakePeak: 420, intakeQ: 3.6,
+        raspFreq: 760, raspGain: 9.5,
+        ringFreq: 3200, ringGain: 11.0, // VTEC超高域突き抜け鳴き
+        intakePeak: 440, intakeQ: 3.6,
         mechWhineRatio: 1.6,
         mechClatterWeight: 0.13,
         revBounceHz: 12.0,
@@ -198,14 +205,15 @@ const ENGINE_PROFILES = {
     'f5a': {
         name: 'F5A (アルトワークス)',
         orderMult: 1.5,       // 3気筒: 1回転あたり1.5回点火
+        cycleFreqRatio: 1 / 120,
         combDelay: 0.0080,    // 3気筒脈動遅延 8.0ms
-        combFeedback: 0.36,
+        combFeedback: 0.38,
         idleRpm: 950,
         redlineRpm: 9500,
         maxRpm: 10500,
         subWeight: 0.48,
-        mainWeight: 0.54,
-        noiseBurstWeight: 0.78, // パタパタ脈動
+        mainWeight: 0.56,
+        noiseBurstWeight: 0.80, // パタパタ脈動
         bodyFreq: 175, bodyGain: 7.0,
         raspFreq: 500, raspGain: 7.5,
         ringFreq: 2550, ringGain: 6.5,
@@ -225,20 +233,22 @@ class AudioManager {
         this.sfxGain = null;
         this.bgmGain = null;
 
-        // プロシージャル・エンジン音響物理ノード群 2.0
-        this.engineOscMain1 = null;         // 主シリンダー点火パルス (PeriodicWave)
-        this.engineOscMain2 = null;         // 第2次高調波シリンダーパルス (PeriodicWave)
-        this.engineOscSub = null;           // 4ストローク単室爆発サブベース打撃 (クランク半次数)
+        // プロシージャル・エンジン音響物理ノード群 3.0 (720°全周期音響物理 ＆ 離散排気ガススラグ噴射)
+        this.engineOscMain1 = null;         // 720°主燃焼圧力衝撃波パルス列 (PeriodicWave)
+        this.engineOscMain2 = null;         // 720°吸気インダクション・サクションパルス列 (PeriodicWave)
+        this.engineOscSub = null;           // 4ストローク単室爆発サブベース (クランク半次数・安全互換)
         this.subGain = null;
         this.mainGain1 = null;
         this.mainGain2 = null;
 
-        // 排気管気流乱流バースト (Exhaust Gas Flow Turbulence AM Burst) ★音階感を消す決定打
+        // 排気管気流乱流スラグ・パルス (Exhaust Gas Slug Turbulence AM Burst) ★音階感を消す決定打
         this.engineTurbulenceSource = null; // ピンク/ブラウン排気気流ノイズ源
         this.engineTurbulenceFilter = null;
         this.engineTurbulenceGain = null;
-        this.burstModOsc = null;            // 点火周期AM変調オシレーター (シリンダー排気パルスでチョッピング)
-        this.burstModGain = null;
+        this.burstModOsc = null;            // 点火周期AMチョッパーオシレーター
+        this.burstGateShaper = null;        // 単極性 (0.0〜1.0) ゲート成形 WaveShaper
+        this.gasSlugGateGain = null;        // オーディオレートAMゲイン
+        this._waveCache = {};               // 720°波形キャッシュ
 
         // メカニカル・エンジンノイズ（動弁系バルブクラッター ＆ 補機類ワーリング）
         this.mechClatterSource = null;      // カムシャフト・バルブタペット金属打撃ノイズ
@@ -532,54 +542,146 @@ class AudioManager {
     }
 
     /**
-     * 車種専用のシリンダー燃焼パルス波形 (PeriodicWave) 生成
-     * 単調な音階感を打ち消すため、高調波の位相と振幅に微細な物理的不均一性を付加
+     * 単極性排気ガススラグ・ゲート伝達カーブ (Unipolar Exhaust Gas Slug Gate Curve)
+     * クランク1周期のうち約70%は完全無音（0.0）、排気バルブ開口時（約30%）のみ高圧ガスを噴出
      */
-    _createCombustionPeriodicWave(soundType) {
-        if (!this.ctx) return null;
-        const n = 64;
-        const real = new Float32Array(n);
-        const imag = new Float32Array(n);
-
-        const profile = ENGINE_PROFILES[soundType] || ENGINE_PROFILES['4age'];
-
-        for (let k = 1; k < n; k++) {
-            // 急峻な衝撃波インパルス（高域まで豊かな偶数＋奇数倍音）
-            let amp = (1.0 / Math.pow(k, 0.78)) * (0.6 + 0.4 * Math.cos(k * 0.18));
-
-            // 気筒数ごとの調和倍音の強調
-            if (profile.orderMult === 3.0) {
-                // 直6 / ロータリー: 3次, 6次, 9次, 12次を強く強調（シルキーかつ重厚）
-                if (k % 3 === 0) amp *= 1.95;
-                if (k % 6 === 0) amp *= 1.50;
-            } else if (profile.orderMult === 2.0) {
-                // 4気筒: 2次, 4次, 6次を強調（力強い直4パルス）
-                if (k % 2 === 0) amp *= 1.75;
-                if (k === 4 || k === 8) amp *= 1.40;
+    _makePuffGateCurve() {
+        const n = 2048;
+        const curve = new Float32Array(n);
+        const thresh = 0.52; // 約30%の開弁デューティ比
+        for (let i = 0; i < n; i++) {
+            const x = (i * 2) / n - 1; // -1.0 〜 +1.0
+            if (x > thresh) {
+                const norm = (x - thresh) / (1.0 - thresh);
+                curve[i] = Math.min(1.0, Math.pow(norm, 1.8));
             } else {
-                // 3気筒: 1.5次不均等ビート
-                if (k === 3 || k === 5) amp *= 1.85;
+                curve[i] = 0.0;
             }
-
-            // 高回転NA (4A-GE, B16B) は金属高域倍音をリッチに
-            if (soundType === '4age' || soundType === 'b16b') {
-                if (k >= 6 && k <= 22) amp *= 1.45;
-            }
-
-            imag[k] = amp;
-            // わずかな実部（位相シフト）を与えてシンセサイザーの平坦な完全対称性を破壊！
-            real[k] = amp * 0.18 * Math.sin(k * 0.35);
         }
-
-        try {
-            return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
-        } catch (e) {
-            return null;
-        }
+        return curve;
     }
 
     /**
-     * プロシージャル・エンジン音響物理チェーン 2.0 の構築
+     * 車種専用 720° 4ストローク全周期燃焼衝撃波 ＆ 吸気インダクション波形生成
+     * クランク2回転（720度）の全気筒点火シーケンス・マニホールド管長差・気筒不均等を完全モデリング
+     * 単調なオシレーター音階感を完全破壊し、本物の打撃衝撃波と吸気咆哮を生成
+     */
+    _generate720WaveData(soundType) {
+        if (!this.ctx) return null;
+        if (!this._waveCache) this._waveCache = {};
+        if (this._waveCache[soundType]) return this._waveCache[soundType];
+
+        const N = 2048;
+        const timeData = new Float32Array(N);
+        const intakeData = new Float32Array(N);
+
+        let firings = [];
+        let intakeOffset = 0.25;
+
+        if (soundType === '13b') {
+            // 2ローター・偏心軸1回転あたり3回排気 (360°基準、無バルブ高速排気)
+            firings = [
+                { pos: 0.000, amp: 1.00, w: 0.15, decay: 1.6 },
+                { pos: 0.333, amp: 0.98, w: 0.15, decay: 1.6 },
+                { pos: 0.667, amp: 1.02, w: 0.15, decay: 1.6 }
+            ];
+            intakeOffset = 0.18;
+        } else if (soundType === 'rb26' || soundType === '1jz' || soundType === '2jz') {
+            // 直列6気筒: 720°あたり6回点火 (120°等間隔、直6シルキーバランス)
+            firings = [
+                { pos: 0.000, amp: 1.00, w: 0.09, decay: 2.4 },
+                { pos: 0.167, amp: 0.96, w: 0.09, decay: 2.2 },
+                { pos: 0.333, amp: 1.02, w: 0.09, decay: 2.3 },
+                { pos: 0.500, amp: 0.98, w: 0.09, decay: 2.4 },
+                { pos: 0.667, amp: 1.01, w: 0.09, decay: 2.2 },
+                { pos: 0.833, amp: 0.95, w: 0.09, decay: 2.3 }
+            ];
+            intakeOffset = 0.20;
+        } else if (soundType === 'f5a') {
+            // 直列3気筒: 720°あたり3回点火 (240°間隔、パタパタ不均等ビート)
+            firings = [
+                { pos: 0.000, amp: 1.00, w: 0.15, decay: 1.8 },
+                { pos: 0.333, amp: 0.94, w: 0.15, decay: 1.7 },
+                { pos: 0.667, amp: 1.04, w: 0.14, decay: 1.9 }
+            ];
+            intakeOffset = 0.28;
+        } else {
+            // 直列4気筒 (4A-GE, SR20, 4G63, B16B): 720°あたり4回点火
+            const isUnequal = (soundType === 'sr20');
+            firings = [
+                { pos: 0.000, amp: 1.00, w: 0.11, decay: 2.2 },
+                { pos: isUnequal ? 0.262 : 0.250, amp: 0.94, w: 0.12, decay: 2.0 },
+                { pos: 0.500, amp: 1.03, w: 0.11, decay: 2.3 },
+                { pos: isUnequal ? 0.738 : 0.750, amp: 0.96, w: 0.12, decay: 2.1 }
+            ];
+            intakeOffset = 0.25;
+        }
+
+        // タイムドメインで気筒別爆発波形と吸気サクション波形を合成
+        for (let i = 0; i < firings.length; i++) {
+            const f = firings[i];
+            const idx0 = Math.floor(f.pos * N);
+            const wLen = Math.floor(f.w * N);
+            for (let j = 0; j < wLen; j++) {
+                const tau = j / wLen;
+                const idx = (idx0 + j) % N;
+                // 急峻な立ち上がり衝撃波 ＋ 排気脈動の負圧引力（Scavenging Rarefaction Dip）
+                const p = Math.pow(Math.sin(Math.PI * tau), 1.3) * Math.exp(-f.decay * tau) -
+                          0.24 * Math.sin(2 * Math.PI * tau) * Math.exp(-3.2 * tau);
+                timeData[idx] += f.amp * p;
+
+                // 吸気インダクション波形（位相反転サクション）
+                const inIdx = (idx0 + Math.floor(intakeOffset * N) + j) % N;
+                const inP = Math.pow(Math.sin(Math.PI * tau), 1.8) * Math.exp(-1.5 * tau);
+                intakeData[inIdx] += f.amp * inP;
+            }
+        }
+
+        const dft = (arr) => {
+            let mean = 0;
+            for (let i = 0; i < N; i++) mean += arr[i];
+            mean /= N;
+            for (let i = 0; i < N; i++) arr[i] -= mean;
+
+            let maxAbs = 0.0001;
+            for (let i = 0; i < N; i++) {
+                const a = Math.abs(arr[i]);
+                if (a > maxAbs) maxAbs = a;
+            }
+            for (let i = 0; i < N; i++) arr[i] /= maxAbs;
+
+            const numHarmonics = 128;
+            const real = new Float32Array(numHarmonics);
+            const imag = new Float32Array(numHarmonics);
+
+            for (let k = 1; k < numHarmonics; k++) {
+                let re = 0;
+                let im = 0;
+                const omega = (2 * Math.PI * k) / N;
+                for (let n = 0; n < N; n++) {
+                    const angle = omega * n;
+                    re += arr[n] * Math.cos(angle);
+                    im -= arr[n] * Math.sin(angle);
+                }
+                real[k] = (re / N) * 2;
+                imag[k] = (im / N) * 2;
+            }
+            try {
+                return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+            } catch (e) {
+                return null;
+            }
+        };
+
+        const combustionWave = dft(timeData);
+        const intakeWave = dft(intakeData);
+
+        this._waveCache[soundType] = { combustionWave, intakeWave };
+        return this._waveCache[soundType];
+    }
+
+    /**
+     * プロシージャル・エンジン音響物理チェーン 3.0 の構築
      */
     setupProceduralEngineChain() {
         if (!this.ctx) return;
@@ -587,12 +689,13 @@ class AudioManager {
         const sampleRate = this.ctx.sampleRate;
         const profile = ENGINE_PROFILES[this.soundType] || ENGINE_PROFILES['4age'];
 
-        // 1. シリンダー爆発パルス発生オシレーター群
-        const wave = this._createCombustionPeriodicWave(this.soundType);
+        // 1. 720°全周期シリンダー燃焼パルス ＆ 吸気インダクション波形生成
+        const waves = this._generate720WaveData(this.soundType);
 
+        // 主シリンダー点火パルス列 (PeriodicWave)
         this.engineOscMain1 = this.ctx.createOscillator();
-        if (wave) {
-            try { this.engineOscMain1.setPeriodicWave(wave); } catch (e) { this.engineOscMain1.type = 'sawtooth'; }
+        if (waves && waves.combustionWave) {
+            try { this.engineOscMain1.setPeriodicWave(waves.combustionWave); } catch (e) { this.engineOscMain1.type = 'sawtooth'; }
         } else {
             this.engineOscMain1.type = 'sawtooth';
         }
@@ -600,43 +703,44 @@ class AudioManager {
         this.mainGain1.gain.setValueAtTime(profile.mainWeight, now);
         this.engineOscMain1.connect(this.mainGain1);
 
+        // 吸気インダクション・パルス列（スロットル開度連動）
         this.engineOscMain2 = this.ctx.createOscillator();
-        if (wave) {
-            try { this.engineOscMain2.setPeriodicWave(wave); } catch (e) { this.engineOscMain2.type = 'triangle'; }
+        if (waves && waves.intakeWave) {
+            try { this.engineOscMain2.setPeriodicWave(waves.intakeWave); } catch (e) { this.engineOscMain2.type = 'triangle'; }
         } else {
             this.engineOscMain2.type = 'triangle';
         }
         this.mainGain2 = this.ctx.createGain();
-        this.mainGain2.gain.setValueAtTime(profile.mainWeight * 0.75, now);
+        this.mainGain2.gain.setValueAtTime(0.0, now);
         this.engineOscMain2.connect(this.mainGain2);
 
-        // 4ストローク単室爆発打撃サブベース (クランク半次数 0.5f)
+        // クランク半次数サブベース打撃 (超低域ダミーノード・安全互換)
         this.engineOscSub = this.ctx.createOscillator();
         this.engineOscSub.type = 'sine';
         this.subGain = this.ctx.createGain();
-        this.subGain.gain.setValueAtTime(profile.subWeight, now);
+        this.subGain.gain.setValueAtTime(0.0, now);
         this.engineOscSub.connect(this.subGain);
 
-        // 2. 燃焼サイクル・ジッター LFO (内燃機関の生々しい爆発脈動・気筒差)
-        const jitterLen = sampleRate * 3;
+        // 2. 有機的燃焼ワンダリング LFO (0.8Hzの自然なアイドリング揺らぎ、FMビブラート臭を完全根絶)
+        const jitterLen = sampleRate * 4;
         const jitterBuf = this.ctx.createBuffer(1, jitterLen, sampleRate);
         const jData = jitterBuf.getChannelData(0);
-        let lastJ = 0;
+        let jWalk = 0;
         for (let i = 0; i < jitterLen; i++) {
             const white = Math.random() * 2 - 1;
-            lastJ = 0.995 * lastJ + 0.005 * white;
-            jData[i] = lastJ * 4.8 + Math.sin(i * 0.004) * 0.45;
+            jWalk = 0.9995 * jWalk + 0.0005 * white;
+            jData[i] = jWalk * 8.0;
         }
         this.combustionJitterSource = this.ctx.createBufferSource();
         this.combustionJitterSource.buffer = jitterBuf;
         this.combustionJitterSource.loop = true;
         this.combustionJitterGain = this.ctx.createGain();
-        this.combustionJitterGain.gain.setValueAtTime(4.2, now); // ±4.2Hz ピッチ微細カオス脈動
+        this.combustionJitterGain.gain.setValueAtTime(1.8, now); // ±1.8Hz 有機的回転数揺らぎ
         this.combustionJitterSource.connect(this.combustionJitterGain);
         this.combustionJitterGain.connect(this.engineOscMain1.frequency);
         this.combustionJitterGain.connect(this.engineOscMain2.frequency);
 
-        // 3. 高圧排気ガスパフ・インパルス乱流 (High-Pressure Gas Puff Turbulence AM Burst)
+        // 3. 高圧排気ガススラグ・インパルス乱流 (Exhaust Gas Slug Turbulence AM Burst)
         // ★単調な「音階（メロディ）」を打ち消し、生々しいガソリン爆発風圧を叩き出す核！
         const turbLen = sampleRate * 2;
         const turbBuf = this.ctx.createBuffer(1, turbLen, sampleRate);
@@ -644,10 +748,9 @@ class AudioManager {
         let lastT = 0;
         for (let i = 0; i < turbLen; i++) {
             const white = Math.random() * 2 - 1;
-            lastT = 0.90 * lastT + 0.10 * white;
-            // 粗いスパイク状の排気微細粒子
-            const spike = (Math.random() < 0.04) ? white * 1.8 : 0;
-            tData[i] = (lastT * 2.6 + spike) * 0.85;
+            lastT = 0.88 * lastT + 0.12 * white;
+            const spike = (Math.random() < 0.05) ? white * 2.2 : 0;
+            tData[i] = (lastT * 2.8 + spike) * 0.90;
         }
         this.engineTurbulenceSource = this.ctx.createBufferSource();
         this.engineTurbulenceSource.buffer = turbBuf;
@@ -655,22 +758,30 @@ class AudioManager {
 
         this.engineTurbulenceFilter = this.ctx.createBiquadFilter();
         this.engineTurbulenceFilter.type = 'bandpass';
-        this.engineTurbulenceFilter.frequency.setValueAtTime(340, now);
-        this.engineTurbulenceFilter.Q.setValueAtTime(1.8, now);
+        this.engineTurbulenceFilter.frequency.setValueAtTime(260, now);
+        this.engineTurbulenceFilter.Q.setValueAtTime(1.6, now);
 
+        // 単極性ゲート成形 WaveShaper (70%無音 / 30%排気ガス噴出)
+        this.burstGateShaper = this.ctx.createWaveShaper();
+        this.burstGateShaper.curve = this._makePuffGateCurve();
+
+        // チョッパーオシレーター (シリンダー点火周波数)
+        this.burstModOsc = this.ctx.createOscillator();
+        this.burstModOsc.type = 'sine';
+        this.burstModOsc.connect(this.burstGateShaper);
+
+        // オーディオレートAMゲインノード
+        this.gasSlugGateGain = this.ctx.createGain();
+        this.gasSlugGateGain.gain.setValueAtTime(0.0, now);
+        this.burstGateShaper.connect(this.gasSlugGateGain.gain);
+
+        // 排気ガス乱流ボリュームゲイン
         this.engineTurbulenceGain = this.ctx.createGain();
         this.engineTurbulenceGain.gain.setValueAtTime(profile.noiseBurstWeight, now);
 
-        // 点火周波数AM変調オシレーター (シリンダーの開弁に同期してノイズをチョッピング)
-        this.burstModOsc = this.ctx.createOscillator();
-        this.burstModOsc.type = 'sawtooth';
-        this.burstModGain = this.ctx.createGain();
-        this.burstModGain.gain.setValueAtTime(0.55, now);
-        this.burstModOsc.connect(this.burstModGain);
-        this.burstModGain.connect(this.engineTurbulenceGain.gain);
-
         this.engineTurbulenceSource.connect(this.engineTurbulenceFilter);
-        this.engineTurbulenceFilter.connect(this.engineTurbulenceGain);
+        this.engineTurbulenceFilter.connect(this.gasSlugGateGain);
+        this.gasSlugGateGain.connect(this.engineTurbulenceGain);
 
         // 4. メカニカル・エンジンノイズ（動弁系バルブクラッター ＆ 補機類ワーリング）
         // A. バルブタペット金属打撃ノイズ (Valve Clatter: 2800Hz〜4500Hzの高域シャリシャリ感)
@@ -708,7 +819,7 @@ class AudioManager {
         this.engineWaveShaper.curve = this._makeAsymmetricExhaustCurve(2.6);
         this.engineWaveShaper.oversample = '2x';
 
-        // 混合バス
+        // 混合バス: 燃焼パルス ＋ 吸気パルス ＋ 排気ガス乱流スラグをまとめてサチュレーターへ！
         const mixBus = this.ctx.createGain();
         this.mainGain1.connect(mixBus);
         this.mainGain2.connect(mixBus);
@@ -717,7 +828,6 @@ class AudioManager {
         mixBus.connect(this.engineWaveShaper);
 
         // 6. エキゾーストマニホールド Comb Filter (櫛状音響管物理遅延)
-        // 排気管内部を音波が往復反射する金属的なタコ足反響（Header Ringing）をリアルタイム物理合成
         this.engineCombDelay = this.ctx.createDelay(0.05);
         this.engineCombDelay.delayTime.setValueAtTime(profile.combDelay, now);
 
@@ -742,28 +852,24 @@ class AudioManager {
         this.engineCombWetGain.connect(combMix);
 
         // 7. 3バンド排気管・マフラー音響共鳴フォルマントフィルター群
-        // フォルマント①: マフラー膨張室・胴鳴り共鳴 (90〜160Hz)
         this.engineBodyFilter = this.ctx.createBiquadFilter();
         this.engineBodyFilter.type = 'peaking';
         this.engineBodyFilter.frequency.setValueAtTime(profile.bodyFreq, now);
         this.engineBodyFilter.gain.setValueAtTime(profile.bodyGain, now);
         this.engineBodyFilter.Q.setValueAtTime(1.9, now);
 
-        // フォルマント②: テールパイプ喉鳴り共鳴 (480〜780Hz)
         this.engineRaspFilter = this.ctx.createBiquadFilter();
         this.engineRaspFilter.type = 'peaking';
         this.engineRaspFilter.frequency.setValueAtTime(profile.raspFreq, now);
         this.engineRaspFilter.gain.setValueAtTime(profile.raspGain, now);
         this.engineRaspFilter.Q.setValueAtTime(2.4, now);
 
-        // フォルマント③: タコ足・ステン管金属鳴き共鳴 (2100〜3200Hz)
         this.engineRingFilter = this.ctx.createBiquadFilter();
         this.engineRingFilter.type = 'peaking';
         this.engineRingFilter.frequency.setValueAtTime(profile.ringFreq, now);
         this.engineRingFilter.gain.setValueAtTime(profile.ringGain, now);
         this.engineRingFilter.Q.setValueAtTime(3.0, now);
 
-        // メイン可変吸排気ダイナミックローパス
         this.engineFilter = this.ctx.createBiquadFilter();
         this.engineFilter.type = 'lowpass';
         this.engineFilter.frequency.setValueAtTime(800, now);
@@ -788,7 +894,7 @@ class AudioManager {
 
         this.engineFilter.connect(this.revChopperGain);
 
-        // メカニカルノイズも合流
+        // メカニカルノイズ合流
         this.mechClatterGain.connect(this.revChopperGain);
         this.mechWhineGain.connect(this.revChopperGain);
 
@@ -888,12 +994,12 @@ class AudioManager {
         const now = this.ctx.currentTime;
         const profile = ENGINE_PROFILES[this.soundType] || ENGINE_PROFILES['4age'];
 
-        // 1. 車種専用のシリンダー爆発パルス波形（PeriodicWave）を即時適用
-        const wave = this._createCombustionPeriodicWave(this.soundType);
-        if (wave) {
+        // 1. 車種専用の720°シリンダー爆発パルス波形＆吸気パルス波形（PeriodicWave）を即時適用
+        const waves = this._generate720WaveData(this.soundType);
+        if (waves) {
             try {
-                this.engineOscMain1.setPeriodicWave(wave);
-                this.engineOscMain2.setPeriodicWave(wave);
+                if (waves.combustionWave) this.engineOscMain1.setPeriodicWave(waves.combustionWave);
+                if (waves.intakeWave) this.engineOscMain2.setPeriodicWave(waves.intakeWave);
             } catch (e) {}
         }
 
@@ -949,18 +1055,18 @@ class AudioManager {
         const maxRpmRef = Math.max(redlineRpm, profile.maxRpm || 8500);
         const rpmNorm = Math.min(1.25, Math.max(0, (rpm - profile.idleRpm) / (maxRpmRef - profile.idleRpm)));
 
-        // 1. 基本シリンダー点火周波数 (Firing Frequency) の物理計算
-        const baseFreq = Math.max(26, (rpm / 60) * profile.orderMult);
+        // 1. 基本720°全周期周波数 (Cycle Frequency: RPM / 120) ＆ 点火周波数 (Firing Frequency)
+        const cycleFreqRatio = profile.cycleFreqRatio || (1 / 120);
+        const cycleFreq = Math.max(5.5, rpm * cycleFreqRatio);
+        const firingFreq = Math.max(18.0, (rpm / 60.0) * profile.orderMult);
 
         // 2. オシレーター群の周波数更新
-        // 主点火パルス
-        this.engineOscMain1.frequency.setTargetAtTime(baseFreq, curTime, 0.022);
-        // 第2次高調波パルス (わずかなデチューンで厚みを付加)
-        this.engineOscMain2.frequency.setTargetAtTime(baseFreq * 2.006, curTime, 0.022);
-        // 4ストローク単室爆発サブベース打撃 (クランク半次数 0.5f)
-        this.engineOscSub.frequency.setTargetAtTime(baseFreq * 0.5, curTime, 0.022);
-        // 排気気流乱流バーストAM変調周波数
-        this.burstModOsc.frequency.setTargetAtTime(baseFreq, curTime, 0.022);
+        // 主燃焼パルス列 (720°周期)
+        this.engineOscMain1.frequency.setTargetAtTime(cycleFreq, curTime, 0.022);
+        // 吸気インダクション・パルス列 (720°周期)
+        this.engineOscMain2.frequency.setTargetAtTime(cycleFreq, curTime, 0.022);
+        // 排気気流乱流スラグチョッパー (シリンダー点火周波数)
+        this.burstModOsc.frequency.setTargetAtTime(firingFreq, curTime, 0.022);
 
         // メカニカル・補機類ワーリング周波数
         if (this.mechWhineOsc) {
@@ -970,16 +1076,21 @@ class AudioManager {
             this.mechWhineGain.gain.setTargetAtTime(whineVol, curTime, 0.03);
         }
 
-        // 3. サブベース打撃 ＆ 気流乱流ゲインのダイナミック追従
-        // スロットル全開で排気ガス圧力が一気に高まる
-        const targetSubGain = profile.subWeight * (0.85 + throttle * 0.48);
-        this.subGain.gain.setTargetAtTime(targetSubGain, curTime, 0.028);
+        // 3. 燃焼圧力 ＆ 吸気パルス ＆ 排気ガス乱流スラグゲインのダイナミック追従
+        // 主燃焼パルス
+        const targetMain1 = profile.mainWeight * (0.85 + throttle * 0.35 + rpmNorm * 0.20);
+        this.mainGain1.gain.setTargetAtTime(targetMain1, curTime, 0.028);
 
-        const targetTurbulence = profile.noiseBurstWeight * (0.65 + throttle * 0.60 + rpmNorm * 0.30);
+        // 吸気インダクションパルス（アクセルONで猛烈に唸りを上げる）
+        const targetMain2 = profile.mainWeight * (0.05 + throttle * 0.65 + rpmNorm * 0.30 * throttle);
+        this.mainGain2.gain.setTargetAtTime(targetMain2, curTime, 0.028);
+
+        // 排気ガス乱流スラグ（スロットル全開で排気ガス噴射風圧が一気に炸裂）
+        const targetTurbulence = profile.noiseBurstWeight * (0.50 + throttle * 0.65 + rpmNorm * 0.35);
         this.engineTurbulenceGain.gain.setTargetAtTime(targetTurbulence, curTime, 0.028);
 
         // 気流乱流の周波数追従（回転数が上がるほど激しい高圧噴射へ）
-        const turbFreq = 260 + rpmNorm * 520 + throttle * 360;
+        const turbFreq = 220 + rpmNorm * 520 + throttle * 400;
         this.engineTurbulenceFilter.frequency.setTargetAtTime(turbFreq, curTime, 0.03);
 
         // 4. マフラー・エキゾースト管共鳴フォルマントのダイナミック追従
