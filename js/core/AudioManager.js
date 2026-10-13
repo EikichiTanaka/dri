@@ -72,6 +72,8 @@ class AudioManager {
 
         // ドリフトタイヤスキール音（効果音ラボ 実車急ブレーキ音＆路面研磨グラインド・ハイブリッド）
         this.tireGain = null;
+        this.tirePanner = null;             // 左右荷重移動ステレオパンニング
+        this.tireToneFilter = null;         // スリップ角・天候連動ダイナミックEQ
         this.tireOnsetBuffer = null;
         this.tireLoopBuffer = null;
         this.tireLoopSource = null;
@@ -80,10 +82,13 @@ class AudioManager {
         this.tireSamplesLoaded = false;
         this.tireGrindGain = null;
         this.tireGrindFilter = null;
+        this.tireGrainGain = null;          // アスファルト微小骨材クラックル
+        this.tireGrainFilter = null;
         this.prevDriftIntensity = 0;
         this.wasDrifting = false;
         this.wasBrakingHard = false;
         this._lastOnsetPlayTime = 0;
+        this._lastSnapPlayTime = 0;
 
         // 環境音（ウェット水しぶき / 砂利 / 溝落とし）
         this.wetTireGain = null;
@@ -739,7 +744,7 @@ class AudioManager {
         const masterVol = baseEngineVol * driftDucking;
         this.engineGain.gain.setTargetAtTime(masterVol, curTime, 0.025);
 
-        // 11. ドリフト時のタイヤスキール音（実車急ブレーキ音ループ＆路面研磨グラインド制御）
+        // 11. ドリフト時のタイヤスキール音（実車急ブレーキ音ループ＆動的音響物理モデリング）
         let squealVol = 0;
         if (driftIntensity > 0) {
             this._ensureTireLoopPlaying();
@@ -750,16 +755,45 @@ class AudioManager {
             // 実音スキール音量：ドリフト強度とスロットル開度に連動（最大約0.95）
             squealVol = (0.55 + driftIntensity * 0.45) * (0.80 + throttle * 0.20) * speedFactor;
 
-            // 車速・横Gに応じたplaybackRate動的推移（0.94〜1.12）
+            // ★車速・横G・ホイールスピン（アクセルON）連動の動的playbackRate推移
             if (this.tireLoopSource && this.tireLoopSource.playbackRate) {
                 const speedNorm = Math.min(1.0, Math.max(0.0, speed / 120.0));
-                const targetRate = 0.94 + (speedNorm * 0.14) + (driftIntensity * 0.04);
+                // スロットル全開時はホイールスピンによりピッチがわずかに上昇（最大+3.5%）
+                const wheelSpinRate = (throttle > 0.5) ? ((throttle - 0.5) * 0.07) : 0;
+                // ブレーキロック時はピッチがわずかに落ち着きフラットスポット滑走音に（最大-2.5%）
+                const brakeRateDrop = (brake > 0.35) ? (Math.min(0.65, brake) * 0.035) : 0;
+                const targetRate = 0.94 + (speedNorm * 0.14) + (driftIntensity * 0.04) + wheelSpinRate - brakeRateDrop;
                 this.tireLoopSource.playbackRate.setTargetAtTime(targetRate, curTime, 0.035);
+            }
+
+            // ★左右荷重移動ステレオパンニング（遠心力で外側輪へ音像がリアルタイムにシフト）
+            if (this.tirePanner && this.tirePanner.pan) {
+                // driftAngle の向きに応じて -0.55 〜 +0.55 に滑らかにパンニング
+                const targetPan = Math.max(-0.55, Math.min(0.55, -driftAngle * 1.3));
+                this.tirePanner.pan.setTargetAtTime(targetPan, curTime, 0.04);
+            }
+
+            // ★スリップ角・天候連動ダイナミックトーンEQ
+            if (this.tireToneFilter && this.tireToneFilter.gain) {
+                const isRain = (this.currentWeather === 'rain');
+                if (isRain) {
+                    // 雨の日は水膜で高域スキールが丸まる（-4dB）
+                    this.tireToneFilter.gain.setTargetAtTime(-4.0, curTime, 0.04);
+                } else {
+                    // ドリフトが激しく角度が深いほど高域が突き抜ける（最大+3.5dB）
+                    const highBoost = (driftIntensity > 0.4) ? ((driftIntensity - 0.4) * 5.8) : 0;
+                    this.tireToneFilter.gain.setTargetAtTime(highBoost, curTime, 0.04);
+                }
             }
 
             if (this.tireGrindFilter) {
                 // 接地グラインドの周波数追従（低域の重い摩擦）
                 this.tireGrindFilter.frequency.setTargetAtTime(320 + speed * 1.5, curTime, 0.04);
+            }
+        } else {
+            // ドリフト終了時はパンをセンターへ滑らかに戻す
+            if (this.tirePanner && this.tirePanner.pan) {
+                this.tirePanner.pan.setTargetAtTime(0.0, curTime, 0.08);
             }
         }
 
@@ -773,12 +807,19 @@ class AudioManager {
             this.playTireOnset(Math.max(driftIntensity, isBrakingHard ? 0.85 : 0.6));
         }
 
+        // ★ドリフト終了・グリップ回復（トラクションスナップ音）
+        if (this.wasDrifting && !isDrifting && speed > 22 && driftIntensity === 0) {
+            this.playTractionSnap(Math.min(1.0, (speed - 20) / 40.0));
+        }
+
         this.wasDrifting = isDrifting;
         this.wasBrakingHard = isBrakingHard;
         this.prevDriftIntensity = driftIntensity;
 
         if (this.tireGain) {
-            this.tireGain.gain.setTargetAtTime(squealVol, curTime, 0.035);
+            // ドリフト終了時は唐突に切らず 0.065秒の有機的な余韻（Release Tail）で減衰
+            const releaseTime = (driftIntensity > 0) ? 0.035 : 0.065;
+            this.tireGain.gain.setTargetAtTime(squealVol, curTime, releaseTime);
         }
     }
 
@@ -833,14 +874,29 @@ class AudioManager {
         // マスタータイヤゲインノード
         this.tireGain = this.ctx.createGain();
         this.tireGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
-        this.tireGain.connect(this.sfxGain);
 
-        // ① 実音スキールループ用ゲイン
+        // ★左右荷重移動ステレオパンナー（遠心力で外側輪へ音像がリアルタイムにシフト）
+        if (this.ctx.createStereoPanner) {
+            this.tirePanner = this.ctx.createStereoPanner();
+            this.tireGain.connect(this.tirePanner);
+            this.tirePanner.connect(this.sfxGain);
+        } else {
+            this.tireGain.connect(this.sfxGain);
+        }
+
+        // ★スリップ角・天候連動ダイナミックEQ（激しいフルカウンターでエッジが立ち、雨天で丸まる）
+        this.tireToneFilter = this.ctx.createBiquadFilter();
+        this.tireToneFilter.type = 'highshelf';
+        this.tireToneFilter.frequency.setValueAtTime(3200, this.ctx.currentTime);
+        this.tireToneFilter.gain.setValueAtTime(0.0, this.ctx.currentTime);
+
+        // ① 実音スキールループ用ゲイン -> トーンEQ -> マスタータイヤゲイン
         this.tireLoopGain = this.ctx.createGain();
         this.tireLoopGain.gain.setValueAtTime(1.1, this.ctx.currentTime);
-        this.tireLoopGain.connect(this.tireGain);
+        this.tireLoopGain.connect(this.tireToneFilter);
+        this.tireToneFilter.connect(this.tireGain);
 
-        // ② 路面接地アスファルト研磨グラインド（叫び声を排した低中域の重厚な摩擦土台）
+        // ② 路面接地アスファルト研磨グラインド（低中域の重厚な摩擦土台＋高域微粒子クラックル）
         const sampleRate = this.ctx.sampleRate;
         const grindBufSize = Math.floor(sampleRate * 2.0);
         const grindBuffer = this.ctx.createBuffer(2, grindBufSize, sampleRate);
@@ -848,19 +904,23 @@ class AudioManager {
         const gR = grindBuffer.getChannelData(1);
         let lastL = 0, lastR = 0;
         for (let i = 0; i < grindBufSize; i++) {
-            // ブラウン／ピンクノイズによる低周波アスファルト骨材クラックル
+            // ブラウンノイズ（低域重厚グラインド）
             const wL = Math.random() * 2 - 1;
             const wR = Math.random() * 2 - 1;
             lastL = 0.92 * lastL + 0.08 * wL;
             lastR = 0.92 * lastR + 0.08 * wR;
-            gL[i] = lastL * 3.5;
-            gR[i] = lastR * 3.5;
+            // アスファルト砕石パチパチ成分（微粒子クラックル）
+            const grainL = Math.pow(Math.abs(wL), 4.0) * Math.sign(wL) * 0.4;
+            const grainR = Math.pow(Math.abs(wR), 4.0) * Math.sign(wR) * 0.4;
+            gL[i] = lastL * 3.5 + grainL;
+            gR[i] = lastR * 3.5 + grainR;
         }
 
         const grindSource = this.ctx.createBufferSource();
         grindSource.buffer = grindBuffer;
         grindSource.loop = true;
 
+        // 低中域接地グラインド（450Hz lowpass）
         this.tireGrindFilter = this.ctx.createBiquadFilter();
         this.tireGrindFilter.type = 'lowpass';
         this.tireGrindFilter.frequency.setValueAtTime(450, this.ctx.currentTime);
@@ -872,6 +932,20 @@ class AudioManager {
         grindSource.connect(this.tireGrindFilter);
         this.tireGrindFilter.connect(this.tireGrindGain);
         this.tireGrindGain.connect(this.tireGain);
+
+        // 高域アスファルト砕石・タイヤカス擦過テクスチャ（2400Hz bandpass, Q:0.8, -14dB）
+        this.tireGrainFilter = this.ctx.createBiquadFilter();
+        this.tireGrainFilter.type = 'bandpass';
+        this.tireGrainFilter.frequency.setValueAtTime(2400, this.ctx.currentTime);
+        this.tireGrainFilter.Q.setValueAtTime(0.8, this.ctx.currentTime);
+
+        this.tireGrainGain = this.ctx.createGain();
+        this.tireGrainGain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+
+        grindSource.connect(this.tireGrainFilter);
+        this.tireGrainFilter.connect(this.tireGrainGain);
+        this.tireGrainGain.connect(this.tireGain);
+
         grindSource.start();
 
         // 組み込みBase64オーディオの自動デコード開始
@@ -997,6 +1071,37 @@ class AudioManager {
             snapGain.connect(this.sfxGain);
             snapSrc.start(now);
         }
+    }
+
+    playTractionSnap(intensity = 0.5) {
+        if (!this.initialized || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (this._lastSnapPlayTime && (now - this._lastSnapPlayTime < 0.30)) return;
+        this._lastSnapPlayTime = now;
+
+        // タイヤが路面に再密着・グリップ回復する瞬間の低音ゴムスナップ音（0.06秒）
+        const bufLen = Math.floor(this.ctx.sampleRate * 0.06);
+        const snapBuf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+        const data = snapBuf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) {
+            const env = Math.exp(-i / (this.ctx.sampleRate * 0.012));
+            data[i] = (Math.random() * 2 - 1) * env;
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = snapBuf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(650, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.24 * Math.min(1.0, intensity), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.058);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.sfxGain);
+        src.start(now);
     }
 
     playShiftSound() {
