@@ -107,25 +107,25 @@ const ENGINE_PROFILES = {
         idleBaseRpm: 880,
         lowBaseRpm: 2200,
         midBaseRpm: 4200,
-        highBaseRpm: 6800,
+        highBaseRpm: 7200,         // 高回転バッファの基準ピッチを7200rpmにして高回転での上擦りを抑制
         redlineRpm: 8000,
         maxRpm: 8500,
-        mainWeight: 0.85,          // 圧倒的な音圧・存在感
+        mainWeight: 0.88,          // 圧倒的な重圧・塊感
         exhaustDrive: 3.4,
         // 音響管ウェーブガイド・マフラー物理パラメータ
-        pipeLen: 3.15,             // 3.15mの極太マフラー長尺管（長波長・重低音共鳴）
+        pipeLen: 3.20,             // 3.20mの大口径極太マフラー長尺管（長波長・重低音共鳴）
         primLen: 0.65,             // 等長6-2-1
         tailRef: -0.76,            // 大口径φ115砲弾マフラー出口
-        bodyFreq: 82, bodyGain: 15.5, bodyQ: 1.6,  // 2.6Lツインターボの地響き重低音（82Hz広帯域でズッシリ腹に響く！）
-        raspFreq: 440, raspGain: 13.5,            // 直6特有の野太く重い中低音排気咆哮「ズォォォォン」(440Hz)
-        ringFreq: 2200, ringGain: 9.5,            // 高音のキンキン感を抑え、大口径ステン管の重厚なしっとりした鳴き (2200Hz)
-        raspRatioBase: 0.20,
-        raspRatioMax: 0.74,        // 高回転でも甲高く割れすぎず、重厚な音圧を維持
-        intakePeak: 380, intakeQ: 2.6, intakeGain: 0.52, // ツインターボの分厚い過給吸気音
-        mechWeight: 0.08, mechFreq: 3100,
+        bodyFreq: 80, bodyGain: 16.5, bodyQ: 1.5,  // 2.6Lツインターボの地響き重低音（80Hz超広帯域でズッシリ腹に響く！）
+        raspFreq: 320, raspGain: 11.0,            // 直6点火基本波（300〜400Hz）と一致する野太く重い中低音排気咆哮「ズォォォォン」
+        ringFreq: 1650, ringGain: 2.5,            // 高音のキンキン・金属鳴きを徹底抑制（ツインターボ減衰）
+        raspRatioBase: 0.18,
+        raspRatioMax: 0.38,        // 高回転でも直管破裂音に逃げず、太鼓重低音（80Hz胴鳴り）を62%以上強固に維持！
+        intakePeak: 360, intakeQ: 2.4, intakeGain: 0.45, // ツインターボの分厚い過給吸気音
+        mechWeight: 0.05, mechFreq: 2800,
         headerDelays: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], // 完全等長・完全バランス（ドロドロ感ゼロ、時計の精度）
         cylAmps: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        shockSharpness: 2.4,       // 重厚で厚みのあるシリンダー燃焼衝撃波
+        shockSharpness: 2.0,       // 高周波の鋭利な角を抑え、分厚い風圧トルク感を前面に
         gasAmp: 0.95,              // 分厚い排気風圧
         revBounceHz: 10.5,
         isTurbo: true,
@@ -1233,32 +1233,37 @@ class AudioManager {
             // 2JZ：3.0L超重低音の圧倒的音圧を常に維持
             bodyGainVal += (1.0 - rpmNorm * 0.2) * 2.5;
         } else if (this.soundType === 'rb26') {
-            // BNR32 GT-R：2.6Lツインターボの重厚な地響き低音圧を常に太く保つ！
-            bodyGainVal += (1.0 - rpmNorm * 0.15) * 3.5 + throttle * 2.0;
+            // BNR32 GT-R：高回転になっても低音が一切痩せず、排気風量増大に伴い重低音圧（80Hz）がさらに増強！
+            bodyGainVal += 3.5 + (rpmNorm * 2.5) + (throttle * 2.5);
         }
         this.engineBodyFilter.frequency.setTargetAtTime(bodyFreq, curTime, 0.04);
         this.engineBodyFilter.gain.setTargetAtTime(bodyGainVal, curTime, 0.04);
 
         // テールパイプ喉鳴り（Rasp）
-        const raspFreq = profile.raspFreq + rpmNorm * 180;
+        // RB26の場合は高回転でも400Hz以上の高音へ逃げず、直6爆発周波数（300〜380Hz）の野太さを堅持
+        const raspFreqShift = (this.soundType === 'rb26') ? (rpmNorm * 60) : (rpmNorm * 180);
+        const raspFreq = profile.raspFreq + raspFreqShift;
         let raspGainVal = profile.raspGain;
         if (this.soundType === '1jz' && throttle > 0.50) {
             // 1JZ直管の激しい高音破裂割れ
             raspGainVal += 3.5;
+        } else if (this.soundType === 'rb26' && throttle > 0.35) {
+            // BNR32 GT-R：野太い中低域喉鳴り「ズォォォォン」を厚く保つ
+            raspGainVal += 2.0;
         }
         this.engineRaspFilter.frequency.setTargetAtTime(raspFreq, curTime, 0.04);
         this.engineRaspFilter.gain.setTargetAtTime(raspGainVal, curTime, 0.04);
 
         // タコ足ステン管金属鳴き（スロットル開時のみ励起）
-        const ringFreq = profile.ringFreq + rpmNorm * 260;
+        const ringFreqShift = (this.soundType === 'rb26') ? (rpmNorm * 100) : (rpmNorm * 260);
+        const ringFreq = profile.ringFreq + ringFreqShift;
         let ringGainVal = profile.ringGain * (0.35 + throttle * 0.65);
         if (this.soundType === '4age' && throttle > 0.40) {
             // AE86：4-1等長ステン管の突き抜ける高音金属鳴き
             ringGainVal *= 1.25;
-        } else if (this.soundType === 'rb26' && throttle > 0.35) {
-            // BNR32 GT-R：高音キンキンを抑え、野太い中低域喉鳴りをドッシリブースト
-            raspGainVal += 3.0;
-            ringGainVal *= 1.05;
+        } else if (this.soundType === 'rb26') {
+            // BNR32 GT-R：ツインターボ車特有のタービン減衰により高音金属鳴きを最小限に抑制
+            ringGainVal = Math.min(2.5, ringGainVal);
         }
         this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
         this.engineRingFilter.gain.setTargetAtTime(ringGainVal, curTime, 0.04);
@@ -1311,11 +1316,12 @@ class AudioManager {
                 this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.35, curTime, 0.02);
             }
         } else if (this.soundType === 'rb26') {
-            // BNR32 GT-R：高音シャリシャリをカットし、低めで重みのある重厚な直6ツインターボサウンドへ！
-            // 低〜中域の分厚い排気圧を押し出し、腹に響く野太い咆哮「ズォォォォン」を再現
-            baseCutoff = 1600;
-            rangeCutoff = 5600;
-            throttleCutoff = 3400;
+            // BNR32 GT-R：高回転時の高音シャリシャリ・甲高い成分を完全にカット！
+            // 全開高回転でもカットオフを3800Hz前後にタイトに抑え、
+            // 「高回転の音が高い」を根本解決し、重みのある野太い轟音「ズォォォォン」に凝縮！
+            baseCutoff = 1100;
+            rangeCutoff = 1800;
+            throttleCutoff = 1000;
         }
 
         const targetCutoff = baseCutoff + (rpmNorm * rangeCutoff) + (throttle * throttleCutoff);
