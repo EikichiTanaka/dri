@@ -274,33 +274,33 @@ const ENGINE_PROFILES = {
     'b16b': {
         name: 'B16B (EK9 シビック Type R)',
         numCyl: 4,
-        orderMult: 2.0,            // 1.6L 9,000rpm VTEC NA
+        orderMult: 2.0,            // 1.6L 9,000rpm 超高回転 VTEC NA (直4 180°等間隔点火)
         cycleFreqRatio: 1 / 120,
         idleRpm: 850,
         idleBaseRpm: 850,
         lowBaseRpm: 2400,
-        midBaseRpm: 4800,
-        highBaseRpm: 8200,
-        redlineRpm: 9000,
-        maxRpm: 9800,
-        mainWeight: 0.74,
-        exhaustDrive: 2.7,
+        midBaseRpm: 4600,
+        highBaseRpm: 8200,         // ハイカムVTEC基準RPM
+        redlineRpm: 8400,
+        maxRpm: 9500,
+        mainWeight: 0.78,          // NA特有の乾いたクリスプな音圧
+        exhaustDrive: 3.0,
         // 音響管ウェーブガイド・マフラー物理パラメータ
-        pipeLen: 2.50,             // コンパクトハッチ管長 2.50m
-        primLen: 0.55,             // 極細チタン等長タコ足
-        tailRef: -0.72,
-        bodyFreq: 128, bodyGain: 8.5, bodyQ: 2.0,  // 高回転NAの引き締まった低音 (128Hz)
-        raspFreq: 790, raspGain: 13.5,            // 9000rpm VTECの甲高い咆哮 (790Hz)
-        ringFreq: 3350, ringGain: 15.0,           // 極細チタン管の突き抜け金属鳴き (3350Hz)
-        raspRatioBase: 0.18,
-        raspRatioMax: 0.88,        // 5800rpmハイカムで一気に高周波開放（VTECキック！）
-        intakePeak: 480, intakeQ: 3.8, intakeGain: 0.75,
-        mechWeight: 0.14, mechFreq: 3800,
-        headerDelays: [0.0, 0.00004, -0.00004, 0.0],
-        cylAmps: [1.01, 0.99, 1.01, 0.99],
-        shockSharpness: 2.6,
-        gasAmp: 0.65,
-        revBounceHz: 12.0,
+        pipeLen: 2.85,             // 触媒〜中間タイコ〜リヤピース管長 2.85m
+        primLen: 0.58,             // 4-2-1等長ステンレスエキマニ
+        tailRef: -0.74,            // 高回転ストレートマフラー出口
+        bodyFreq: 114, bodyGain: 12.0, bodyQ: 1.8,  // ローカムでも直4の乾いたコシのある排気胴鳴り (114Hz)
+        raspFreq: 720, raspGain: 14.5,            // 9000rpm VTECの突き抜ける乾いた直4甲高い咆哮「クォォォォン」(720Hz)
+        ringFreq: 2850, ringGain: 10.0,           // 4-2-1等長ステンエキマニの澄んだ金属共振（キーンとした電子音を排除）
+        raspRatioBase: 0.20,
+        raspRatioMax: 0.82,        // 6100rpmハイカムで直管排気比率が一気に爆発！
+        intakePeak: 540, intakeQ: 3.2, intakeGain: 0.85, // サージタンク＋大口径スロットル吸気咆哮
+        mechWeight: 0.10, mechFreq: 3400,
+        headerDelays: [0.0, 0.00002, -0.00002, 0.0], // 4-2-1等長エキマニ（完全バランス）
+        cylAmps: [1.0, 1.0, 1.0, 1.0],
+        shockSharpness: 2.9,       // 乾いた輪郭の際立つ高圧縮NA排気衝撃波
+        gasAmp: 0.75,
+        revBounceHz: 12.5,         // 8400rpm超高速レブ打ち
         isTurbo: false,
         isRotary: false
     },
@@ -734,6 +734,17 @@ class AudioManager {
                     // 超高温排気ガス乱流（ジェット気流ノイズ）
                     const turb = (Math.random() * 2 - 1) * shock * (profile.gasAmp || 0.85);
                     p = shock + turb * 0.40;
+                } else if (soundType === 'b16b' && speedMode === 'high') {
+                    // EK9 B16B VTECハイカム（8,200〜9,000rpm）:
+                    // ハイカム11.5mm大リフトによる超急峻なバルブ開口パルス (立上り 0.08ms)
+                    // 高圧縮NA特有の乾いた金属的爆発音「パァァァン！」を再現
+                    const tauRiseVtec = 0.00008;
+                    const tauDecayVtec = 0.0013;
+                    const rise = 1.0 - Math.exp(-t / tauRiseVtec);
+                    const decay = Math.exp(-t / tauDecayVtec);
+                    const shock = rise * decay;
+                    const turb = (Math.random() * 2 - 1) * shock * 0.40;
+                    p = shock + turb * 0.45;
                 } else {
                     // レシプロ: 超急峻な立上り衝撃波面 + 非線形膨張減衰 (Unipolar Shock Pulse)
                     const rise = 1.0 - Math.exp(-t / tauRise);
@@ -1186,7 +1197,30 @@ class AudioManager {
 
         // 3ゾーン・イコールパワースムースクロスフェード（idle-low, low-mid, mid-high）
         let gIdle = 0, gLow = 0, gMid = 0, gHigh = 0;
-        if (rpm <= baseLow) {
+        if (this.soundType === 'b16b') {
+            // ★EK9 B16B VTEC専用段付きカム切り替えロジック
+            // 6,100rpmを境にローカムからハイカム（VTEC Kick）へ劇的かつ瞬間的に切り替わる！
+            const vtecRpm = 6100.0;
+            if (rpm < vtecRpm) {
+                if (rpm <= baseLow) {
+                    const t = Math.max(0, Math.min(1.0, (rpm - baseIdle) / (baseLow - baseIdle)));
+                    gIdle = Math.cos(t * Math.PI * 0.5);
+                    gLow = Math.sin(t * Math.PI * 0.5);
+                } else {
+                    const t = Math.max(0, Math.min(1.0, (rpm - baseLow) / (vtecRpm - baseLow)));
+                    gLow = Math.cos(t * Math.PI * 0.5);
+                    gMid = Math.sin(t * Math.PI * 0.5);
+                }
+                gHigh = 0.0;
+            } else {
+                // 6100rpm到達：VTEC Kick！ハイカム（highループ）が一気に主役に躍り出る！
+                const t = Math.min(1.0, (rpm - vtecRpm) / 500.0);
+                gIdle = 0.0;
+                gLow = 0.0;
+                gMid = (1.0 - t) * 0.20;
+                gHigh = 0.82 + t * 0.18;
+            }
+        } else if (rpm <= baseLow) {
             const t = Math.max(0, Math.min(1.0, (rpm - baseIdle) / (baseLow - baseIdle)));
             gIdle = Math.cos(t * Math.PI * 0.5);
             gLow = Math.sin(t * Math.PI * 0.5);
@@ -1216,9 +1250,9 @@ class AudioManager {
         if (this.soundType === '1jz' && throttle > 0.60 && rpm > 3200) {
             // 1JZ直管砲弾マフラー：高回転スロットル全開で強烈に破裂する「ワンジェイ節」！
             driveMult += throttle * 0.45 + rpmNorm * 0.35;
-        } else if (this.soundType === 'b16b' && rpm > 5800 && throttle > 0.40) {
+        } else if (this.soundType === 'b16b' && rpm >= 6100 && throttle > 0.25) {
             // EK9 VTEC：ハイカム突入時の爆圧
-            driveMult += throttle * 0.30;
+            driveMult += 0.35 + throttle * 0.45;
         } else if (this.soundType === 'rb26' && throttle > 0.35) {
             // BNR32 GT-R：ツインターボフルブースト時の分厚い排気圧轟音！
             driveMult += throttle * 0.50 + rpmNorm * 0.35;
@@ -1289,20 +1323,23 @@ class AudioManager {
         let vtecVolumeBoost = 1.0;
 
         if (this.soundType === 'b16b') {
-            // EK9 VTEC：5800rpm以上でハイカムへ機械的切り替え（VTECキック！）
-            // 音量が一段階跳ね上がり、13000Hzまで超高次倍音が一気に突き抜ける！
-            const isVtec = (rpm > 5800);
+            // EK9 VTEC：6,100rpm以上でハイカムへ機械的切り替え（VTEC Kick！）
+            // 音圧が一段階跳ね上がり、14000Hzまで超高次倍音が一気に突き抜ける！
+            const isVtec = (rpm >= 6100);
             if (isVtec) {
-                baseCutoff = 3200;
-                rangeCutoff = 13500;
-                throttleCutoff = 6000;
-                vtecVolumeBoost = 1.22; // VTECが入った瞬間に音圧がガツンと跳ね上がる！
-                this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 4.5, curTime, 0.02);
-                this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.50, curTime, 0.02);
+                baseCutoff = 3600;
+                rangeCutoff = 9500;
+                throttleCutoff = 5000;
+                vtecVolumeBoost = 1.30; // VTECが入った瞬間に音圧がガツンと跳ね上がる！
+                this.engineRaspFilter.frequency.setTargetAtTime(profile.raspFreq + rpmNorm * 120, curTime, 0.02);
+                this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 5.0, curTime, 0.02);
+                this.engineRingFilter.frequency.setTargetAtTime(profile.ringFreq, curTime, 0.02);
+                this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.25, curTime, 0.02);
             } else {
-                baseCutoff = 1600;
-                rangeCutoff = 6500;
-                throttleCutoff = 3600;
+                baseCutoff = 1700;
+                rangeCutoff = 4800;
+                throttleCutoff = 3200;
+                vtecVolumeBoost = 0.95;
             }
         } else if (this.soundType === '13b') {
             // FD3S 13B-REW：排気弁のないロータリー特有の超高域抜け（13500Hzまで全開解放）
@@ -1335,10 +1372,10 @@ class AudioManager {
             intakeVol = Math.max(0, (throttle * 0.72) + (rpmNorm * 0.35 * throttle));
             intakeFreq = 420 + (throttle * 520) + (rpmNorm * 300);
         } else if (this.soundType === 'b16b') {
-            // EK9 VTEC：5800rpm以上のハイカム吸気爆音
-            const isVtec = (rpm > 5800);
-            intakeVol = Math.max(0, (throttle * (isVtec ? 0.78 : 0.32)) + (rpmNorm * 0.28 * throttle));
-            intakeFreq = isVtec ? (760 + throttle * 640) : (360 + throttle * 340);
+            // EK9 VTEC：6,100rpm以上のハイカム吸気爆音（大口径スロットル＋サージタンク共鳴）
+            const isVtec = (rpm >= 6100);
+            intakeVol = Math.max(0, (throttle * (isVtec ? 0.88 : 0.32)) + (rpmNorm * 0.25 * throttle));
+            intakeFreq = isVtec ? (580 + throttle * 480 + rpmNorm * 180) : (340 + throttle * 260);
         } else if (this.soundType === '13b') {
             // FD3S 13B-REW：3800rpmシーケンシャルツインターボ切り替え
             const isSecondary = (rpm > 3800);
