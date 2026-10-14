@@ -1205,9 +1205,6 @@ class AudioManager {
         if (this.engineGainHigh) this.engineGainHigh.gain.setTargetAtTime(gHigh, curTime, 0.025);
 
         // 2. スロットル連動・排気管圧力ドライブ（アクセル全開でマフラーが激しく吼える！）
-        // スロットルOFFで 0.35（静かでマイルド）、全開で 1.45（強烈な排気破裂音）
-        const targetDrive = profile.mainWeight * (0.35 + throttle * 0.95 + rpmNorm * 0.25);
-        // 2. スロットル連動・排気管圧力ドライブ（アクセル全開でマフラーが激しく吼える！）
         let driveMult = 0.35 + throttle * 0.95 + rpmNorm * 0.25;
         if (this.soundType === '1jz' && throttle > 0.60 && rpm > 3200) {
             // 1JZ直管砲弾マフラー：高回転スロットル全開で強烈に破裂する「ワンジェイ節」！
