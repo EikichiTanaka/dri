@@ -103,30 +103,30 @@ const ENGINE_PROFILES = {
         numCyl: 6,
         orderMult: 3.0,            // 直6: 1回転あたり3回点火 (完全等間隔120°点火)
         cycleFreqRatio: 1 / 120,
-        idleRpm: 950,
-        idleBaseRpm: 950,
-        lowBaseRpm: 2200,
-        midBaseRpm: 4200,
-        highBaseRpm: 6800,
+        idleRpm: 900,
+        idleBaseRpm: 900,
+        lowBaseRpm: 2400,
+        midBaseRpm: 4500,
+        highBaseRpm: 7200,
         redlineRpm: 8000,
-        maxRpm: 8500,
-        mainWeight: 0.78,
-        exhaustDrive: 3.0,
+        maxRpm: 8600,
+        mainWeight: 0.82,
+        exhaustDrive: 3.2,
         // 音響管ウェーブガイド・マフラー物理パラメータ
-        pipeLen: 3.10,             // 3.10m長尺管 (直6特有の重厚な長波長共鳴)
-        primLen: 0.68,             // 等長6-2-1
-        tailRef: -0.74,            // 大口径ステン直管マフラー
-        bodyFreq: 84, bodyGain: 14.5, bodyQ: 2.4, // 2.6L直6の大排気量地響き重低音 (84Hz)
-        raspFreq: 530, raspGain: 10.5,            // 直6完全バランスによるシルキーで途切れのない連続加圧 (530Hz)
-        ringFreq: 2500, ringGain: 11.5,           // 大口径ステン管の澄んだ甲高いレーシングGT-R鳴き (2500Hz)
-        raspRatioBase: 0.16,
-        raspRatioMax: 0.78,
-        intakePeak: 380, intakeQ: 2.8, intakeGain: 0.48,
-        mechWeight: 0.10, mechFreq: 3100,
+        pipeLen: 3.00,             // 3.00m等長フロントパイプ〜ストレート管長
+        primLen: 0.65,             // 等長6-2-1
+        tailRef: -0.72,            // 大口径ステン直管マフラー
+        bodyFreq: 98, bodyGain: 10.5, bodyQ: 2.0,  // 重苦しい低音を抑え、引き締まった直6の厚み (98Hz)
+        raspFreq: 620, raspGain: 14.5,            // 直6完全バランスによるシルキーで太い排気喉鳴り「クォォォォン」 (620Hz)
+        ringFreq: 2800, ringGain: 14.5,           // 大口径等長ステン管の澄んだ甲高いレーシングGT-R鳴き (2800Hz)
+        raspRatioBase: 0.22,
+        raspRatioMax: 0.82,
+        intakePeak: 450, intakeQ: 3.0, intakeGain: 0.65, // ツインターボキノコ型エアクリの強烈な吸気音
+        mechWeight: 0.08, mechFreq: 3300,
         headerDelays: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], // 完全等長・完全バランス（ドロドロ感ゼロ、時計の精度）
         cylAmps: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        shockSharpness: 2.5,
-        gasAmp: 0.85,
+        shockSharpness: 2.8,       // 研ぎ澄まされた直6燃焼衝撃波
+        gasAmp: 0.90,
         revBounceHz: 10.5,
         isTurbo: true,
         isTwinTurbo: true,
@@ -1216,6 +1216,9 @@ class AudioManager {
         } else if (this.soundType === 'b16b' && rpm > 5800 && throttle > 0.40) {
             // EK9 VTEC：ハイカム突入時の爆圧
             driveMult += throttle * 0.30;
+        } else if (this.soundType === 'rb26' && throttle > 0.40) {
+            // BNR32 GT-R：ツインターボフルブースト時の分厚い排気圧轟音！
+            driveMult += throttle * 0.40 + rpmNorm * 0.30;
         }
         const targetDrive = profile.mainWeight * driveMult;
         if (this.exhaustDriveGain) {
@@ -1249,6 +1252,10 @@ class AudioManager {
         if (this.soundType === '4age' && throttle > 0.40) {
             // AE86：4-1等長ステン管の突き抜ける高音金属鳴き
             ringGainVal *= 1.25;
+        } else if (this.soundType === 'rb26' && throttle > 0.35) {
+            // BNR32 GT-R：等長6-2-1フロントパイプ＆ステン直管マフラーの突き抜けるレーシングGT-R鳴き！
+            ringGainVal *= 1.35;
+            raspGainVal += 2.5;
         }
         this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
         this.engineRingFilter.gain.setTargetAtTime(ringGainVal, curTime, 0.04);
@@ -1300,6 +1307,11 @@ class AudioManager {
                 this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 3.5, curTime, 0.02);
                 this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.35, curTime, 0.02);
             }
+        } else if (this.soundType === 'rb26') {
+            // BNR32 GT-R：直6完全等間隔爆発によるシルキーで澄み切った高域抜け（12500Hzまで綺麗に伸びる）
+            baseCutoff = 2200;
+            rangeCutoff = 9000;
+            throttleCutoff = 5000;
         }
 
         const targetCutoff = baseCutoff + (rpmNorm * rangeCutoff) + (throttle * throttleCutoff);
@@ -1322,6 +1334,10 @@ class AudioManager {
             const isSecondary = (rpm > 3800);
             intakeVol = Math.max(0, (throttle * (isSecondary ? 0.52 : 0.36)) + (rpmNorm * 0.24 * throttle));
             intakeFreq = profile.intakePeak + (throttle * 380) + (rpmNorm * 240);
+        } else if (this.soundType === 'rb26') {
+            // BNR32 RB26DETT：ツインターボ剥き出しキノコ型エアクリーナーの過給吸気咆哮
+            intakeVol = Math.max(0, (throttle * 0.58) + (rpmNorm * 0.28 * throttle));
+            intakeFreq = 450 + (throttle * 420) + (rpmNorm * 260);
         } else if (profile.isTurbo) {
             intakeVol = Math.max(0, (throttle * 0.44) + (rpmNorm * 0.22 * throttle));
             intakeFreq = profile.intakePeak + (throttle * 350) + (rpmNorm * 220);
