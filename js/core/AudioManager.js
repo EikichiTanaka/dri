@@ -280,26 +280,26 @@ const ENGINE_PROFILES = {
         idleBaseRpm: 850,
         lowBaseRpm: 2400,
         midBaseRpm: 4600,
-        highBaseRpm: 8200,         // ハイカムVTEC基準RPM
+        highBaseRpm: 7200,         // ハイカムVTEC基準RPM（6,100〜8,400rpmで自然な音程伸長）
         redlineRpm: 8400,
         maxRpm: 9500,
-        mainWeight: 0.78,          // NA特有の乾いたクリスプな音圧
-        exhaustDrive: 3.0,
+        mainWeight: 0.76,          // 澄んだNA排気音圧
+        exhaustDrive: 2.1,         // 過剰な矩形波歪みを排し、乾いた澄み切った高回転NAエキゾーストノートへ
         // 音響管ウェーブガイド・マフラー物理パラメータ
-        pipeLen: 2.85,             // 触媒〜中間タイコ〜リヤピース管長 2.85m
-        primLen: 0.58,             // 4-2-1等長ステンレスエキマニ
+        pipeLen: 2.70,             // 実車ハッチバック管長 2.70m
+        primLen: 0.60,             // 4-2-1等長ステンレスエキマニ
         tailRef: -0.74,            // 高回転ストレートマフラー出口
-        bodyFreq: 114, bodyGain: 12.0, bodyQ: 1.8,  // ローカムでも直4の乾いたコシのある排気胴鳴り (114Hz)
-        raspFreq: 720, raspGain: 14.5,            // 9000rpm VTECの突き抜ける乾いた直4甲高い咆哮「クォォォォン」(720Hz)
-        ringFreq: 2850, ringGain: 10.0,           // 4-2-1等長ステンエキマニの澄んだ金属共振（キーンとした電子音を排除）
-        raspRatioBase: 0.20,
-        raspRatioMax: 0.82,        // 6100rpmハイカムで直管排気比率が一気に爆発！
+        bodyFreq: 116, bodyGain: 10.5, bodyQ: 2.0,  // 引き締まった乾いた4気筒排気胴鳴り (116Hz)
+        raspFreq: 680, raspGain: 14.0,            // 直4の3倍音・VTEC高回転排気咆哮「クォォォォン」(680Hz)
+        ringFreq: 2750, ringGain: 9.5,            // 4-2-1等長ステン管の突き抜ける乾いた高音金属鳴き (2750Hz)
+        raspRatioBase: 0.18,
+        raspRatioMax: 0.80,        // 6100rpmハイカムで直管排気比率が一気に爆発！
         intakePeak: 540, intakeQ: 3.2, intakeGain: 0.85, // サージタンク＋大口径スロットル吸気咆哮
         mechWeight: 0.10, mechFreq: 3400,
         headerDelays: [0.0, 0.00002, -0.00002, 0.0], // 4-2-1等長エキマニ（完全バランス）
         cylAmps: [1.0, 1.0, 1.0, 1.0],
-        shockSharpness: 2.9,       // 乾いた輪郭の際立つ高圧縮NA排気衝撃波
-        gasAmp: 0.75,
+        shockSharpness: 2.7,       // 乾いた輪郭の際立つ高圧縮NA排気衝撃波
+        gasAmp: 0.70,
         revBounceHz: 12.5,         // 8400rpm超高速レブ打ち
         isTurbo: false,
         isRotary: false
@@ -1197,30 +1197,7 @@ class AudioManager {
 
         // 3ゾーン・イコールパワースムースクロスフェード（idle-low, low-mid, mid-high）
         let gIdle = 0, gLow = 0, gMid = 0, gHigh = 0;
-        if (this.soundType === 'b16b') {
-            // ★EK9 B16B VTEC専用段付きカム切り替えロジック
-            // 6,100rpmを境にローカムからハイカム（VTEC Kick）へ劇的かつ瞬間的に切り替わる！
-            const vtecRpm = 6100.0;
-            if (rpm < vtecRpm) {
-                if (rpm <= baseLow) {
-                    const t = Math.max(0, Math.min(1.0, (rpm - baseIdle) / (baseLow - baseIdle)));
-                    gIdle = Math.cos(t * Math.PI * 0.5);
-                    gLow = Math.sin(t * Math.PI * 0.5);
-                } else {
-                    const t = Math.max(0, Math.min(1.0, (rpm - baseLow) / (vtecRpm - baseLow)));
-                    gLow = Math.cos(t * Math.PI * 0.5);
-                    gMid = Math.sin(t * Math.PI * 0.5);
-                }
-                gHigh = 0.0;
-            } else {
-                // 6100rpm到達：VTEC Kick！ハイカム（highループ）が一気に主役に躍り出る！
-                const t = Math.min(1.0, (rpm - vtecRpm) / 500.0);
-                gIdle = 0.0;
-                gLow = 0.0;
-                gMid = (1.0 - t) * 0.20;
-                gHigh = 0.82 + t * 0.18;
-            }
-        } else if (rpm <= baseLow) {
+        if (rpm <= baseLow) {
             const t = Math.max(0, Math.min(1.0, (rpm - baseIdle) / (baseLow - baseIdle)));
             gIdle = Math.cos(t * Math.PI * 0.5);
             gLow = Math.sin(t * Math.PI * 0.5);
@@ -1250,9 +1227,10 @@ class AudioManager {
         if (this.soundType === '1jz' && throttle > 0.60 && rpm > 3200) {
             // 1JZ直管砲弾マフラー：高回転スロットル全開で強烈に破裂する「ワンジェイ節」！
             driveMult += throttle * 0.45 + rpmNorm * 0.35;
-        } else if (this.soundType === 'b16b' && rpm >= 6100 && throttle > 0.25) {
-            // EK9 VTEC：ハイカム突入時の爆圧
-            driveMult += 0.35 + throttle * 0.45;
+        } else if (this.soundType === 'b16b') {
+            // EK9 VTEC：6,100rpm以上でハイカム突入！排気エネルギーがガツンと一段階跳ね上がる！
+            const isVtec = (rpm >= 6100);
+            driveMult += (isVtec ? (0.20 + throttle * 0.30) : (throttle * 0.10));
         } else if (this.soundType === 'rb26' && throttle > 0.35) {
             // BNR32 GT-R：ツインターボフルブースト時の分厚い排気圧轟音！
             driveMult += throttle * 0.50 + rpmNorm * 0.35;
@@ -1285,6 +1263,9 @@ class AudioManager {
         } else if (this.soundType === 'rb26' && throttle > 0.35) {
             // BNR32 GT-R：直6澄み切った排気咆哮「クォォォォン」を力強く響かせる
             raspGainVal += 2.5;
+        } else if (this.soundType === 'b16b' && rpm >= 6100 && throttle > 0.25) {
+            // EK9 VTEC：ハイカム排気咆哮「クォォォォン！」
+            raspGainVal += 4.0;
         }
         this.engineRaspFilter.frequency.setTargetAtTime(raspFreq, curTime, 0.04);
         this.engineRaspFilter.gain.setTargetAtTime(raspGainVal, curTime, 0.04);
@@ -1298,6 +1279,9 @@ class AudioManager {
         } else if (this.soundType === 'rb26' && throttle > 0.35) {
             // BNR32 GT-R：大口径ステン管の澄んだレーシング鳴き・抜けの良さを維持（籠もり完全解消）
             ringGainVal *= 1.20;
+        } else if (this.soundType === 'b16b' && rpm >= 6100 && throttle > 0.30) {
+            // EK9 VTEC：4-2-1等長ステンエキマニの突き抜ける乾いた高周波鳴き
+            ringGainVal *= 1.35;
         }
         this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
         this.engineRingFilter.gain.setTargetAtTime(ringGainVal, curTime, 0.04);
