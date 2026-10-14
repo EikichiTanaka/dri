@@ -65,33 +65,33 @@ const ENGINE_PROFILES = {
     },
     '13b': {
         name: '13B-REW (FD3S RX-7)',
-        numCyl: 3,
-        orderMult: 3.0,            // 2ローター・偏心軸1回転あたり3回排気 (120°連続排気)
+        numCyl: 2,                 // 2ローター (フロント / リア)
+        orderMult: 2.0,            // 偏心軸1回転あたり2回排気 (180°等間隔点火・実車通りの真のロータリーピッチ)
         cycleFreqRatio: 1 / 60,
-        idleRpm: 900,
-        idleBaseRpm: 900,
-        lowBaseRpm: 2400,
+        idleRpm: 850,
+        idleBaseRpm: 850,
+        lowBaseRpm: 2200,
         midBaseRpm: 4400,
-        highBaseRpm: 7000,
+        highBaseRpm: 7200,
         redlineRpm: 8200,
         maxRpm: 8800,
-        mainWeight: 0.74,
-        exhaustDrive: 2.2,
+        mainWeight: 0.78,
+        exhaustDrive: 2.8,         // 鋭く高圧なロータリー排気波面
         // 音響管ウェーブガイド・マフラー物理パラメータ
-        pipeLen: 2.85,
-        primLen: 0.50,
-        tailRef: -0.60,
-        bodyFreq: 140, bodyGain: 6.5, bodyQ: 1.6, // 重苦しい低音はなく、引き締まった中低音 (140Hz)
-        raspFreq: 840, raspGain: 12.0,            // 超高密度ロータリー排気ハミング (840Hz)
-        ringFreq: 2450, ringGain: 9.0,
-        raspRatioBase: 0.12,
-        raspRatioMax: 0.68,
+        pipeLen: 2.70,             // ロータリー専用ストレート管長
+        primLen: 0.52,
+        tailRef: -0.70,            // 砲弾チタンテール
+        bodyFreq: 125, bodyGain: 8.0, bodyQ: 1.8,  // アイドリングで「ポポポポ…」と乾いて弾ける胴鳴り (125Hz)
+        raspFreq: 960, raspGain: 15.0,            // 13B特有の超甲高い高密度ロータリー咆哮 (960Hz)
+        ringFreq: 3300, ringGain: 13.5,           // チタン/ステン砲弾マフラーの突き抜ける高周波鳴き (3300Hz)
+        raspRatioBase: 0.18,
+        raspRatioMax: 0.82,        // 高回転で突き抜ける快音
         // シーケンシャルツインターボ吸気
-        intakePeak: 380, intakeQ: 2.6, intakeGain: 0.45,
-        mechWeight: 0.01, mechFreq: 4200, // ロータリーは動弁系打撃音ほぼ皆無
-        headerDelays: [0.0, 0.0, 0.0],
-        cylAmps: [1.0, 1.0, 1.0],
-        shockSharpness: 0.9,       // ポートが滑らかに開口（ピストン打撃音完全ゼロ、澄んだ超高周波ジェット音）
+        intakePeak: 420, intakeQ: 2.8, intakeGain: 0.55,
+        mechWeight: 0.005, mechFreq: 4500, // ロータリーは動弁系打撃音ほぼ皆無
+        headerDelays: [0.0, 0.0],  // 2ローター完全180°対称
+        cylAmps: [1.0, 1.0],       // 前後ローター完全均等
+        shockSharpness: 2.2,       // アペックスシールのスリット通過による鋭角排気パルス
         gasAmp: 0.85,
         revBounceHz: 13.5,
         isTurbo: true,
@@ -720,13 +720,17 @@ class AudioManager {
                 let p = 0;
 
                 if (isRotary) {
-                    // ロータリー（13B）: 滑らかな三日月形ポート開放（打撃音なし）
-                    const tNorm = Math.min(1.0, t / 0.0065);
-                    const shape = Math.sin(Math.PI * tNorm);
-                    p = shape * shape * Math.exp(-t / 0.004);
-                    // タービン通過乱流
-                    const turb = (Math.random() * 2 - 1) * p * (profile.gasAmp || 0.75);
-                    p += turb * 0.45;
+                    // ロータリー（13B）: アペックスシールの排気ポート通過による急峻な開口衝撃波 (0.18ms)
+                    // ピストン打撃（メカノイズ）はないが、超高圧排気ガスの急峻な噴射パルスにより甲高く突き抜ける！
+                    const tauRiseRot = 0.00018;
+                    const tauDecayRot = 0.0022;
+                    const rise = 1.0 - Math.exp(-t / tauRiseRot);
+                    const decay = Math.exp(-t / tauDecayRot);
+                    const shape = Math.sin(Math.min(1.0, t / 0.0045) * Math.PI);
+                    const shock = rise * decay * (0.60 + 0.40 * shape);
+                    // 超高温排気ガス乱流（ジェット気流ノイズ）
+                    const turb = (Math.random() * 2 - 1) * shock * (profile.gasAmp || 0.85);
+                    p = shock + turb * 0.40;
                 } else {
                     // レシプロ: 超急峻な立上り衝撃波面 + 非線形膨張減衰 (Unipolar Shock Pulse)
                     const rise = 1.0 - Math.exp(-t / tauRise);
@@ -1284,6 +1288,17 @@ class AudioManager {
                 baseCutoff = 1600;
                 rangeCutoff = 6500;
                 throttleCutoff = 3600;
+            }
+        } else if (this.soundType === '13b') {
+            // FD3S 13B-REW：排気弁のないロータリー特有の超高域抜け（13500Hzまで全開解放）
+            // 澄み切った高密度ハミングと、セカンダリータービン始動時の鋭い咆哮！
+            baseCutoff = 2400;
+            rangeCutoff = 9800;
+            throttleCutoff = 5400;
+            if (rpm > 3800) {
+                // セカンダリー過給域での高回転ロータリー咆哮ブースト
+                this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 3.5, curTime, 0.02);
+                this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.35, curTime, 0.02);
             }
         }
 
