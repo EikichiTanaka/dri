@@ -45,19 +45,19 @@ const ENGINE_PROFILES = {
         exhaustDrive: 2.8,
         // 音響管ウェーブガイド・マフラー物理パラメータ
         pipeLen: 2.65,             // 排気管長 2.65m (短尺管特有の軽快な高域共鳴)
-        primLen: 0.62,             // 4-1等長タコ足 0.62m (奇数次倍音相殺・2次/4次整流)
+        primLen: 0.62,             // 4-1等長タコ足 0.62m (奇数次倍音相殺・乾いたレーシングサウンド)
         tailRef: -0.68,            // 砲弾テールパイプ反射率
-        bodyFreq: 118, bodyGain: 9.0, bodyQ: 2.2, // マフラー太鼓胴鳴り (118Hz)
-        raspFreq: 680, raspGain: 11.0,            // テールパイプ喉鳴り
-        ringFreq: 2950, ringGain: 12.5,           // 4-1ステン管共鳴
-        raspRatioBase: 0.18,       // 低回転での直管抜け率
-        raspRatioMax: 0.72,        // 高回転・全開時の直管破裂抜け率
-        // 4連独立スロットル・剥き出しファンネル吸気咆哮
-        intakePeak: 460, intakeQ: 3.5, intakeGain: 0.68,
+        bodyFreq: 118, bodyGain: 7.5, bodyQ: 2.0, // 太鼓低音はやや絞り、重苦しさを排除
+        raspFreq: 740, raspGain: 13.0,            // 等長エキマニの乾いたハイトーン喉鳴り (740Hz)
+        ringFreq: 3100, ringGain: 14.0,           // 4-1ステン管の突き抜ける高周波鳴き (3100Hz)
+        raspRatioBase: 0.20,       // 低回転での直管抜け率
+        raspRatioMax: 0.75,        // 高回転・全開時の直管破裂抜け率
+        // 4連独立スロットル・剥き出しファンネル吸気咆哮（踏み込んだ瞬間に吸気が猛烈に吠える！）
+        intakePeak: 520, intakeQ: 3.6, intakeGain: 0.85,
         mechWeight: 0.16, mechFreq: 3400,
-        headerDelays: [0.0, 0.00008, -0.00008, 0.0],
-        cylAmps: [1.02, 0.98, 1.01, 0.99],
-        shockSharpness: 2.4,
+        headerDelays: [0.0, 0.00004, -0.00004, 0.0],
+        cylAmps: [1.01, 0.99, 1.01, 0.99],
+        shockSharpness: 2.6,       // 超鋭敏なスロットルレスポンス
         gasAmp: 0.55,
         revBounceHz: 11.5,
         isTurbo: false,
@@ -81,17 +81,17 @@ const ENGINE_PROFILES = {
         pipeLen: 2.85,
         primLen: 0.50,
         tailRef: -0.60,
-        bodyFreq: 135, bodyGain: 7.5, bodyQ: 1.8, // 引き締まった中低音 (135Hz)
-        raspFreq: 820, raspGain: 11.5,
-        ringFreq: 2400, ringGain: 8.5,
-        raspRatioBase: 0.14,
-        raspRatioMax: 0.65,
-        // 吸気サージ
-        intakePeak: 360, intakeQ: 2.6, intakeGain: 0.42,
-        mechWeight: 0.02, mechFreq: 4200, // ロータリーは動弁系打撃音ほぼ皆無
+        bodyFreq: 140, bodyGain: 6.5, bodyQ: 1.6, // 重苦しい低音はなく、引き締まった中低音 (140Hz)
+        raspFreq: 840, raspGain: 12.0,            // 超高密度ロータリー排気ハミング (840Hz)
+        ringFreq: 2450, ringGain: 9.0,
+        raspRatioBase: 0.12,
+        raspRatioMax: 0.68,
+        // シーケンシャルツインターボ吸気
+        intakePeak: 380, intakeQ: 2.6, intakeGain: 0.45,
+        mechWeight: 0.01, mechFreq: 4200, // ロータリーは動弁系打撃音ほぼ皆無
         headerDelays: [0.0, 0.0, 0.0],
         cylAmps: [1.0, 1.0, 1.0],
-        shockSharpness: 1.2,       // ポートが滑らかに開口（衝撃波面なし、角のない澄んだジェット音）
+        shockSharpness: 0.9,       // ポートが滑らかに開口（ピストン打撃音完全ゼロ、澄んだ超高周波ジェット音）
         gasAmp: 0.85,
         revBounceHz: 13.5,
         isTurbo: true,
@@ -116,15 +116,15 @@ const ENGINE_PROFILES = {
         pipeLen: 3.10,             // 3.10m長尺管 (直6特有の重厚な長波長共鳴)
         primLen: 0.68,             // 等長6-2-1
         tailRef: -0.74,            // 大口径ステン直管マフラー
-        bodyFreq: 86, bodyGain: 13.5, bodyQ: 2.4, // 2.6L直6の大排気量地響き重低音 (86Hz)
-        raspFreq: 540, raspGain: 10.0,
-        ringFreq: 2450, ringGain: 10.0,
+        bodyFreq: 84, bodyGain: 14.5, bodyQ: 2.4, // 2.6L直6の大排気量地響き重低音 (84Hz)
+        raspFreq: 530, raspGain: 10.5,            // 直6完全バランスによるシルキーで途切れのない連続加圧 (530Hz)
+        ringFreq: 2500, ringGain: 11.5,           // 大口径ステン管の澄んだ甲高いレーシングGT-R鳴き (2500Hz)
         raspRatioBase: 0.16,
-        raspRatioMax: 0.76,
+        raspRatioMax: 0.78,
         intakePeak: 380, intakeQ: 2.8, intakeGain: 0.48,
-        mechWeight: 0.12, mechFreq: 3100,
-        headerDelays: [0.0, 0.00006, -0.00006, 0.0, 0.00006, -0.00006],
-        cylAmps: [1.02, 0.98, 1.01, 0.99, 1.02, 0.98],
+        mechWeight: 0.10, mechFreq: 3100,
+        headerDelays: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], // 完全等長・完全バランス（ドロドロ感ゼロ、時計の精度）
+        cylAmps: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         shockSharpness: 2.5,
         gasAmp: 0.85,
         revBounceHz: 10.5,
@@ -150,15 +150,15 @@ const ENGINE_PROFILES = {
         pipeLen: 2.80,
         primLen: 0.60,
         tailRef: -0.66,
-        bodyFreq: 102, bodyGain: 11.5, bodyQ: 2.0, // 太い4気筒ターボ重低音 (102Hz)
-        raspFreq: 610, raspGain: 9.5,
+        bodyFreq: 102, bodyGain: 12.0, bodyQ: 2.1, // 太い4気筒ターボ重低音 (102Hz)
+        raspFreq: 590, raspGain: 10.0,            // 不等長マニホールドの野太いドロドロ喉鳴り (590Hz)
         ringFreq: 2550, ringGain: 9.0,
-        raspRatioBase: 0.20,
-        raspRatioMax: 0.74,
+        raspRatioBase: 0.22,
+        raspRatioMax: 0.76,
         intakePeak: 320, intakeQ: 2.4, intakeGain: 0.45,
-        mechWeight: 0.18, mechFreq: 2900,
-        headerDelays: [0.0, 0.0016, -0.0006, 0.0012], // 不等長エキマニ干渉ディレイ（強いドロドロ脈動）
-        cylAmps: [1.08, 0.90, 1.10, 0.92],
+        mechWeight: 0.22, mechFreq: 2800, // ラッシュアジャスター特有の打撃音
+        headerDelays: [0.0, 0.0024, -0.0010, 0.0018], // 不等長エキマニ干渉ディレイ（強いドロドロ脈動）
+        cylAmps: [1.12, 0.88, 1.15, 0.85],           // 気筒別燃焼圧差による強い不等長ビート
         shockSharpness: 2.3,
         gasAmp: 0.70,
         revBounceHz: 11.0,
@@ -179,22 +179,22 @@ const ENGINE_PROFILES = {
         redlineRpm: 7500,
         maxRpm: 8000,
         mainWeight: 0.76,
-        exhaustDrive: 3.2,
+        exhaustDrive: 3.6,         // 直管マフラー高回転で激しく割れる強烈な破裂音（ワンジェイ節！）
         // 音響管ウェーブガイド・マフラー物理パラメータ
         pipeLen: 3.25,             // ロングセダン管長 3.25m
         primLen: 0.65,
-        tailRef: -0.80,            // 直管砲弾マフラー（高反射率で激しく炸裂）
-        bodyFreq: 94, bodyGain: 12.0, bodyQ: 2.2,  // 2.5L直6の太い低音 (94Hz)
-        raspFreq: 640, raspGain: 12.5,
-        ringFreq: 2600, ringGain: 10.5,
-        raspRatioBase: 0.24,
-        raspRatioMax: 0.85,        // 高回転でバリバリ割れる強烈な直管破裂音
+        tailRef: -0.84,            // 直管砲弾マフラー（高反射率で激しく炸裂）
+        bodyFreq: 94, bodyGain: 11.5, bodyQ: 2.0,  // 2.5L直6の太い低音 (94Hz)
+        raspFreq: 650, raspGain: 14.5,            // 高回転で激しく弾ける1JZ特有の甲高い直管抜け (650Hz)
+        ringFreq: 2650, ringGain: 12.0,           // 直管の共鳴金属鳴き (2650Hz)
+        raspRatioBase: 0.26,
+        raspRatioMax: 0.90,        // 高回転でバリバリ割れる強烈な直管破裂音
         intakePeak: 340, intakeQ: 2.6, intakeGain: 0.48,
         mechWeight: 0.12, mechFreq: 3200,
         headerDelays: [0.0, 0.0001, -0.0001, 0.0, 0.0001, -0.0001],
         cylAmps: [1.04, 0.96, 1.02, 0.98, 1.03, 0.97],
-        shockSharpness: 2.7,
-        gasAmp: 0.90,
+        shockSharpness: 2.8,       // 鋭い排気打撃波
+        gasAmp: 0.95,
         revBounceHz: 10.5,
         isTurbo: true,
         isTwinTurbo: false,
@@ -218,17 +218,17 @@ const ENGINE_PROFILES = {
         pipeLen: 3.05,
         primLen: 0.70,
         tailRef: -0.76,
-        bodyFreq: 78, bodyGain: 15.0, bodyQ: 2.5,  // 3.0L大排気量モンスターの超重低音 (78Hz)
-        raspFreq: 510, raspGain: 9.5,
-        ringFreq: 2350, ringGain: 8.5,
+        bodyFreq: 76, bodyGain: 16.5, bodyQ: 2.5,  // 3.0L大排気量モンスターの超重低音 (76Hz地響き)
+        raspFreq: 490, raspGain: 9.0,             // 1JZのように割れず、分厚い風圧トルクの轟音 (490Hz)
+        ringFreq: 2300, ringGain: 8.0,
         raspRatioBase: 0.18,
-        raspRatioMax: 0.78,
+        raspRatioMax: 0.70,
         intakePeak: 360, intakeQ: 2.8, intakeGain: 0.52,
         mechWeight: 0.10, mechFreq: 2800,
         headerDelays: [0.0, 0.00008, -0.00008, 0.0, 0.00008, -0.00008],
         cylAmps: [1.02, 0.98, 1.01, 0.99, 1.02, 0.98],
-        shockSharpness: 2.6,
-        gasAmp: 0.95,
+        shockSharpness: 2.5,
+        gasAmp: 1.00,              // 3.0L強大な排気風量
         revBounceHz: 10.5,
         isTurbo: true,
         isTwinTurbo: true,
@@ -247,21 +247,21 @@ const ENGINE_PROFILES = {
         redlineRpm: 7800,
         maxRpm: 8300,
         mainWeight: 0.74,
-        exhaustDrive: 3.3,
+        exhaustDrive: 3.4,
         // 音響管ウェーブガイド・マフラー物理パラメータ
         pipeLen: 2.75,
         primLen: 0.58,
-        tailRef: -0.72,
+        tailRef: -0.76,            // ラリー競技管（高硬度）
         bodyFreq: 110, bodyGain: 11.0, bodyQ: 2.1, // 硬質な低音胴鳴り (110Hz)
-        raspFreq: 670, raspGain: 11.5,
-        ringFreq: 2650, ringGain: 11.0,
-        raspRatioBase: 0.22,
-        raspRatioMax: 0.80,        // WRC競技マフラーの暴力的な排気破裂音
+        raspFreq: 680, raspGain: 13.0,            // 4G63特有の硬く乾いた排気打撃音 (680Hz)
+        ringFreq: 2700, ringGain: 12.0,           // 排気管の金属鳴き (2700Hz)
+        raspRatioBase: 0.24,
+        raspRatioMax: 0.84,        // WRC競技マフラーの暴力的な排気破裂音
         intakePeak: 340, intakeQ: 3.0, intakeGain: 0.55,
         mechWeight: 0.16, mechFreq: 3300,
         headerDelays: [0.0, 0.0006, -0.0003, 0.0004],
         cylAmps: [1.06, 0.94, 1.05, 0.95],
-        shockSharpness: 3.0,       // 超急峻なラリー高ブースト衝撃波
+        shockSharpness: 3.2,       // 超急峻なラリー高ブースト衝撃波（乾いた金属的爆圧）
         gasAmp: 0.90,
         revBounceHz: 11.0,
         isTurbo: true,
@@ -285,16 +285,16 @@ const ENGINE_PROFILES = {
         // 音響管ウェーブガイド・マフラー物理パラメータ
         pipeLen: 2.50,             // コンパクトハッチ管長 2.50m
         primLen: 0.55,             // 極細チタン等長タコ足
-        tailRef: -0.70,
+        tailRef: -0.72,
         bodyFreq: 128, bodyGain: 8.5, bodyQ: 2.0,  // 高回転NAの引き締まった低音 (128Hz)
-        raspFreq: 790, raspGain: 13.0,
-        ringFreq: 3350, ringGain: 14.5,            // 極細チタン管の突き抜け金属鳴き
+        raspFreq: 790, raspGain: 13.5,            // 9000rpm VTECの甲高い咆哮 (790Hz)
+        ringFreq: 3350, ringGain: 15.0,           // 極細チタン管の突き抜け金属鳴き (3350Hz)
         raspRatioBase: 0.18,
-        raspRatioMax: 0.82,        // 5800rpmハイカムで一気に高周波開放
+        raspRatioMax: 0.88,        // 5800rpmハイカムで一気に高周波開放（VTECキック！）
         intakePeak: 480, intakeQ: 3.8, intakeGain: 0.75,
         mechWeight: 0.14, mechFreq: 3800,
-        headerDelays: [0.0, 0.00006, -0.00006, 0.0],
-        cylAmps: [1.02, 0.98, 1.01, 0.99],
+        headerDelays: [0.0, 0.00004, -0.00004, 0.0],
+        cylAmps: [1.01, 0.99, 1.01, 0.99],
         shockSharpness: 2.6,
         gasAmp: 0.65,
         revBounceHz: 12.0,
@@ -319,15 +319,15 @@ const ENGINE_PROFILES = {
         pipeLen: 2.20,             // 軽自動車短尺管 2.20m
         primLen: 0.45,
         tailRef: -0.62,
-        bodyFreq: 155, bodyGain: 9.0, bodyQ: 1.8,  // 550cc軽快な胴鳴り (155Hz)
-        raspFreq: 520, raspGain: 9.5,              // 3気筒パタパタ不均等ビート (520Hz)
+        bodyFreq: 160, bodyGain: 9.0, bodyQ: 1.8,  // 550cc軽快な胴鳴り (160Hz)
+        raspFreq: 510, raspGain: 10.0,             // 3気筒パタパタ不均等ビート (510Hz)
         ringFreq: 2750, ringGain: 8.5,
         raspRatioBase: 0.22,
         raspRatioMax: 0.68,
         intakePeak: 320, intakeQ: 2.2, intakeGain: 0.40,
         mechWeight: 0.20, mechFreq: 3100,
-        headerDelays: [0.0, 0.0004, -0.0003],
-        cylAmps: [1.08, 0.92, 1.04],
+        headerDelays: [0.0, 0.0006, -0.0005],
+        cylAmps: [1.12, 0.88, 1.05],
         shockSharpness: 2.2,
         gasAmp: 0.60,
         revBounceHz: 11.0,
@@ -1207,6 +1207,16 @@ class AudioManager {
         // 2. スロットル連動・排気管圧力ドライブ（アクセル全開でマフラーが激しく吼える！）
         // スロットルOFFで 0.35（静かでマイルド）、全開で 1.45（強烈な排気破裂音）
         const targetDrive = profile.mainWeight * (0.35 + throttle * 0.95 + rpmNorm * 0.25);
+        // 2. スロットル連動・排気管圧力ドライブ（アクセル全開でマフラーが激しく吼える！）
+        let driveMult = 0.35 + throttle * 0.95 + rpmNorm * 0.25;
+        if (this.soundType === '1jz' && throttle > 0.60 && rpm > 3200) {
+            // 1JZ直管砲弾マフラー：高回転スロットル全開で強烈に破裂する「ワンジェイ節」！
+            driveMult += throttle * 0.45 + rpmNorm * 0.35;
+        } else if (this.soundType === 'b16b' && rpm > 5800 && throttle > 0.40) {
+            // EK9 VTEC：ハイカム突入時の爆圧
+            driveMult += throttle * 0.30;
+        }
+        const targetDrive = profile.mainWeight * driveMult;
         if (this.exhaustDriveGain) {
             this.exhaustDriveGain.gain.setTargetAtTime(targetDrive, curTime, 0.025);
         }
@@ -1214,40 +1224,69 @@ class AudioManager {
         // 3. マフラー・エキゾースト管共鳴フォルマントのダイナミック追従
         // マフラー太鼓胴鳴り（bodyFreq）は固定物理共鳴のため回転数シフトはわずか（+15Hz以内）
         const bodyFreq = profile.bodyFreq + rpmNorm * 15;
+        let bodyGainVal = profile.bodyGain;
+        if (this.soundType === '2jz') {
+            // 2JZ：3.0L超重低音の圧倒的音圧を常に維持
+            bodyGainVal += (1.0 - rpmNorm * 0.2) * 2.5;
+        }
         this.engineBodyFilter.frequency.setTargetAtTime(bodyFreq, curTime, 0.04);
+        this.engineBodyFilter.gain.setTargetAtTime(bodyGainVal, curTime, 0.04);
 
-        // テールパイプ喉鳴り
+        // テールパイプ喉鳴り（Rasp）
         const raspFreq = profile.raspFreq + rpmNorm * 180;
+        let raspGainVal = profile.raspGain;
+        if (this.soundType === '1jz' && throttle > 0.50) {
+            // 1JZ直管の激しい高音破裂割れ
+            raspGainVal += 3.5;
+        }
         this.engineRaspFilter.frequency.setTargetAtTime(raspFreq, curTime, 0.04);
+        this.engineRaspFilter.gain.setTargetAtTime(raspGainVal, curTime, 0.04);
 
         // タコ足ステン管金属鳴き（スロットル開時のみ励起）
         const ringFreq = profile.ringFreq + rpmNorm * 260;
-        const ringGainVal = profile.ringGain * (0.35 + throttle * 0.65);
+        let ringGainVal = profile.ringGain * (0.35 + throttle * 0.65);
+        if (this.soundType === '4age' && throttle > 0.40) {
+            // AE86：4-1等長ステン管の突き抜ける高音金属鳴き
+            ringGainVal *= 1.25;
+        }
         this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
         this.engineRingFilter.gain.setTargetAtTime(ringGainVal, curTime, 0.04);
 
         // 4. 動弁系メカニカル打音（アイドリング〜低回転で存在感、高回転ではマスク）
         if (this.mechGain) {
-            const mechVol = (profile.mechWeight || 0.12) * (0.85 + 0.35 * (1.0 - Math.min(1.0, rpmNorm * 1.5)) + throttle * 0.25);
+            let mechWeightVal = profile.mechWeight || 0.12;
+            if (this.soundType === 'sr20') {
+                // SR20：特有のラッシュアジャスター（油圧タペット）打音をアイドリングで強調
+                mechWeightVal *= 1.35;
+            } else if (this.soundType === '13b') {
+                // 13Bロータリー：動弁系打撃音ゼロ
+                mechWeightVal = 0.005;
+            }
+            const mechVol = mechWeightVal * (0.85 + 0.35 * (1.0 - Math.min(1.0, rpmNorm * 1.5)) + throttle * 0.25);
             this.mechGain.gain.setTargetAtTime(mechVol, curTime, 0.03);
         }
 
         // 5. 吸排気可変ダイナミックローパスフィルター (スロットル開閉にダイレクト連動)
-        // アイドリング時でも籠もりを排除し、乾いた排気の歯切れ良さを保つため 1800Hz を確保
         let baseCutoff = 1800;
         let rangeCutoff = 7500;
         let throttleCutoff = 4800;
+        let vtecVolumeBoost = 1.0;
 
         if (this.soundType === 'b16b') {
-            // EK9 VTEC: 5800rpm以上でハイカム吸排気が炸裂！超高域13000Hzまで突き抜ける
+            // EK9 VTEC：5800rpm以上でハイカムへ機械的切り替え（VTECキック！）
+            // 音量が一段階跳ね上がり、13000Hzまで超高次倍音が一気に突き抜ける！
             const isVtec = (rpm > 5800);
-            baseCutoff = isVtec ? 2800 : 1600;
-            rangeCutoff = isVtec ? 12000 : 6800;
-            throttleCutoff = isVtec ? 5800 : 3600;
             if (isVtec) {
-                // ハイカム作動時の排気喉鳴りと金属鳴きを強烈にブースト
-                this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 3.0, curTime, 0.03);
-                this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.35, curTime, 0.03);
+                baseCutoff = 3200;
+                rangeCutoff = 13500;
+                throttleCutoff = 6000;
+                vtecVolumeBoost = 1.22; // VTECが入った瞬間に音圧がガツンと跳ね上がる！
+                this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 4.5, curTime, 0.02);
+                this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.50, curTime, 0.02);
+            } else {
+                baseCutoff = 1600;
+                rangeCutoff = 6500;
+                throttleCutoff = 3600;
             }
         }
 
@@ -1258,22 +1297,22 @@ class AudioManager {
         let intakeVol = 0;
         let intakeFreq = profile.intakePeak;
         if (this.soundType === '4age') {
-            // AE86 4連独立スロットル: 踏み込んだ瞬間に剥き出しファンネルが猛烈に吠える！
-            intakeVol = Math.max(0, (throttle * 0.58) + (rpmNorm * 0.30 * throttle));
-            intakeFreq = 360 + (throttle * 480) + (rpmNorm * 280);
+            // AE86 4連独立スロットルファンネル吸気：踏み込んだ瞬間に「クオォォォン！」と猛烈に吠える！
+            intakeVol = Math.max(0, (throttle * 0.72) + (rpmNorm * 0.35 * throttle));
+            intakeFreq = 420 + (throttle * 520) + (rpmNorm * 300);
         } else if (this.soundType === 'b16b') {
-            // EK9 VTEC: 5800rpm以上でハイカム吸気が一気に炸裂！
+            // EK9 VTEC：5800rpm以上のハイカム吸気爆音
             const isVtec = (rpm > 5800);
-            intakeVol = Math.max(0, (throttle * (isVtec ? 0.68 : 0.32)) + (rpmNorm * 0.25 * throttle));
-            intakeFreq = isVtec ? (720 + throttle * 600) : (340 + throttle * 320);
+            intakeVol = Math.max(0, (throttle * (isVtec ? 0.78 : 0.32)) + (rpmNorm * 0.28 * throttle));
+            intakeFreq = isVtec ? (760 + throttle * 640) : (360 + throttle * 340);
         } else if (this.soundType === '13b') {
-            // FD3S 13B-REW: 3800rpmでセカンダリータービン始動
+            // FD3S 13B-REW：3800rpmシーケンシャルツインターボ切り替え
             const isSecondary = (rpm > 3800);
-            intakeVol = Math.max(0, (throttle * (isSecondary ? 0.48 : 0.36)) + (rpmNorm * 0.22 * throttle));
-            intakeFreq = profile.intakePeak + (throttle * 360) + (rpmNorm * 220);
+            intakeVol = Math.max(0, (throttle * (isSecondary ? 0.52 : 0.36)) + (rpmNorm * 0.24 * throttle));
+            intakeFreq = profile.intakePeak + (throttle * 380) + (rpmNorm * 240);
         } else if (profile.isTurbo) {
-            intakeVol = Math.max(0, (throttle * 0.42) + (rpmNorm * 0.20 * throttle));
-            intakeFreq = profile.intakePeak + (throttle * 340) + (rpmNorm * 200);
+            intakeVol = Math.max(0, (throttle * 0.44) + (rpmNorm * 0.22 * throttle));
+            intakeFreq = profile.intakePeak + (throttle * 350) + (rpmNorm * 220);
         } else {
             intakeVol = Math.max(0, (throttle * 0.36) + (rpmNorm * 0.18 * throttle));
             intakeFreq = profile.intakePeak + (throttle * 280) + (rpmNorm * 180);
@@ -1287,8 +1326,8 @@ class AudioManager {
             this.revModGain.gain.setValueAtTime(0.88, curTime);
             this.engineFilter.frequency.setValueAtTime(targetCutoff * 1.45, curTime);
             this.engineRingFilter.gain.setValueAtTime(profile.ringGain * 1.65, curTime);
-            if (Math.random() < 0.24) {
-                this.playAfterfireSound(0.90);
+            if (Math.random() < 0.26) {
+                this.playAfterfireSound(0.95);
             }
         } else {
             this.revModGain.gain.setTargetAtTime(0.0, curTime, 0.02);
@@ -1296,29 +1335,33 @@ class AudioManager {
 
         // 8. ターボチャージャー過給エアラッシュ ＆ ブローオフバルブ
         const throttleDrop = (this.prevThrottle > 0.35 && throttle < 0.15);
-        if (profile.isTurbo && throttle > 0.12 && rpm > 2600) {
-            // FD3S 3800rpmセカンダリー過給ブースト
-            const turboScale = (this.soundType === '13b' && rpm > 3800) ? 1.35 : (profile.isTwinTurbo ? 1.2 : 1.0);
-            const turboVol = Math.min(0.24, (0.04 + (throttle * 0.12) + (rpmNorm * 0.08)) * turboScale);
-            const turboFreq = 2200 + (rpmNorm * 2000) + (throttle * 600);
+        if (profile.isTurbo && throttle > 0.12 && rpm > 2400) {
+            // FD3S 3800rpmツインターボ過給急上昇
+            let turboScale = profile.isTwinTurbo ? 1.25 : 1.0;
+            if (this.soundType === '13b' && rpm > 3800) {
+                turboScale = 1.45; // セカンダリータービン始動時の過給音
+            }
+            const turboVol = Math.min(0.26, (0.04 + (throttle * 0.13) + (rpmNorm * 0.09)) * turboScale);
+            const turboFreq = 2200 + (rpmNorm * 2200) + (throttle * 650);
             this.turboFilter.frequency.setTargetAtTime(turboFreq, curTime, 0.04);
             this.turboGain.gain.setTargetAtTime(turboVol, curTime, 0.04);
         } else {
             this.turboGain.gain.setTargetAtTime(0.0, curTime, 0.06);
         }
 
-        if (profile.isTurbo && throttleDrop && rpm > 3000) {
+        if (profile.isTurbo && throttleDrop && rpm > 2800) {
             this.playBlowOffSound(rpmNorm, profile.isTwinTurbo);
         }
 
-        // 9. 減速時デセル・クラックル ＆ CE9Aミスファイアリングシステム
-        if (throttleDrop || (throttle < 0.12 && rpm > 3400)) {
-            const decelVol = Math.min(0.26, (rpm / maxRpmRef) * 0.30);
+        // 9. 減速時デセル・クラックル ＆ CE9Aミスファイアリングシステム（アンチラグ）
+        if (throttleDrop || (throttle < 0.15 && rpm > 2600)) {
+            const decelVol = Math.min(0.28, (rpm / maxRpmRef) * 0.32);
             this.decelNoiseGain.gain.setTargetAtTime(decelVol, curTime, 0.02);
 
-            // CE9A エボIII ミスファイアリングシステム (二次エア爆裂音「パンッ！」)
-            if (this.soundType === '4g63' && throttle < 0.10 && rpm > 3200) {
-                if (Math.random() < 0.30) {
+            // CE9A エボIII ミスファイアリングシステム (二次エア爆裂音「パンッ！パンパンッ！」)
+            // 須藤京一の真骨頂：アクセルOFFでエキマニ内二次エア爆裂音を激しく連射！
+            if (this.soundType === '4g63' && throttle < 0.12 && rpm > 2600) {
+                if (Math.random() < 0.45) {
                     this.playAntiLagPop(rpmNorm);
                 }
             }
@@ -1340,7 +1383,7 @@ class AudioManager {
             driftIntensity = Math.min(0.85, brakeFactor * speedRatio);
         }
 
-        const baseEngineVol = 0.28 + (throttle * 0.52) + (rpmNorm * 0.28);
+        const baseEngineVol = (0.28 + (throttle * 0.52) + (rpmNorm * 0.28)) * vtecVolumeBoost;
         const driftDucking = 1.0 - (driftIntensity * 0.28);
         const masterVol = baseEngineVol * driftDucking;
         this.engineGain.gain.setTargetAtTime(masterVol, curTime, 0.025);
