@@ -1,0 +1,1358 @@
+/* style.css - 頭文字D ARCADE STAGE 完全再現スタイルシート */
+
+@import url('https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Rajdhani:wght@700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+    font-family: 'Rajdhani', 'Teko', 'Impact', sans-serif;
+    color: #fff;
+}
+
+#canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#speed-lines-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* HUD コンテナ */
+#hud-container {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* 画面上部：ライバル距離差ゲージ (VS Gauge) */
+.vs-gauge-container {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(10, 15, 25, 0.75);
+    border: 2px solid #446688;
+    border-radius: 8px;
+    padding: 8px 24px;
+    box-shadow: 0 0 20px rgba(0, 150, 255, 0.3);
+}
+
+.vs-header {
+    display: flex;
+    justify-content: space-between;
+    width: 240px;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    font-style: italic;
+}
+
+#lead-label {
+    color: #33ff55;
+    text-shadow: 0 0 10px #33ff55;
+}
+
+#lead-val {
+    color: #33ff55;
+    text-shadow: 0 0 10px #33ff55;
+}
+
+.vs-bar-track {
+    width: 240px;
+    height: 12px;
+    background: #111a24;
+    border: 1px solid #335577;
+    margin-top: 5px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+#lead-bar {
+    height: 100%;
+    width: 50%;
+    background: #33ff55;
+    box-shadow: 0 0 8px currentColor;
+    transition: width 0.1s ease;
+}
+
+/* 画面右上：タイム表示 */
+.time-container {
+    position: absolute;
+    top: 25px;
+    right: 35px;
+    text-align: right;
+    background: rgba(10, 15, 25, 0.7);
+    padding: 8px 18px;
+    border-radius: 6px;
+    border-right: 4px solid #ffcc00;
+}
+
+.time-label {
+    font-size: 14px;
+    color: #aaa;
+    letter-spacing: 2px;
+}
+
+#time-val {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+    font-style: italic;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* 頭文字DAC仕様：セクション進行インジケーター */
+.dac-section-tracker {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    justify-content: flex-end;
+}
+
+.sec-tag {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #8899aa;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.25s ease;
+}
+
+.sec-tag.active {
+    background: linear-gradient(180deg, #ffbb00, #ff8800);
+    color: #000;
+    border-color: #ffcc00;
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.7);
+}
+
+.sec-tag.passed {
+    background: rgba(0, 200, 100, 0.3);
+    color: #33ff88;
+    border-color: #33ff88;
+}
+
+/* 頭文字DAC仕様：セクション通過ポップアップ */
+.section-popup {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(8, 12, 18, 0.88);
+    border: 2px solid #ffcc00;
+    box-shadow: 0 0 25px rgba(255, 204, 0, 0.6);
+    border-radius: 8px;
+    padding: 12px 32px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    z-index: 90;
+}
+
+.section-popup.active {
+    transform: translate(-50%, -50%) scale(1.0);
+    opacity: 1;
+}
+
+.sec-popup-title {
+    font-size: 26px;
+    font-weight: 900;
+    font-style: italic;
+    color: #ffcc00;
+    letter-spacing: 3px;
+    text-shadow: 0 0 12px rgba(255, 204, 0, 0.8);
+    margin-bottom: 4px;
+}
+
+.sec-popup-body {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+}
+
+.sec-popup-time {
+    font-size: 34px;
+    font-weight: 800;
+    font-style: italic;
+    color: #ffffff;
+    letter-spacing: 2px;
+}
+
+.sec-popup-diff {
+    font-size: 22px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 1px;
+}
+
+.sec-popup-diff.green {
+    color: #33ff55;
+    text-shadow: 0 0 10px rgba(51, 255, 85, 0.7);
+}
+
+.sec-popup-diff.red {
+    color: #ff3333;
+    text-shadow: 0 0 10px rgba(255, 51, 51, 0.7);
+}
+
+/* 画面左下：峠ミニマップ */
+.minimap-container {
+    position: absolute;
+    bottom: 25px;
+    left: 25px;
+    width: 170px;
+    height: 270px;
+    display: flex;
+    flex-direction: column;
+}
+
+#minimap-course-name {
+    font-size: 16px;
+    font-weight: 800;
+    font-style: italic;
+    color: #ffaa00;
+    letter-spacing: 2px;
+    text-align: center;
+    background: rgba(10, 15, 20, 0.85);
+    border: 1px solid #445566;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    padding: 3px 0;
+}
+
+.hud-condition-tag {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-align: center;
+    padding: 2px 0;
+    border-left: 1px solid #445566;
+    border-right: 1px solid #445566;
+    background: rgba(8, 12, 18, 0.9);
+    transition: all 0.3s ease;
+}
+
+.hud-condition-tag.dry {
+    color: #ffaa00;
+    text-shadow: 0 0 6px rgba(255, 170, 0, 0.5);
+    border-bottom: 1px solid rgba(255, 170, 0, 0.3);
+}
+
+.hud-condition-tag.wet {
+    color: #00f0ff;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.9);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.6);
+    animation: wetConditionPulse 1.8s infinite ease-in-out;
+}
+
+.hud-condition-tag.fog {
+    color: #aaccdd;
+    text-shadow: 0 0 8px rgba(170, 204, 221, 0.6);
+    border-bottom: 1px solid rgba(170, 204, 221, 0.4);
+}
+
+@keyframes wetConditionPulse {
+    0%, 100% {
+        box-shadow: inset 0 0 8px rgba(0, 240, 255, 0.2);
+    }
+    50% {
+        box-shadow: inset 0 0 16px rgba(0, 240, 255, 0.55);
+        color: #70ffff;
+    }
+}
+
+#minimap-canvas {
+    width: 100%;
+    height: 245px;
+    border-radius: 0 0 8px 8px;
+}
+
+/* 画面中央下部：メインメーター & 走り屋Defi風追加3連メータークラスター */
+.center-gauge-cluster {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.digital-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background: rgba(10, 12, 18, 0.85);
+    border: 2px solid #ffaa00;
+    border-radius: 8px;
+    padding: 10px 18px;
+    box-shadow: 0 0 25px rgba(255, 170, 0, 0.3);
+}
+
+.speed-wrapper {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+#speed-val {
+    font-size: 68px;
+    font-weight: 800;
+    font-style: italic;
+    color: #fff;
+    line-height: 0.9;
+    letter-spacing: 1px;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+.speed-unit {
+    font-size: 18px;
+    color: #ffaa00;
+    font-style: italic;
+    font-weight: bold;
+}
+
+.gear-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+#shift-lamp {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: #220000;
+    border: 1px solid #550000;
+}
+
+.gear-display {
+    font-size: 15px;
+    color: #aaa;
+    font-weight: bold;
+}
+
+#gear-val {
+    font-size: 34px;
+    font-weight: 800;
+    color: #ffcc00;
+    margin-left: 4px;
+}
+
+#trans-mode {
+    font-size: 16px;
+    color: #33bbff;
+    font-weight: bold;
+    margin-left: 6px;
+}
+
+.tacho-wrapper {
+    width: 220px;
+    height: 220px;
+    position: relative;
+}
+
+#tacho-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* 本物の走り屋仕様：Defi風 3連追加メーターポッド */
+.triple-meter-pod {
+    display: flex;
+    gap: 8px;
+    background: rgba(8, 12, 18, 0.88);
+    border: 2px solid #334455;
+    border-radius: 10px;
+    padding: 6px 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+.meter-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 95px;
+}
+
+.meter-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #ffaa00;
+    letter-spacing: 1px;
+    margin-top: 2px;
+    text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+}
+
+.meter-digital-val {
+    font-size: 13px;
+    font-weight: bold;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+    margin-top: 1px;
+}
+
+#drift-popup {
+    position: absolute;
+    top: 36%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.6);
+    font-size: 54px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+    white-space: nowrap;
+}
+
+#drift-popup.active {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 1;
+}
+
+#countdown-overlay {
+    display: none;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 130px;
+    font-weight: 900;
+    font-style: italic;
+    color: #ffea00;
+    text-shadow: 0 0 35px #ff8800, 4px 4px 0 #000;
+    z-index: 50;
+    pointer-events: none;
+}
+
+.countdown-anim {
+    animation: countScale 0.8s ease-out;
+}
+
+@keyframes countScale {
+    0% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
+    40% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+}
+
+#start-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(15, 20, 30, 0.92) 0%, rgba(5, 7, 10, 0.98) 100%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.title-box {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.title-sub {
+    font-size: 13px;
+    color: #ff3333;
+    letter-spacing: 5px;
+    font-weight: bold;
+}
+
+.title-main {
+    font-size: 46px;
+    font-weight: 900;
+    font-style: italic;
+    background: linear-gradient(180deg, #ffffff 0%, #ffcc00 50%, #ee2222 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 4px;
+    text-shadow: 0 0 25px rgba(255, 100, 0, 0.6);
+    margin: 2px 0;
+    line-height: 1;
+}
+
+.title-stage {
+    font-size: 15px;
+    color: #00ddff;
+    letter-spacing: 3px;
+    font-weight: bold;
+    font-style: italic;
+}
+
+.menu-card {
+    background: rgba(20, 25, 35, 0.94);
+    border: 2px solid #ffaa00;
+    border-radius: 12px;
+    padding: 12px 18px;
+    width: 980px;
+    max-width: 96vw;
+    box-shadow: 0 0 35px rgba(255, 170, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+}
+
+.menu-columns {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    align-items: stretch;
+}
+
+.menu-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.left-col {
+    flex: 1.15;
+}
+
+.right-col {
+    flex: 0.85;
+}
+
+.setting-label {
+    font-size: 15px;
+    font-weight: bold;
+    color: #eee;
+    letter-spacing: 1px;
+}
+
+/* 8大名峠コースセレクター */
+.course-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.course-badge-total {
+    background: linear-gradient(90deg, #ff3300, #ff9900);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: 0 0 8px rgba(255, 80, 0, 0.5);
+}
+
+.course-selector-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(10, 15, 25, 0.65);
+    border: 1px solid #334455;
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+
+.course-area-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.area-tag {
+    font-size: 10px;
+    font-weight: 800;
+    color: #00e1ff;
+    background: rgba(0, 150, 255, 0.15);
+    border: 1px solid rgba(0, 200, 255, 0.3);
+    border-radius: 4px;
+    padding: 4px 5px;
+    white-space: nowrap;
+    width: 60px;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.course-btn-group {
+    display: flex;
+    flex: 1;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.course-toggle-btn {
+    flex: 1 1 calc(50% - 5px);
+    padding: 5px 6px;
+    font-size: 11.5px;
+    font-weight: bold;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-radius: 4px;
+}
+
+.course-desc-box {
+    background: rgba(0, 40, 70, 0.45);
+    border-left: 3px solid #00ccff;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #aaddff;
+    border-radius: 0 4px 4px 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+/* 右カラム：コンパクト設定グリッド */
+.setting-compact-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.setting-compact-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.setting-compact-split {
+    display: flex;
+    gap: 10px;
+}
+
+.setting-compact-item {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+
+.setting-label-compact {
+    font-size: 12px;
+    font-weight: 800;
+    color: #bbb;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.compact-btn-group {
+    display: flex;
+    gap: 4px;
+}
+
+.toggle-btn {
+    background: #1a2230;
+    border: 1px solid #446688;
+    color: #aaa;
+    padding: 5px 10px;
+    font-size: 12.5px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.toggle-btn:hover {
+    color: #fff;
+    border-color: #6699cc;
+}
+
+.toggle-btn.active {
+    background: #ff9900;
+    color: #000;
+    border-color: #ffcc00;
+    box-shadow: 0 0 10px rgba(255, 150, 0, 0.6);
+}
+
+/* 操作説明ボックス */
+.instructions-box.compact {
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid #334455;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: #bbb;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.inst-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.inst-tag {
+    font-size: 9.5px;
+    font-weight: 900;
+    background: #0055aa;
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+}
+
+.inst-hint {
+    font-size: 11px;
+    color: #ccc;
+    border-top: 1px dashed rgba(255,255,255,0.15);
+    padding-top: 3px;
+}
+
+.key-badge {
+    background: #334455;
+    color: #ffdd44;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 10.5px;
+}
+
+/* 下部：ボタン行（常時最前面・ワイド・最優先視認性） */
+.start-btn-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-top: 2px;
+}
+
+.garage-btn {
+    flex: 1;
+    padding: 12px;
+    font-size: 17px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, #0055cc 0%, #00aadd 100%);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 0 18px rgba(0, 160, 240, 0.4);
+    transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.garage-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 26px rgba(0, 200, 255, 0.7);
+}
+
+.start-btn {
+    flex: 1.6;
+    padding: 12px;
+    font-size: 21px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #ee1111 0%, #ff8800 100%);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 0 25px rgba(255, 50, 0, 0.6);
+    transition: transform 0.1s, box-shadow 0.2s;
+    animation: startPulse 2s infinite ease-in-out;
+}
+
+@keyframes startPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 50, 0, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 35px rgba(255, 120, 0, 0.95);
+    }
+}
+
+.start-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 40px rgba(255, 120, 0, 1.0);
+}
+
+/* ==========================================================================
+   ガレージ＆3Dショールーム スタイル
+   ========================================================================== */
+#garage-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 95;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 34px;
+    box-sizing: border-box;
+    background: radial-gradient(circle at center, rgba(10, 16, 26, 0.2) 0%, rgba(5, 8, 14, 0.85) 100%);
+    pointer-events: none;
+    user-select: none;
+}
+
+.garage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: auto;
+}
+
+.garage-title {
+    font-size: 34px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 3px;
+    color: #00ddff;
+    text-shadow: 0 0 20px rgba(0, 221, 255, 0.6);
+}
+
+.garage-subtitle {
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: #88bbdd;
+    font-weight: bold;
+}
+
+.garage-close-btn {
+    background: rgba(20, 30, 45, 0.8);
+    border: 2px solid #ff4444;
+    color: #ff6666;
+    font-size: 28px;
+    line-height: 28px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.garage-close-btn:hover {
+    background: #ff4444;
+    color: #fff;
+    box-shadow: 0 0 16px rgba(255, 50, 50, 0.8);
+}
+
+/* 車両セレクターカード */
+.garage-car-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    pointer-events: auto;
+    margin-top: 6px;
+}
+
+.garage-nav-btn {
+    background: rgba(10, 25, 45, 0.85);
+    border: 2px solid #00aaff;
+    color: #00ddff;
+    font-size: 26px;
+    font-weight: 900;
+    width: 44px;
+    height: 60px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.garage-nav-btn:hover {
+    background: #0088dd;
+    color: #fff;
+    box-shadow: 0 0 16px rgba(0, 180, 255, 0.8);
+}
+
+.garage-cards-row {
+    display: flex;
+    gap: 12px;
+}
+
+.garage-car-card {
+    background: rgba(12, 18, 28, 0.85);
+    border: 2px solid #2a3d54;
+    border-radius: 8px;
+    padding: 8px 16px;
+    min-width: 130px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.garage-car-card:hover {
+    border-color: #00bbff;
+    transform: translateY(-2px);
+}
+
+.garage-car-card.active {
+    background: rgba(0, 45, 80, 0.85);
+    border-color: #ffaa00;
+    box-shadow: 0 0 18px rgba(255, 170, 0, 0.6);
+}
+
+.card-model {
+    font-size: 11px;
+    font-weight: bold;
+    color: #88aacc;
+    letter-spacing: 1px;
+}
+
+.card-name {
+    font-size: 15px;
+    font-weight: 900;
+    color: #fff;
+    margin: 2px 0;
+}
+
+.card-drive {
+    font-size: 11px;
+    font-weight: bold;
+    color: #ffcc00;
+    background: rgba(255, 200, 0, 0.15);
+    padding: 1px 6px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+/* 下部パネル */
+.garage-bottom-panel {
+    display: flex;
+    gap: 16px;
+    pointer-events: auto;
+    max-height: 250px;
+}
+
+.garage-card {
+    background: rgba(10, 16, 26, 0.90);
+    border: 1px solid #335577;
+    border-radius: 10px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.spec-card {
+    flex: 1.4;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.car-cat-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #00ddff;
+    background: rgba(0, 180, 255, 0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.car-main-name {
+    font-size: 20px;
+    font-weight: 900;
+    font-style: italic;
+    color: #fff;
+    margin: 0 0 2px 0;
+    letter-spacing: 1px;
+}
+
+.car-driver-name {
+    font-size: 12px;
+    color: #ffaa00;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.car-description {
+    font-size: 12px;
+    line-height: 1.45;
+    color: #b0c4de;
+    margin-bottom: 10px;
+}
+
+.car-spec-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #223344;
+}
+
+.spec-grid-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.spec-lbl {
+    font-size: 9.5px;
+    font-weight: bold;
+    color: #7799bb;
+    letter-spacing: 0.5px;
+}
+
+.spec-val {
+    font-size: 12.5px;
+    font-weight: 900;
+    color: #fff;
+    margin-top: 2px;
+}
+
+/* パラメータカード */
+.stat-card {
+    flex: 1.1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.stat-title, .action-title {
+    font-size: 13px;
+    font-weight: 900;
+    color: #00ddff;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #aaccee;
+    width: 95px;
+}
+
+.stat-bar-bg {
+    flex: 1;
+    height: 10px;
+    background: rgba(20, 30, 45, 0.8);
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid #334466;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    width: 70%;
+    background: linear-gradient(90deg, #0088ee 0%, #00ffcc 100%);
+    box-shadow: 0 0 8px rgba(0, 255, 204, 0.6);
+    transition: width 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* アクションカード */
+.action-card {
+    flex: 1.0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.garage-colors-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.garage-color-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #556677;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.garage-color-btn:hover {
+    transform: scale(1.15);
+}
+
+.garage-color-btn.active {
+    border-color: #ffaa00;
+    box-shadow: 0 0 12px #ffaa00;
+    transform: scale(1.15);
+}
+
+.action-buttons-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.garage-rev-btn {
+    background: linear-gradient(90deg, #ff6600 0%, #ff3300 100%);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 900;
+    font-style: italic;
+    padding: 9px;
+    cursor: pointer;
+    box-shadow: 0 0 14px rgba(255, 80, 0, 0.4);
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.garage-rev-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(255, 80, 0, 0.8);
+}
+
+.garage-confirm-btn {
+    background: linear-gradient(90deg, #00aa55 0%, #00dd88 100%);
+    border: none;
+    border-radius: 6px;
+    color: #000;
+    font-size: 15px;
+    font-weight: 900;
+    font-style: italic;
+    padding: 11px;
+    cursor: pointer;
+    box-shadow: 0 0 16px rgba(0, 220, 130, 0.5);
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.garage-confirm-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 24px rgba(0, 255, 150, 0.8);
+}
+
+#result-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5, 8, 12, 0.9);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#result-title {
+    font-size: 72px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 30px currentColor;
+}
+
+#result-time {
+    font-size: 40px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 30px;
+}
+
+.retry-btn {
+    padding: 12px 40px;
+    font-size: 24px;
+    font-weight: bold;
+    font-style: italic;
+    background: #ffaa00;
+    border: none;
+    border-radius: 6px;
+    color: #000;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(255, 170, 0, 0.6);
+}
+
+/* ==========================================================================
+   ★ 頭文字D THE ARCADE (DAC) 完全再現コーナーガイド (Corner Guide)
+   ========================================================================== */
+.dac-corner-guide {
+    position: absolute;
+    top: 88px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.3, 1), transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.dac-corner-guide.visible {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.0);
+}
+
+/* 次コーナー予告ミニアイコン (S字/連続ヘアピン) */
+.cg-sub-wrap {
+    display: none;
+    width: 42px;
+    height: 42px;
+    margin-bottom: -10px;
+    z-index: 1;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.85));
+    opacity: 0.88;
+    transform: scale(0.95);
+}
+
+.cg-sub-svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* メインコーナーガイドコンテナ */
+.cg-main-wrap {
+    position: relative;
+    width: 86px;
+    height: 86px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+}
+
+.cg-main-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.9));
+}
+
+/* 外枠グローパルスリング */
+.cg-glow-ring {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    transform: rotate(45deg);
+    border-radius: 12px;
+    border: 3px solid transparent;
+    pointer-events: none;
+    opacity: 0.7;
+    transition: box-shadow 0.2s ease;
+}
+
+/* 接近時の激しい点滅警告 (Blinking Alert) */
+.dac-corner-guide.blinking .cg-main-wrap {
+    animation: dac-corner-blink-pulse 0.13s infinite alternate ease-in-out;
+}
+
+.dac-corner-guide.blinking.urgent .cg-main-wrap {
+    animation: dac-corner-urgent-flash 0.10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dac-corner-blink-pulse {
+    0% {
+        opacity: 1.0;
+        transform: scale(1.0);
+        filter: brightness(1.0);
+    }
+    100% {
+        opacity: 0.18;
+        transform: scale(1.05);
+        filter: brightness(1.6);
+    }
+}
+
+@keyframes dac-corner-urgent-flash {
+    0% {
+        opacity: 1.0;
+        transform: scale(1.0);
+        filter: brightness(1.0) drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+    }
+    50% {
+        opacity: 0.85;
+        transform: scale(1.14);
+        filter: brightness(2.0) drop-shadow(0 0 25px #ffffff) drop-shadow(0 0 40px #ff0033);
+    }
+    100% {
+        opacity: 0.15;
+        transform: scale(1.02);
+        filter: brightness(0.6);
+    }
+}
+
+/* ガイド下部：残距離 & 推奨アクション (DAC仕様) */
+.cg-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 3px 12px;
+    background: rgba(10, 16, 26, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+    font-family: 'Arial Black', Impact, sans-serif;
+    font-style: italic;
+    letter-spacing: 1px;
+}
+
+.cg-action-text {
+    font-size: 15px;
+    font-weight: 900;
+    text-shadow: 0 0 10px currentColor;
+}
+
+.cg-dist-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    opacity: 0.9;
+}
+

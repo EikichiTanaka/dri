@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INITIAL D ARCADE STAGE - 峠ドリフトレース</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 3D WebGL レンダリングキャンバス -->
+    <div id="canvas-container"></div>
+
+    <!-- 高速走行時の頭文字D風 集中スピードライン Canvas -->
+    <canvas id="speed-lines-canvas"></canvas>
+
+    <!-- アーケード HUD -->
+    <div id="hud-container">
+        <!-- 画面上部：ライバル距離差ゲージ -->
+        <div class="vs-gauge-container">
+            <div class="vs-header">
+                <span id="lead-label">1ST</span>
+                <span id="lead-val">+0.0m</span>
+            </div>
+            <div class="vs-bar-track">
+                <div id="lead-bar"></div>
+            </div>
+        </div>
+
+        <!-- 画面右上：タイム ＆ DACセクションインジケーター -->
+        <div class="time-container">
+            <div class="time-label">TIME</div>
+            <div id="time-val">00:00.000</div>
+            <div class="dac-section-tracker">
+                <span id="sec-tag-1" class="sec-tag active">SEC 1</span>
+                <span id="sec-tag-2" class="sec-tag">SEC 2</span>
+                <span id="sec-tag-3" class="sec-tag">SEC 3</span>
+                <span id="sec-tag-4" class="sec-tag">SEC 4</span>
+            </div>
+        </div>
+
+        <!-- 頭文字DAC仕様 セクション通過ポップアップ -->
+        <div id="section-popup" class="section-popup">
+            <div id="sec-popup-title" class="sec-popup-title">SECTION 1 CLEAR</div>
+            <div class="sec-popup-body">
+                <span id="sec-popup-time" class="sec-popup-time">0'34"450</span>
+                <span id="sec-popup-diff" class="sec-popup-diff green">-0'00"280</span>
+            </div>
+        </div>
+
+        <!-- 画面左下：峠ミニマップ -->
+        <div class="minimap-container">
+            <div id="minimap-course-name">AKINA</div>
+            <div id="hud-condition-tag" class="hud-condition-tag dry">DRY</div>
+            <canvas id="minimap-canvas" width="170" height="250"></canvas>
+        </div>
+
+        <!-- 画面中央下部：メインメーター ＆ 走り屋Defi風追加3連メータークラスター -->
+        <div class="center-gauge-cluster">
+            <!-- 左側：デジタルスピードメーター & ギアインジケーター -->
+            <div class="digital-box">
+                <div class="speed-wrapper">
+                    <span id="speed-val">0</span>
+                    <span class="speed-unit">km/h</span>
+                </div>
+                <div class="gear-wrapper">
+                    <div id="shift-lamp"></div>
+                    <div class="gear-display">GEAR <span id="gear-val">1</span><span id="trans-mode">MT</span></div>
+                </div>
+            </div>
+
+            <!-- 中央：大型レーシングタコメーター (11,000RPM) -->
+            <div class="tacho-wrapper">
+                <canvas id="tacho-canvas" width="220" height="220"></canvas>
+            </div>
+
+            <!-- 右側：本物の走り屋仕様 Defi風 3連追加メーターポッド (油圧 / 水温 / 油温) -->
+            <div class="triple-meter-pod">
+                <div class="meter-item">
+                    <canvas id="meter-oilpress-canvas" width="95" height="95"></canvas>
+                    <div class="meter-label">OIL PRESS</div>
+                    <div id="val-oilpress" class="meter-digital-val">2.0 bar</div>
+                </div>
+                <div class="meter-item">
+                    <canvas id="meter-watertemp-canvas" width="95" height="95"></canvas>
+                    <div class="meter-label">WATER TEMP</div>
+                    <div id="val-watertemp" class="meter-digital-val">86 ℃</div>
+                </div>
+                <div class="meter-item">
+                    <canvas id="meter-oiltemp-canvas" width="95" height="95"></canvas>
+                    <div class="meter-label">OIL TEMP</div>
+                    <div id="val-oiltemp" class="meter-digital-val">90 ℃</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ドリフト演出カットイン -->
+        <div id="drift-popup">DRIFT!</div>
+
+        <!-- カウントダウン -->
+        <div id="countdown-overlay">3</div>
+    </div>
+
+    <!-- スタート画面 / 設定オーバーレイ -->
+    <div id="start-overlay">
+        <div class="title-box">
+            <div class="title-sub">SEGA ARCADE TOUGE RACING</div>
+            <h1 class="title-main">INITIAL D</h1>
+            <div id="course-title-sub" class="title-stage">ARCADE STAGE : AKINA DOWNHILL (7,552m・原作公式完全再現)</div>
+        </div>
+
+        <div class="menu-card">
+            <!-- 2カラム設定レイアウト -->
+            <div class="menu-columns">
+                <!-- 左カラム：コース選択 ＆ コース解説 -->
+                <div class="menu-col left-col">
+                    <div class="course-header-row">
+                        <span class="setting-label">COURSE SELECT</span>
+                        <span class="course-badge-total">8 TOUGE STAGES</span>
+                    </div>
+                    <div class="course-selector-grid">
+                        <div class="course-area-group">
+                            <span class="area-tag">群馬エリア</span>
+                            <div class="btn-group course-btn-group">
+                                <button id="btn-akina" class="toggle-btn course-toggle-btn active">秋名 下り (7,552m)</button>
+                                <button id="btn-akina-uphill" class="toggle-btn course-toggle-btn">秋名 上り (7,552m)</button>
+                                <button id="btn-myogi" class="toggle-btn course-toggle-btn">妙義 (7,068m)</button>
+                                <button id="btn-usui" class="toggle-btn course-toggle-btn">碓氷 (4.8km)</button>
+                                <button id="btn-akagi" class="toggle-btn course-toggle-btn">赤城 (6.2km)</button>
+                            </div>
+                        </div>
+                        <div class="course-area-group">
+                            <span class="area-tag">遠征・関東</span>
+                            <div class="btn-group course-btn-group">
+                                <button id="btn-iroha" class="toggle-btn course-toggle-btn">いろは坂 (5,116m)</button>
+                                <button id="btn-happo" class="toggle-btn course-toggle-btn">八方ヶ原 (5,754m)</button>
+                                <button id="btn-tsubaki" class="toggle-btn course-toggle-btn">椿ライン (7,312m)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- コース解説 -->
+                    <div id="course-desc-box" class="course-desc-box">
+                        【秋名山 下り フルコース 7,552m】画像公式レイアウトゼロから完全再構築！山頂スタート〜給水塔〜急降下ダウンヒル〜伝説の5連ヘアピン溝落とし〜伊香保ゴール！
+                    </div>
+                </div>
+
+                <!-- 右カラム：コンディション設定 ＆ 操作方法 -->
+                <div class="menu-col right-col">
+                    <div class="setting-compact-grid">
+                        <!-- 天候 -->
+                        <div class="setting-compact-row">
+                            <span class="setting-label-compact">WEATHER</span>
+                            <div class="btn-group compact-btn-group">
+                                <button id="btn-weather-dry" class="toggle-btn active">DRY (晴れ)</button>
+                                <button id="btn-weather-rain" class="toggle-btn">RAIN (雨)</button>
+                                <button id="btn-weather-fog" class="toggle-btn">FOG (濃霧)</button>
+                            </div>
+                        </div>
+
+                        <!-- 時間帯 -->
+                        <div class="setting-compact-row">
+                            <span class="setting-label-compact">TIME OF DAY</span>
+                            <div class="btn-group compact-btn-group">
+                                <button id="btn-time-midnight" class="toggle-btn active">MIDNIGHT (深夜)</button>
+                                <button id="btn-time-sunset" class="toggle-btn">SUNSET (夕暮)</button>
+                                <button id="btn-time-daylight" class="toggle-btn">DAY (昼)</button>
+                            </div>
+                        </div>
+
+                        <!-- AT/MT & BGM -->
+                        <div class="setting-compact-split">
+                            <div class="setting-compact-item">
+                                <span class="setting-label-compact">MISSION</span>
+                                <div class="btn-group compact-btn-group">
+                                    <button id="btn-mt" class="toggle-btn">MT</button>
+                                    <button id="btn-at" class="toggle-btn active">AT</button>
+                                </div>
+                            </div>
+                            <div class="setting-compact-item">
+                                <span class="setting-label-compact">EUROBEAT</span>
+                                <div class="btn-group compact-btn-group">
+                                    <button id="btn-bgm-on" class="toggle-btn active">ON</button>
+                                    <button id="btn-bgm-off" class="toggle-btn">OFF</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 難易度 & コーナーアシスト -->
+                        <div class="setting-compact-split">
+                            <div class="setting-compact-item">
+                                <span class="setting-label-compact">DIFFICULTY</span>
+                                <div class="btn-group compact-btn-group">
+                                    <button id="btn-diff-easy" class="toggle-btn">EASY</button>
+                                    <button id="btn-diff-normal" class="toggle-btn active">NORM</button>
+                                    <button id="btn-diff-hard" class="toggle-btn">HARD</button>
+                                </div>
+                            </div>
+                            <div class="setting-compact-item">
+                                <span class="setting-label-compact">ASSIST</span>
+                                <div class="btn-group compact-btn-group">
+                                    <button id="btn-assist-weak" class="toggle-btn active">弱 (標準)</button>
+                                    <button id="btn-assist-strong" class="toggle-btn">強 (超旋回)</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作方法（コンパクト版） -->
+                    <div class="instructions-box compact">
+                        <div class="inst-line">
+                            <span class="inst-tag">走行</span>
+                            <span>ステア: <span class="key-badge">A</span>/<span class="key-badge">D</span> | アクセル: <span class="key-badge">W</span>/<span class="key-badge">↑</span> | ブレーキ: <span class="key-badge">S</span>/<span class="key-badge">↓</span> | サイド: <span class="key-badge">SPACE</span></span>
+                        </div>
+                        <div class="inst-line">
+                            <span class="inst-tag">操作</span>
+                            <span>シフト: <span class="key-badge">←</span>/<span class="key-badge">→</span> | 視点: <span class="key-badge">C</span> | アシスト: <span class="key-badge">T</span> | リトライ: <span class="key-badge">R</span> | ライト: <span class="key-badge">L</span></span>
+                        </div>
+                        <div class="inst-hint">
+                            ★ <span style="color:#ffcc00;">減速&ドリフト</span>: ブレーキやサイド(<span class="key-badge">SPACE</span>)でテールスライド！ヘアピン側溝でインベタ溝落とし！
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ガレージ＆マシン選択ボタン ＆ 出撃ボタン -->
+            <div class="start-btn-row">
+                <button id="btn-open-garage" class="garage-btn">🏎️ GARAGE (マシン選択・鑑賞)</button>
+                <button id="btn-start" class="start-btn">INSERT COIN & START BATTLE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ガレージ＆マシン選択 3Dショールーム オーバーレイ -->
+    <div id="garage-overlay" style="display: none;">
+        <div class="garage-header">
+            <div class="garage-title-wrap">
+                <div class="garage-title">TOUGE MACHINE GARAGE</div>
+                <div class="garage-subtitle">3D SHOWROOM & TUNING SPEC SHEET</div>
+            </div>
+            <button id="btn-garage-close" class="garage-close-btn">&times;</button>
+        </div>
+
+        <!-- 車両セレクターカード横スクロール -->
+        <div class="garage-car-bar">
+            <button id="btn-garage-prev" class="garage-nav-btn">&lt;</button>
+            <div id="garage-car-cards" class="garage-cards-row"></div>
+            <button id="btn-garage-next" class="garage-nav-btn">&gt;</button>
+        </div>
+
+        <!-- 下部：スペックシート ＆ コントロールパネル -->
+        <div class="garage-bottom-panel">
+            <div class="garage-card spec-card">
+                <div class="car-identity">
+                    <div id="garage-car-category" class="car-cat-tag">LIGHTWEIGHT FR</div>
+                    <h2 id="garage-car-name" class="car-main-name">TOYOTA SPRINTER TRUENO GT-APEX</h2>
+                    <div id="garage-car-driver" class="car-driver-name">藤原拓海 (秋名スピードスターズ)</div>
+                </div>
+                <div id="garage-car-desc" class="car-description">【ハチロク】超軽量ボディと高回転レーシングエンジン...</div>
+
+                <div class="car-spec-grid">
+                    <div class="spec-grid-item"><span class="spec-lbl">ENGINE</span><span id="garage-engine-val" class="spec-val">4A-GEU 20V</span></div>
+                    <div class="spec-grid-item"><span class="spec-lbl">MAX POWER</span><span id="garage-power-val" class="spec-val">240 PS</span></div>
+                    <div class="spec-grid-item"><span class="spec-lbl">MAX TORQUE</span><span id="garage-torque-val" class="spec-val">18.0 kgm</span></div>
+                    <div class="spec-grid-item"><span class="spec-lbl">DRIVE</span><span id="garage-drive-val" class="spec-val">FR</span></div>
+                    <div class="spec-grid-item"><span class="spec-lbl">WEIGHT</span><span id="garage-weight-val" class="spec-val">960 kg</span></div>
+                </div>
+            </div>
+
+            <!-- 性能パラメータバー -->
+            <div class="garage-card stat-card">
+                <div class="stat-title">PERFORMANCE METRICS</div>
+                <div class="stat-row"><span class="stat-label">SPEED</span><div class="stat-bar-bg"><div id="stat-bar-speed" class="stat-bar-fill"></div></div></div>
+                <div class="stat-row"><span class="stat-label">ACCEL</span><div class="stat-bar-bg"><div id="stat-bar-accel" class="stat-bar-fill"></div></div></div>
+                <div class="stat-row"><span class="stat-label">HANDLING</span><div class="stat-bar-bg"><div id="stat-bar-handling" class="stat-bar-fill"></div></div></div>
+                <div class="stat-row"><span class="stat-label">DRIFT</span><div class="stat-bar-bg"><div id="stat-bar-drift" class="stat-bar-fill"></div></div></div>
+                <div class="stat-row"><span class="stat-label">STABILITY</span><div class="stat-bar-bg"><div id="stat-bar-stability" class="stat-bar-fill"></div></div></div>
+            </div>
+
+            <!-- アクション・カラー変更 -->
+            <div class="garage-card action-card">
+                <div class="action-title">BODY COLOR</div>
+                <div id="garage-color-group" class="garage-colors-row"></div>
+
+                <div class="action-buttons-col">
+                    <button id="btn-garage-rev" class="garage-rev-btn">🔊 REV ENGINE (空ぶかし試聴)</button>
+                    <button id="btn-garage-select" class="garage-confirm-btn">SELECT THIS MACHINE (決定)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- リザルト画面 -->
+    <div id="result-overlay">
+        <h2 id="result-title">WINNER</h2>
+        <div id="result-time">TIME: 02:14.832</div>
+        <button id="btn-retry" class="retry-btn">RETRY RACE (R)</button>
+    </div>
+
+    <!-- スクリプト群 -->
+    <script src="js/lib/three.min.js"></script>
+    <script src="js/data/CarDatabase.js"></script>
+    <script src="js/physics/TougeTrack.js"></script>
+    <script src="js/physics/CarPhysics.js"></script>
+    <script src="js/entities/CarModelBuilder.js"></script>
+    <script src="js/entities/PlayerCar.js"></script>
+    <script src="js/entities/RivalCar.js"></script>
+    <script src="js/entities/ParticleSystem.js"></script>
+    <script src="js/core/Input.js"></script>
+    <script src="js/data/TireAudioData.js"></script>
+    <script src="js/core/AudioManager.js?v=18"></script>
+    <script src="js/ui/CornerGuide.js"></script>
+    <script src="js/ui/HUD.js"></script>
+    <script src="js/ui/GarageUI.js"></script>
+    <script src="js/core/Game.js"></script>
+
+    <script>
+        function initApp() {
+            if (window.__appInitialized) return;
+            window.__appInitialized = true;
+            try {
+                const game = new Game();
+                window.game = game;
+            } catch (err) {
+                console.error('initApp Error:', err);
+                window.__lastErr = err.toString() + '\\n' + err.stack;
+            }
+
+            // コース選択 (8大名峠)
+            const btnAkina = document.getElementById('btn-akina');
+            const btnAkinaUphill = document.getElementById('btn-akina-uphill');
+            const btnMyogi = document.getElementById('btn-myogi');
+            const btnUsui = document.getElementById('btn-usui');
+            const btnAkagi = document.getElementById('btn-akagi');
+            const btnIroha = document.getElementById('btn-iroha');
+            const btnHappo = document.getElementById('btn-happo');
+            const btnTsubaki = document.getElementById('btn-tsubaki');
+
+            const allCourseBtns = [btnAkina, btnAkinaUphill, btnMyogi, btnUsui, btnAkagi, btnIroha, btnHappo, btnTsubaki];
+            const courseTitleSub = document.getElementById('course-title-sub');
+            const courseDescBox = document.getElementById('course-desc-box');
+            const minimapCourseName = document.getElementById('minimap-course-name');
+
+            const courseDescs = {
+                'akina': {
+                    title: 'ARCADE STAGE : AKINA DOWNHILL (7,552m・原作公式完全再現)',
+                    desc: '【秋名山 下り フルコース 7,552m】画像公式レイアウトゼロから完全再構築！山頂スタート〜給水塔〜急降下ダウンヒル〜伝説の5連ヘアピン溝落とし〜伊香保ゴール！',
+                    name: 'AKINA 7,552m'
+                },
+                'akina_uphill': {
+                    title: 'ARCADE STAGE : AKINA UPHILL (7,552m・頭文字DAC公式動画完全再現)',
+                    desc: '【秋名山 上り フルコース 7,552m】頭文字DACプレイ映像完全準拠！旧料金所跡スタート〜伊香保〜5連ヘアピン溝落とし〜給水塔〜山頂ゴール！標高差+490mを駆け上がるハイパワーヒルクライム！',
+                    name: 'AKINA 7,552m (UP)'
+                },
+                'myogi': {
+                    title: 'ARCADE STAGE : MYOGI HIGHSPEED (7,068m・公式完全再現)',
+                    desc: '【妙義山 ナイトキッズ本拠地 全長7,068m】画像公式レイアウトゼロから完全再構築！第①名物ダブルヘアピン〜第②高速S字＆大ループ〜第③中速ワインディング〜第④鋭角スイッチバック＆超高速フィニッシュ！',
+                    name: 'MYOGI 7,068m'
+                },
+                'usui': {
+                    title: 'ARCADE STAGE : USUI PASS (4.8km・めがね橋 & 極狭C-121)',
+                    desc: '【碓氷峠 下り フルコース 4.8km】道幅7.4mの極狭テクニカル！全184コーナーの難所〜めがね橋（碓氷第三橋梁）〜勝負を決める超難関複合「C-121」減速バトル！',
+                    name: 'USUI 4.8km'
+                },
+                'akagi': {
+                    title: 'ARCADE STAGE : AKAGI DOWNHILL (6.2km・大鳥居 & 白樺並木 & 悪魔のV字)',
+                    desc: '【赤城山 下り フルコース 6.2km】道幅10mの雄大ハイスピード！スタート直後くぐる朱色の大鳥居〜白樺並木〜急激にインへ巻き込む恐怖の「悪魔のV字コーナー」！',
+                    name: 'AKAGI 6.2km'
+                },
+                'irohazaka': {
+                    title: 'ARCADE STAGE : IROHAZAKA DOWNHILL (5,116m・公式完全再現)',
+                    desc: '【第一いろは坂 下り 全長5,116m・標高差-440m】頭文字D ARCADE STAGE公式完全再現！第①区間(1,320m)〜第②区間(1,332m)〜第③区間(1,240m)怒涛のつづら折りヘアピン＆小柏カイ掟破りのインベタ空挺ジャンプ〜第④区間(1,224m)連続スイッチバック＆高速フィニッシュ！',
+                    name: 'IROHA 5,116m'
+                },
+                'happo': {
+                    title: 'ARCADE STAGE : HAPPOGAHARA (5,754m・原作完全再現 & 2大トラス橋)',
+                    desc: '【八方ヶ原 往路 5,754m】東堂塾ホームコース！公式全体マップ完全忠実再現！第①区間(1,302m)スネーク第1橋〜第②区間(1,326m)魔の4連続ヘアピン〜第③区間(1,429m)スネーク第2大橋＆折り返しシケイン〜第④区間(1,697m)最終大ヘアピン＆全開ダウンヒル！',
+                    name: 'HAPPO 5,754m'
+                },
+                'tsubaki': {
+                    title: 'ARCADE STAGE : TSUBAKI LINE (7,312m・公式完全再現・標高差-730m)',
+                    desc: '【椿ライン 下り 全長7,312m】神奈川決戦の最高峰！大観山頂上（標高1,011m）スタート〜第①区間(1,888m)〜第②区間(1,936m)〜第③区間(1,840m)〜第④区間(1,648m)連続七曲りヘアピンを経て奥湯河原へ下る過酷なダウンヒル！',
+                    name: 'TSUBAKI 7,312m'
+                }
+            };
+
+            function selectCourse(courseKey, activeBtn) {
+                allCourseBtns.forEach(b => { if (b) b.classList.remove('active'); });
+                if (activeBtn) activeBtn.classList.add('active');
+                if (courseDescs[courseKey]) {
+                    courseTitleSub.textContent = courseDescs[courseKey].title;
+                    courseDescBox.textContent = courseDescs[courseKey].desc;
+                    minimapCourseName.textContent = courseDescs[courseKey].name;
+                }
+                game.setCourse(courseKey);
+            }
+
+            if (btnAkina) btnAkina.addEventListener('click', () => selectCourse('akina', btnAkina));
+            if (btnAkinaUphill) btnAkinaUphill.addEventListener('click', () => selectCourse('akina_uphill', btnAkinaUphill));
+            if (btnMyogi) btnMyogi.addEventListener('click', () => selectCourse('myogi', btnMyogi));
+            if (btnUsui) btnUsui.addEventListener('click', () => selectCourse('usui', btnUsui));
+            if (btnAkagi) btnAkagi.addEventListener('click', () => selectCourse('akagi', btnAkagi));
+            if (btnIroha) btnIroha.addEventListener('click', () => selectCourse('irohazaka', btnIroha));
+            if (btnHappo) btnHappo.addEventListener('click', () => selectCourse('happo', btnHappo));
+            if (btnTsubaki) btnTsubaki.addEventListener('click', () => selectCourse('tsubaki', btnTsubaki));
+
+            // 天候選択 (DRY / RAIN / FOG)
+            const btnWeatherDry = document.getElementById('btn-weather-dry');
+            const btnWeatherRain = document.getElementById('btn-weather-rain');
+            const btnWeatherFog = document.getElementById('btn-weather-fog');
+            const allWeatherBtns = [btnWeatherDry, btnWeatherRain, btnWeatherFog];
+
+            function selectWeather(w, btn) {
+                allWeatherBtns.forEach(b => { if (b) b.classList.remove('active'); });
+                if (btn) btn.classList.add('active');
+                game.setWeather(w);
+                const tag = document.getElementById('hud-condition-tag');
+                if (tag) {
+                    if (w === 'rain') {
+                        tag.textContent = 'RAIN / WET';
+                        tag.className = 'hud-condition-tag wet';
+                    } else if (w === 'fog') {
+                        tag.textContent = 'FOG';
+                        tag.className = 'hud-condition-tag fog';
+                    } else {
+                        tag.textContent = 'DRY';
+                        tag.className = 'hud-condition-tag dry';
+                    }
+                }
+            }
+
+            if (btnWeatherDry) btnWeatherDry.addEventListener('click', () => selectWeather('dry', btnWeatherDry));
+            if (btnWeatherRain) btnWeatherRain.addEventListener('click', () => selectWeather('rain', btnWeatherRain));
+            if (btnWeatherFog) btnWeatherFog.addEventListener('click', () => selectWeather('fog', btnWeatherFog));
+
+            // 時間帯選択 (MIDNIGHT / SUNSET / DAYLIGHT)
+            const btnTimeMidnight = document.getElementById('btn-time-midnight');
+            const btnTimeSunset = document.getElementById('btn-time-sunset');
+            const btnTimeDaylight = document.getElementById('btn-time-daylight');
+            const allTimeBtns = [btnTimeMidnight, btnTimeSunset, btnTimeDaylight];
+
+            function selectTime(t, btn) {
+                allTimeBtns.forEach(b => { if (b) b.classList.remove('active'); });
+                if (btn) btn.classList.add('active');
+                game.setTimeOfDay(t);
+            }
+
+            if (btnTimeMidnight) btnTimeMidnight.addEventListener('click', () => selectTime('midnight', btnTimeMidnight));
+            if (btnTimeSunset) btnTimeSunset.addEventListener('click', () => selectTime('sunset', btnTimeSunset));
+            if (btnTimeDaylight) btnTimeDaylight.addEventListener('click', () => selectTime('daylight', btnTimeDaylight));
+
+            // AT / MT 選択
+            const btnAt = document.getElementById('btn-at');
+            const btnMt = document.getElementById('btn-mt');
+            btnAt.addEventListener('click', () => {
+                btnAt.classList.add('active');
+                btnMt.classList.remove('active');
+                game.playerPhysics.isAutomatic = true;
+            });
+            btnMt.addEventListener('click', () => {
+                btnMt.classList.add('active');
+                btnAt.classList.remove('active');
+                game.playerPhysics.isAutomatic = false;
+            });
+            if (game.playerPhysics) game.playerPhysics.isAutomatic = true;
+
+            // BGM
+            const btnBgmOn = document.getElementById('btn-bgm-on');
+            const btnBgmOff = document.getElementById('btn-bgm-off');
+            btnBgmOn.addEventListener('click', () => {
+                btnBgmOn.classList.add('active');
+                btnBgmOff.classList.remove('active');
+                game.audio.isBgmEnabled = true;
+            });
+            btnBgmOff.addEventListener('click', () => {
+                btnBgmOff.classList.add('active');
+                btnBgmOn.classList.remove('active');
+                game.audio.isBgmEnabled = false;
+            });
+
+            // 難易度
+            const btnDiffEasy = document.getElementById('btn-diff-easy');
+            const btnDiffNormal = document.getElementById('btn-diff-normal');
+            const btnDiffHard = document.getElementById('btn-diff-hard');
+
+            function selectDifficulty(diff, activeBtn) {
+                [btnDiffEasy, btnDiffNormal, btnDiffHard].forEach(b => b.classList.remove('active'));
+                activeBtn.classList.add('active');
+                game.setDifficulty(diff);
+            }
+
+            btnDiffEasy.addEventListener('click', () => selectDifficulty('easy', btnDiffEasy));
+            btnDiffNormal.addEventListener('click', () => selectDifficulty('normal', btnDiffNormal));
+            btnDiffHard.addEventListener('click', () => selectDifficulty('hard', btnDiffHard));
+
+            // コーナーアシスト選択 (弱 / 強)
+            const btnAssistWeak = document.getElementById('btn-assist-weak');
+            const btnAssistStrong = document.getElementById('btn-assist-strong');
+            if (btnAssistWeak) {
+                btnAssistWeak.addEventListener('click', () => {
+                    game.setCornerAssist('weak');
+                });
+            }
+            if (btnAssistStrong) {
+                btnAssistStrong.addEventListener('click', () => {
+                    game.setCornerAssist('strong');
+                });
+            }
+
+            // ガレージ画面オープン
+            const btnOpenGarage = document.getElementById('btn-open-garage');
+            if (btnOpenGarage) {
+                btnOpenGarage.addEventListener('click', () => {
+                    if (game.audio) game.audio.resume();
+                    game.garageUI.open();
+                });
+            }
+
+            // スタート & リトライ
+            const btnStart = document.getElementById('btn-start');
+            btnStart.addEventListener('click', () => {
+                if (game.audio) game.audio.resume();
+                game.startRace();
+            });
+
+            const btnRetry = document.getElementById('btn-retry');
+            btnRetry.addEventListener('click', () => {
+                if (game.audio) game.audio.resume();
+                game.playerPhysics.resetToTrack(0.003, -1.8);
+                game.rivalCar.resetPosition();
+                game.hud.currentTime = 0;
+                game.hud.isFinished = false;
+                document.getElementById('result-overlay').style.display = 'none';
+                game.startRace();
+            });
+            window.game = game;
+
+            // URLパラメータによるダイレクト起動サポート
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('course')) {
+                const c = params.get('course');
+                const btn = document.getElementById('btn-' + (c === 'akina_uphill' ? 'akina-uphill' : (c === 'irohazaka' ? 'iroha' : c)));
+                if (btn) btn.click();
+            }
+            if (params.has('time')) {
+                const t = params.get('time');
+                const btn = document.getElementById('btn-time-' + t);
+                if (btn) btn.click();
+            }
+            if (params.has('weather')) {
+                const w = params.get('weather');
+                const btn = document.getElementById('btn-weather-' + w);
+                if (btn) btn.click();
+            }
+            if (params.get('autostart') === '1') {
+                setTimeout(() => {
+                    btnStart.click();
+
+                    if (params.has('seek_t')) {
+                        const st = parseFloat(params.get('seek_t'));
+                        setTimeout(() => {
+                            game.state = 'RACING';
+                            game.countdownStep = 0;
+                            game.playerPhysics.isLocked = false;
+                            document.getElementById('countdown-overlay').style.display = 'none';
+
+                            game.playerPhysics.resetToTrack(st, -1.2);
+                            game.playerPhysics.speed = 88.0;
+                            game.playerCar.update(0.016);
+
+                            const p = game.playerPhysics.position;
+                            const f = new THREE.Vector3(Math.sin(game.playerPhysics.yaw), 0, Math.cos(game.playerPhysics.yaw));
+                            game.camera.position.set(p.x - f.x * 6.5, p.y + 2.3, p.z - f.z * 6.5);
+                            game.cameraLookTarget.set(p.x + f.x * 12.0, p.y + 1.2, p.z + f.z * 12.0);
+                            game.camera.lookAt(game.cameraLookTarget);
+                            game.camera.updateMatrixWorld(true);
+
+                            if (game.track && game.track.updateCornerNavigation) {
+                                game.track.updateCornerNavigation(p, st);
+                            }
+                        }, 250);
+                    }
+                }, 150);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>
