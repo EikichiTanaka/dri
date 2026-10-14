@@ -27,6 +27,7 @@
  */
 
 // 車種別エンジン音響物理プロファイル
+// 車種別エンジン音響物理プロファイル（管内気柱共鳴ウェーブガイド ＆ マフラー膨張室モデル）
 const ENGINE_PROFILES = {
     '4age': {
         name: '4A-GEU 20V (AE86 トレノ)',
@@ -41,23 +42,26 @@ const ENGINE_PROFILES = {
         redlineRpm: 8000,
         maxRpm: 11000,
         mainWeight: 0.72,
-        exhaustDrive: 2.8,         // 4-1等長タコ足の高圧排気破裂度
-        // フジツボ/TRD等長タコ足＋砲弾マフラー音響フォルマント
-        bodyFreq: 118, bodyGain: 9.0,   // マフラー太鼓の引き締まった低音胴鳴り (118Hz)
-        raspFreq: 680, raspGain: 11.0,  // テールパイプの乾いた甲高い喉鳴り (680Hz)
-        ringFreq: 2950, ringGain: 12.5, // 4-1等長ステン管の突き抜ける高域金属鳴き (2950Hz)
+        exhaustDrive: 2.8,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 2.65,             // 排気管長 2.65m (短尺管特有の軽快な高域共鳴)
+        primLen: 0.62,             // 4-1等長タコ足 0.62m (奇数次倍音相殺・2次/4次整流)
+        tailRef: -0.68,            // 砲弾テールパイプ反射率
+        bodyFreq: 118, bodyGain: 9.0, bodyQ: 2.2, // マフラー太鼓胴鳴り (118Hz)
+        raspFreq: 680, raspGain: 11.0,            // テールパイプ喉鳴り
+        ringFreq: 2950, ringGain: 12.5,           // 4-1ステン管共鳴
+        raspRatioBase: 0.18,       // 低回転での直管抜け率
+        raspRatioMax: 0.72,        // 高回転・全開時の直管破裂抜け率
         // 4連独立スロットル・剥き出しファンネル吸気咆哮
         intakePeak: 460, intakeQ: 3.5, intakeGain: 0.68,
-        // ピストン・バルブ動弁系メカニカル音
         mechWeight: 0.16, mechFreq: 3400,
-        // 不等長遅延（4-1等長のため極小：奇数次倍音相殺・2次/4次整流ハーモニクス）
         headerDelays: [0.0, 0.00008, -0.00008, 0.0],
         cylAmps: [1.02, 0.98, 1.01, 0.99],
-        shockSharpness: 2.2,       // 鋭い衝撃波面立上り
-        boomDuration: 0.016,
+        shockSharpness: 2.4,
         gasAmp: 0.55,
         revBounceHz: 11.5,
-        isTurbo: false
+        isTurbo: false,
+        isRotary: false
     },
     '13b': {
         name: '13B-REW (FD3S RX-7)',
@@ -72,22 +76,27 @@ const ENGINE_PROFILES = {
         redlineRpm: 8200,
         maxRpm: 8800,
         mainWeight: 0.74,
-        exhaustDrive: 2.2,         // 急速ポート開放による高密度連続排気
-        // 雨宮ストレートマフラー音響フォルマント
-        bodyFreq: 135, bodyGain: 7.5,   // 膨張室の引き締まった低音 (135Hz)
-        raspFreq: 820, raspGain: 11.5,  // 超高密度ロータリー排気ハミング (820Hz)
-        ringFreq: 2400, ringGain: 8.5,  // チタン砲弾マフラー共鳴 (2400Hz)
+        exhaustDrive: 2.2,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 2.85,
+        primLen: 0.50,
+        tailRef: -0.60,
+        bodyFreq: 135, bodyGain: 7.5, bodyQ: 1.8, // 引き締まった中低音 (135Hz)
+        raspFreq: 820, raspGain: 11.5,
+        ringFreq: 2400, ringGain: 8.5,
+        raspRatioBase: 0.14,
+        raspRatioMax: 0.65,
         // 吸気サージ
         intakePeak: 360, intakeQ: 2.6, intakeGain: 0.42,
-        mechWeight: 0.03, mechFreq: 4200, // ロータリーは動弁系ノイズほぼゼロ
+        mechWeight: 0.02, mechFreq: 4200, // ロータリーは動弁系打撃音ほぼ皆無
         headerDelays: [0.0, 0.0, 0.0],
         cylAmps: [1.0, 1.0, 1.0],
-        shockSharpness: 2.8,       // ポート開放の超急峻ステップ波
-        boomDuration: 0.012,
-        gasAmp: 0.75,              // 強烈な高圧排気ジェット
+        shockSharpness: 1.2,       // ポートが滑らかに開口（衝撃波面なし、角のない澄んだジェット音）
+        gasAmp: 0.85,
         revBounceHz: 13.5,
         isTurbo: true,
-        isTwinTurbo: true
+        isTwinTurbo: true,
+        isRotary: true
     },
     'rb26': {
         name: 'RB26DETT (BNR32 GT-R)',
@@ -102,22 +111,26 @@ const ENGINE_PROFILES = {
         redlineRpm: 8000,
         maxRpm: 8500,
         mainWeight: 0.78,
-        exhaustDrive: 3.0,         // 直6大口径極太マフラーの爆圧
-        // NISMO/HKS大口径ストレートマフラー音響フォルマント
-        bodyFreq: 86, bodyGain: 13.5,   // 2.6L直6の大排気量腹に響く地響き重低音 (86Hz)
-        raspFreq: 540, raspGain: 10.0,  // 直6完全バランスによるシルキーで途切れのない咆哮 (540Hz)
-        ringFreq: 2450, ringGain: 10.0, // 大口径ステンレスパイプの共鳴鳴き (2450Hz)
-        // ツインターボ吸気サージ
+        exhaustDrive: 3.0,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 3.10,             // 3.10m長尺管 (直6特有の重厚な長波長共鳴)
+        primLen: 0.68,             // 等長6-2-1
+        tailRef: -0.74,            // 大口径ステン直管マフラー
+        bodyFreq: 86, bodyGain: 13.5, bodyQ: 2.4, // 2.6L直6の大排気量地響き重低音 (86Hz)
+        raspFreq: 540, raspGain: 10.0,
+        ringFreq: 2450, ringGain: 10.0,
+        raspRatioBase: 0.16,
+        raspRatioMax: 0.76,
         intakePeak: 380, intakeQ: 2.8, intakeGain: 0.48,
         mechWeight: 0.12, mechFreq: 3100,
         headerDelays: [0.0, 0.00006, -0.00006, 0.0, 0.00006, -0.00006],
         cylAmps: [1.02, 0.98, 1.01, 0.99, 1.02, 0.98],
-        shockSharpness: 2.4,
-        boomDuration: 0.022,
+        shockSharpness: 2.5,
         gasAmp: 0.85,
         revBounceHz: 10.5,
         isTurbo: true,
-        isTwinTurbo: true
+        isTwinTurbo: true,
+        isRotary: false
     },
     'sr20': {
         name: 'SR20DET (S13 / 180SX / S15)',
@@ -132,22 +145,26 @@ const ENGINE_PROFILES = {
         redlineRpm: 7500,
         maxRpm: 8000,
         mainWeight: 0.70,
-        exhaustDrive: 2.9,         // 荒々しい不等長エキマニ脈動
-        // GP SPORTS砲弾マフラー音響フォルマント
-        bodyFreq: 102, bodyGain: 11.5,  // 4気筒ターボの太い重低音 (102Hz)
-        raspFreq: 610, raspGain: 9.5,   // 不等長マニホールドの野太いドロドロ喉鳴り (610Hz)
-        ringFreq: 2550, ringGain: 9.0,  // 砲弾テールパイプ金属鳴き (2550Hz)
-        // シングルターボ吸気インダクション
+        exhaustDrive: 2.9,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 2.80,
+        primLen: 0.60,
+        tailRef: -0.66,
+        bodyFreq: 102, bodyGain: 11.5, bodyQ: 2.0, // 太い4気筒ターボ重低音 (102Hz)
+        raspFreq: 610, raspGain: 9.5,
+        ringFreq: 2550, ringGain: 9.0,
+        raspRatioBase: 0.20,
+        raspRatioMax: 0.74,
         intakePeak: 320, intakeQ: 2.4, intakeGain: 0.45,
-        mechWeight: 0.18, mechFreq: 2900, // ラッシュアジャスター特有の打撃音
-        headerDelays: [0.0, 0.0011, -0.0004, 0.0008], // 不等長マニホールド干渉ディレイ（ドロドロ脈動）
-        cylAmps: [1.06, 0.92, 1.08, 0.94],
-        shockSharpness: 2.0,
-        boomDuration: 0.020,
+        mechWeight: 0.18, mechFreq: 2900,
+        headerDelays: [0.0, 0.0016, -0.0006, 0.0012], // 不等長エキマニ干渉ディレイ（強いドロドロ脈動）
+        cylAmps: [1.08, 0.90, 1.10, 0.92],
+        shockSharpness: 2.3,
         gasAmp: 0.70,
         revBounceHz: 11.0,
         isTurbo: true,
-        isTwinTurbo: false
+        isTwinTurbo: false,
+        isRotary: false
     },
     '1jz': {
         name: '1JZ-GTE (JZX100 チェイサー)',
@@ -162,21 +179,26 @@ const ENGINE_PROFILES = {
         redlineRpm: 7500,
         maxRpm: 8000,
         mainWeight: 0.76,
-        exhaustDrive: 3.2,         // 直管マフラー高回転で激しく割れる強烈な破裂音
-        // 直管砲弾ドリフトマフラー音響フォルマント
-        bodyFreq: 94, bodyGain: 12.0,   // 2.5L直6の太い低音 (94Hz)
-        raspFreq: 640, raspGain: 12.5,  // 高回転で激しく弾ける1JZ特有の甲高い直管抜け (640Hz)
-        ringFreq: 2600, ringGain: 10.5, // 排気管の共鳴金属鳴き (2600Hz)
+        exhaustDrive: 3.2,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 3.25,             // ロングセダン管長 3.25m
+        primLen: 0.65,
+        tailRef: -0.80,            // 直管砲弾マフラー（高反射率で激しく炸裂）
+        bodyFreq: 94, bodyGain: 12.0, bodyQ: 2.2,  // 2.5L直6の太い低音 (94Hz)
+        raspFreq: 640, raspGain: 12.5,
+        ringFreq: 2600, ringGain: 10.5,
+        raspRatioBase: 0.24,
+        raspRatioMax: 0.85,        // 高回転でバリバリ割れる強烈な直管破裂音
         intakePeak: 340, intakeQ: 2.6, intakeGain: 0.48,
         mechWeight: 0.12, mechFreq: 3200,
         headerDelays: [0.0, 0.0001, -0.0001, 0.0, 0.0001, -0.0001],
         cylAmps: [1.04, 0.96, 1.02, 0.98, 1.03, 0.97],
-        shockSharpness: 2.6,
-        boomDuration: 0.020,
+        shockSharpness: 2.7,
         gasAmp: 0.90,
         revBounceHz: 10.5,
         isTurbo: true,
-        isTwinTurbo: false
+        isTwinTurbo: false,
+        isRotary: false
     },
     '2jz': {
         name: '2JZ-GTE (JZA80 スープラ RZ)',
@@ -191,21 +213,26 @@ const ENGINE_PROFILES = {
         redlineRpm: 7800,
         maxRpm: 8300,
         mainWeight: 0.80,
-        exhaustDrive: 3.0,         // 3.0L大排気量モンスターの強大な排気圧
-        // 大口径ツインターボマフラー音響フォルマント
-        bodyFreq: 78, bodyGain: 15.0,   // 3.0L大排気量の超重低音 (78Hz)
-        raspFreq: 510, raspGain: 9.5,   // 重厚で分厚い直6ツインターボの唸り (510Hz)
-        ringFreq: 2350, ringGain: 8.5,  // 太い排気管の共鳴 (2350Hz)
+        exhaustDrive: 3.0,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 3.05,
+        primLen: 0.70,
+        tailRef: -0.76,
+        bodyFreq: 78, bodyGain: 15.0, bodyQ: 2.5,  // 3.0L大排気量モンスターの超重低音 (78Hz)
+        raspFreq: 510, raspGain: 9.5,
+        ringFreq: 2350, ringGain: 8.5,
+        raspRatioBase: 0.18,
+        raspRatioMax: 0.78,
         intakePeak: 360, intakeQ: 2.8, intakeGain: 0.52,
         mechWeight: 0.10, mechFreq: 2800,
         headerDelays: [0.0, 0.00008, -0.00008, 0.0, 0.00008, -0.00008],
         cylAmps: [1.02, 0.98, 1.01, 0.99, 1.02, 0.98],
-        shockSharpness: 2.5,
-        boomDuration: 0.024,
+        shockSharpness: 2.6,
         gasAmp: 0.95,
         revBounceHz: 10.5,
         isTurbo: true,
-        isTwinTurbo: true
+        isTwinTurbo: true,
+        isRotary: false
     },
     '4g63': {
         name: '4G63 (CE9A ランエボIII GSR)',
@@ -220,21 +247,26 @@ const ENGINE_PROFILES = {
         redlineRpm: 7800,
         maxRpm: 8300,
         mainWeight: 0.74,
-        exhaustDrive: 3.3,         // WRC競技マフラーの硬質で暴力的な排気破裂音
-        // ラリー競技マフラー音響フォルマント
-        bodyFreq: 110, bodyGain: 11.0,  // 硬質な低音胴鳴り (110Hz)
-        raspFreq: 670, raspGain: 11.5,  // 4G63特有の硬く乾いた排気打撃音 (670Hz)
-        ringFreq: 2650, ringGain: 11.0, // 排気管の金属鳴き (2650Hz)
+        exhaustDrive: 3.3,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 2.75,
+        primLen: 0.58,
+        tailRef: -0.72,
+        bodyFreq: 110, bodyGain: 11.0, bodyQ: 2.1, // 硬質な低音胴鳴り (110Hz)
+        raspFreq: 670, raspGain: 11.5,
+        ringFreq: 2650, ringGain: 11.0,
+        raspRatioBase: 0.22,
+        raspRatioMax: 0.80,        // WRC競技マフラーの暴力的な排気破裂音
         intakePeak: 340, intakeQ: 3.0, intakeGain: 0.55,
         mechWeight: 0.16, mechFreq: 3300,
         headerDelays: [0.0, 0.0006, -0.0003, 0.0004],
-        cylAmps: [1.05, 0.95, 1.04, 0.96],
-        shockSharpness: 2.8,
-        boomDuration: 0.018,
+        cylAmps: [1.06, 0.94, 1.05, 0.95],
+        shockSharpness: 3.0,       // 超急峻なラリー高ブースト衝撃波
         gasAmp: 0.90,
         revBounceHz: 11.0,
         isTurbo: true,
-        isTwinTurbo: false
+        isTwinTurbo: false,
+        isRotary: false
     },
     'b16b': {
         name: 'B16B (EK9 シビック Type R)',
@@ -249,21 +281,25 @@ const ENGINE_PROFILES = {
         redlineRpm: 9000,
         maxRpm: 9800,
         mainWeight: 0.74,
-        exhaustDrive: 2.7,         // 5800rpmハイカム切り替え時の超高回転咆哮
-        // SPOON砲弾マフラー音響フォルマント
-        bodyFreq: 128, bodyGain: 8.5,   // 高回転NAの引き締まった低音 (128Hz)
-        raspFreq: 790, raspGain: 13.0,  // 9000rpm VTECの甲高い咆哮 (790Hz)
-        ringFreq: 3350, ringGain: 14.5, // 極細チタンエキマニの突き抜け金属鳴き (3350Hz)
-        // 5800rpm〜ハイカム吸気爆音
+        exhaustDrive: 2.7,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 2.50,             // コンパクトハッチ管長 2.50m
+        primLen: 0.55,             // 極細チタン等長タコ足
+        tailRef: -0.70,
+        bodyFreq: 128, bodyGain: 8.5, bodyQ: 2.0,  // 高回転NAの引き締まった低音 (128Hz)
+        raspFreq: 790, raspGain: 13.0,
+        ringFreq: 3350, ringGain: 14.5,            // 極細チタン管の突き抜け金属鳴き
+        raspRatioBase: 0.18,
+        raspRatioMax: 0.82,        // 5800rpmハイカムで一気に高周波開放
         intakePeak: 480, intakeQ: 3.8, intakeGain: 0.75,
         mechWeight: 0.14, mechFreq: 3800,
-        headerDelays: [0.0, 0.00006, -0.00006, 0.0], // 等長チタン管
+        headerDelays: [0.0, 0.00006, -0.00006, 0.0],
         cylAmps: [1.02, 0.98, 1.01, 0.99],
-        shockSharpness: 2.5,
-        boomDuration: 0.014,
+        shockSharpness: 2.6,
         gasAmp: 0.65,
         revBounceHz: 12.0,
-        isTurbo: false
+        isTurbo: false,
+        isRotary: false
     },
     'f5a': {
         name: 'F5A (CC72V アルトワークス RS-R)',
@@ -278,21 +314,26 @@ const ENGINE_PROFILES = {
         redlineRpm: 9500,
         maxRpm: 10500,
         mainWeight: 0.65,
-        exhaustDrive: 2.5,         // ドッカンターボ過給時の小排気量炸裂音
-        // スズスポ砲弾マフラー音響フォルマント
-        bodyFreq: 155, bodyGain: 9.0,   // 550ccの軽快な胴鳴り (155Hz)
-        raspFreq: 520, raspGain: 9.5,   // 3気筒パタパタ不均等ビート (520Hz)
-        ringFreq: 2750, ringGain: 8.5,  // 小型タービン＆エキマニ共鳴 (2750Hz)
+        exhaustDrive: 2.5,
+        // 音響管ウェーブガイド・マフラー物理パラメータ
+        pipeLen: 2.20,             // 軽自動車短尺管 2.20m
+        primLen: 0.45,
+        tailRef: -0.62,
+        bodyFreq: 155, bodyGain: 9.0, bodyQ: 1.8,  // 550cc軽快な胴鳴り (155Hz)
+        raspFreq: 520, raspGain: 9.5,              // 3気筒パタパタ不均等ビート (520Hz)
+        ringFreq: 2750, ringGain: 8.5,
+        raspRatioBase: 0.22,
+        raspRatioMax: 0.68,
         intakePeak: 320, intakeQ: 2.2, intakeGain: 0.40,
-        mechWeight: 0.20, mechFreq: 3100, // 軽自動車特有のメカノイズ
+        mechWeight: 0.20, mechFreq: 3100,
         headerDelays: [0.0, 0.0004, -0.0003],
         cylAmps: [1.08, 0.92, 1.04],
         shockSharpness: 2.2,
-        boomDuration: 0.015,
         gasAmp: 0.60,
         revBounceHz: 11.0,
         isTurbo: true,
-        isTwinTurbo: false
+        isTwinTurbo: false,
+        isRotary: false
     }
 };
 
@@ -582,39 +623,38 @@ class AudioManager {
     }
 
     /**
-     * プロシージャル・グランラー燃焼バッファ生成（Procedural Granular Combustion Buffer）
-     * 録音ファイル一切不使用：クランク・シリンダー燃焼衝撃波と排気乱流ジェットを
-     * 2.0秒間（数百サイクル分）の微細時間揺らぎ・IMEP気筒差・乱流ノイズと共にタイムドメイン合成！
-     * 固定オシレーターによる単調な音階・ブザー音を根絶し、本物の内燃機関の有機的脈動を生成。
+     * 排気管非線形音響サチュレーションカーブ生成
+     * 高圧排気ガスが管内を伝播する際の非線形音圧飽和（Acoustic Pipe Saturation）を再現。
+     * 電気的ファズ・ギター歪みを完全排除し、マフラー特有の図太い排気圧サチュレーションを生成。
      */
-    /**
-     * 排気管非線形衝撃波面シェーパーカーブ生成
-     * 高圧排気ガスが管内を伝播する際の波面急峻化（Wave Steepening）をタイムドメインで物理再現！
-     * スロットル全開でマフラー特有の荒々しい排気破裂音（Rasp & Bark）が炸裂。
-     */
-    _makeExhaustDistortionCurve(samples = 1024, k = 2.4) {
+    _makeExhaustDistortionCurve(samples = 1024, k = 1.6) {
         const curve = new Float32Array(samples);
         const half = samples / 2;
         for (let i = 0; i < samples; i++) {
             const x = (i - half) / half;
-            // 非線形排気圧力伝播関数（管内音響急峻化 + 正圧パルス強調）
-            const y = Math.tanh(k * x) + 0.15 * Math.sin(Math.PI * x) * (x > 0 ? 1.0 : 0.6) - 0.05 * (x * x * x);
+            // 音響管ソフトサチュレーション関数 (arctan系)
+            const y = (2.0 / Math.PI) * Math.atan(k * x * 1.3) + 0.08 * Math.sin(Math.PI * x);
             curve[i] = Math.max(-1.0, Math.min(1.0, y));
         }
         return curve;
     }
 
     /**
-     * プロシージャル・リアルエンジン＆マフラー燃焼バッファ生成 6.0
-     * 録音ファイル一切不使用（完全音響物理プロシージャル合成）：
-     * ① シリンダー圧力放出衝撃波面（Gas Dynamics Blowdown Pulse: 立上り0.18ms + 急峻膨張減衰）
-     * ② 排気ポート喉鳴り音響振動 ＆ 排気管負圧反射波（Expansion Tube Reflection）
-     * ③ サイレンサー太鼓のヘルムホルツ共鳴胴鳴り（減衰正弦波）
-     * ④ エキマニ・タコ足金属鳴き共鳴
-     * ⑤ バルブ隙間超音速チョーク乱流ジェット（高圧ホワイトノイズ・パルス変調）
+     * プロシージャル・リアルエンジン＆マフラー音響物理 7.0
+     * 【サイン波・電子シンセ完全排除 / 純粋物理ウェーブガイド・排気管音響モデリング】
      * 
-     * 4段階マルチスピード・ウェーブテーブル対応（idle, low, mid, high）：
-     * 回転数変化によるマフラー固有共鳴のピッチ破綻（ミッキーマウス効果）を完全根絶！
+     * 録音ファイル一切不使用（物理シミュレーションによるプロシージャル合成）：
+     * ① 純粋シリンダー燃焼放出圧力パルス（Unipolar Shock Wavefront: 立上り0.12ms + 非線形膨張減衰）
+     *    ※サイン波（Math.sin）による倍音合成を完全排除し、電子音・ブザー臭を根絶！
+     * ② 各気筒の完全非同期サイクル間カオス揺らぎ（Stochastic IMEP Jitter）
+     *    不均等な爆発力と点火時期の微小ゆらぎにより、生き物のような有機的ビートを生成。
+     * ③ 排気管内往復反射ウェーブガイド（Pipe Acoustic Waveguide Delay-Line Comb Filter）
+     *    排気管長（2.2〜3.25m）に応じた気柱内往復反射により、本物の鉄パイプ・ステンレス管特有の
+     *    無数の自然倍音（管鳴き・直管咆哮）が物理的に自発励起！
+     * ④ サイレンサー太鼓（Muffler Expansion Chamber）の音響透過
+     *    膨張室容積とパンチングパイプによる高周波吸音 ＆ ヘルムホルツ胴鳴り共振（78〜155Hz）。
+     *    急峻な衝撃波が「ドスッ」「ドバババ」という腹の底に響く重低音の排気塊（Muffler Puff）に変化！
+     * ⑤ 直管放射（Tailpipe Rasp）と太鼓胴鳴り（Muffler Boom）のハイブリッドブレンド
      */
     _getProceduralEngineBuffer(soundType, speedMode = 'low') {
         if (!this.ctx) return null;
@@ -628,7 +668,6 @@ class AudioManager {
         const sampleRate = this.ctx.sampleRate || 44100;
         const dur = 2.0;
         const N = Math.floor(sampleRate * dur);
-        const bufData = new Float32Array(N);
 
         // 4段階基準RPMの決定
         let baseRpm = 2200.0;
@@ -644,116 +683,152 @@ class AudioManager {
 
         const orderMult = profile.orderMult || 2.0;
         const strokesPerSec = (baseRpm / 60.0) * orderMult;
+        const interval = 1.0 / strokesPerSec;
+        const numStrokes = Math.floor(dur * strokesPerSec);
 
-        // 燃焼パルスの物理的持続時間
-        let durStroke = profile.boomDuration || 0.020;
-        if (speedMode === 'idle') {
-            durStroke = Math.max(durStroke * 1.35, 0.026);
-        } else if (speedMode === 'low') {
-            durStroke = Math.max(durStroke * 1.15, 0.022);
-        } else if (speedMode === 'mid') {
-            durStroke = Math.max(durStroke * 0.90, 0.016);
-        } else if (speedMode === 'high') {
-            durStroke = Math.max(durStroke * 0.70, 0.012);
-        }
-
-        const pLen = Math.floor(durStroke * sampleRate);
-        const basePulse = new Float32Array(pLen);
-
-        const boomFreq = profile.bodyFreq || 110.0;
-        const raspFreq = profile.raspFreq || 600.0;
-        const ringFreq = profile.ringFreq || 2600.0;
-        const sharpness = profile.shockSharpness || 2.2;
-        const gasAmp = profile.gasAmp || 0.70;
-
-        // 速度ゾーンに応じた胴鳴り・ガス噴射バランス
-        let boomAmp = 1.35;
-        let raspAmp = 1.15;
-        if (speedMode === 'idle') {
-            boomAmp = 1.65;
-            raspAmp = 0.85;
-        } else if (speedMode === 'low') {
-            boomAmp = 1.45;
-            raspAmp = 1.05;
-        } else if (speedMode === 'mid') {
-            boomAmp = 1.15;
-            raspAmp = 1.30;
-        } else if (speedMode === 'high') {
-            boomAmp = 0.85;
-            raspAmp = 1.55;
-        }
-
-        // ① 単一燃焼ストローク（排気パルス）の物理インパルス波形合成
-        for (let j = 0; j < pLen; j++) {
-            const t = j / sampleRate;
-
-            // 1. 非対称シリンダー圧力放出衝撃波（立上り0.18ms + 急激な膨張減衰）
-            const attack = 1.0 - Math.exp(-t / 0.00018);
-            const blowdownDecay = Math.exp(-t / (0.0022 / Math.max(1.0, sharpness * 0.55)));
-            const shockEnvelope = attack * blowdownDecay;
-
-            // 排気弁隙間を通過する音響パルス
-            const raspOsc = Math.sin(2 * Math.PI * raspFreq * t);
-
-            // 排気管内負圧反射波（マニホールド管長約60cmでの負圧引き戻し波、遅延約3.5ms）
-            const refDelay = 0.0034;
-            const refWave = (t > refDelay)
-                ? -0.42 * Math.exp(-(t - refDelay) / 0.0028) * Math.sin(2 * Math.PI * raspFreq * (t - refDelay))
-                : 0.0;
-
-            const combustionShock = (shockEnvelope * raspOsc + refWave) * raspAmp;
-
-            // 2. マフラー太鼓・サイレンサー膨張室のヘルムホルツ共鳴胴鳴り（固定周波数の減衰振動）
-            const boomDecay = (speedMode === 'idle') ? 0.022 : (speedMode === 'low' ? 0.017 : 0.011);
-            const boomWave = Math.sin(2 * Math.PI * boomFreq * t) * Math.exp(-t / boomDecay) * boomAmp;
-
-            // 3. エキマニ・タコ足金属鳴き（極薄ステン/チタン管の硬質共鳴）
-            const ringWave = Math.sin(2 * Math.PI * ringFreq * t) * Math.exp(-t / 0.0024) * 0.35;
-
-            // 4. バルブ隙間超音速チョーク乱流ジェット（高圧ガス噴射パルス変調）
-            const whiteNoise = (Math.random() * 2 - 1);
-            const gasDecay = Math.exp(-t / 0.0032);
-            const gasWave = whiteNoise * gasDecay * gasAmp * 0.65;
-
-            basePulse[j] = combustionShock + boomWave + ringWave + gasWave;
-        }
-
-        // ② 気筒別点火シーケンスとタイムドメイン展開
+        // 1. 純粋シリンダー圧力放出パルス列の生成 (rawCylBuffer)
+        const rawCyl = new Float32Array(N);
         const numCyl = profile.numCyl || 4;
         const amps = profile.cylAmps || [1.0, 1.0, 1.0, 1.0];
         const delays = profile.headerDelays || [0.0, 0.0, 0.0, 0.0];
+        const sharpness = profile.shockSharpness || 2.4;
+        const isRotary = !!profile.isRotary;
 
-        const interval = 1.0 / strokesPerSec;
-        const numStrokes = Math.floor(dur * strokesPerSec);
+        // パルス時間定数（秒）
+        const tauRise = 0.00012 / Math.max(0.8, sharpness * 0.5); // 立上り 0.10〜0.15ms
+        const tauDecay = 0.0016 / Math.max(0.8, sharpness * 0.4); // 膨張減衰 1.2〜2.0ms
+        const pLen = Math.floor(sampleRate * 0.012);
 
         for (let s = 0; s < numStrokes; s++) {
             const cylIdx = s % numCyl;
 
-            // 毎サイクル独立した微小カオス揺らぎ（IMEP timing jitter）
-            const jitterFactor = (speedMode === 'idle') ? 0.026 : 0.012;
+            // サイクル間カオス揺らぎ（Stochastic Jitter）
+            const jitterFactor = (speedMode === 'idle') ? 0.035 : 0.012;
             const jit = ((Math.random() * 2 - 1) * jitterFactor) * interval;
             const headerDelay = delays[cylIdx] || 0.0;
             const stTime = (s * interval + jit + headerDelay + dur) % dur;
 
-            // 気筒別燃焼圧の揺らぎ（IMEP pressure jitter）
-            const ampJitter = (speedMode === 'idle') ? 0.08 : 0.035;
+            // IMEP燃焼圧力揺らぎ
+            const ampJitter = (speedMode === 'idle') ? 0.09 : 0.035;
             const baseAmp = amps[cylIdx] || 1.0;
             const cylAmp = (1.0 + (Math.random() * 2 - 1) * ampJitter) * baseAmp;
 
             const idx0 = Math.floor(stTime * sampleRate);
 
             for (let j = 0; j < pLen; j++) {
-                bufData[(idx0 + j) % N] += basePulse[j] * cylAmp;
+                const t = j / sampleRate;
+                let p = 0;
+
+                if (isRotary) {
+                    // ロータリー（13B）: 滑らかな三日月形ポート開放（打撃音なし）
+                    const tNorm = Math.min(1.0, t / 0.0065);
+                    const shape = Math.sin(Math.PI * tNorm);
+                    p = shape * shape * Math.exp(-t / 0.004);
+                    // タービン通過乱流
+                    const turb = (Math.random() * 2 - 1) * p * (profile.gasAmp || 0.75);
+                    p += turb * 0.45;
+                } else {
+                    // レシプロ: 超急峻な立上り衝撃波面 + 非線形膨張減衰 (Unipolar Shock Pulse)
+                    const rise = 1.0 - Math.exp(-t / tauRise);
+                    const decay = Math.exp(-t / tauDecay);
+                    const shock = rise * decay;
+
+                    // バルブシート隙間超音速チョーク気流乱流（パルス振幅連動カオス変動）
+                    const turb = (Math.random() * 2 - 1) * shock * (profile.gasAmp || 0.65);
+                    p = shock + turb * 0.55;
+                }
+
+                rawCyl[(idx0 + j) % N] += p * cylAmp;
             }
         }
 
-        // ③ DCオフセットの除去
+        // 2. 排気管内往復反射ウェーブガイド（Pipe Acoustic Waveguide Delay-Line Comb Filter）
+        const cGas = 520.0; // 高温排気ガス中の音速 (m/s)
+        const L_pipe = profile.pipeLen || 2.80; // 排気管全長 (m)
+        const delayPipe = Math.max(16, Math.floor(sampleRate * (2.0 * L_pipe / cGas)));
+        const delayBuf = new Float32Array(delayPipe);
+        let delayIdx = 0;
+
+        const pipeOut = new Float32Array(N);
+        const rOpen = profile.tailRef || -0.68; // テールパイプ開口端負圧反射
+        const rCol = 0.42;                      // エキマニ集合部正圧反射
+        let lastDamped = 0.0;
+
+        for (let i = 0; i < N; i++) {
+            const delayed = delayBuf[delayIdx];
+            // 管壁音響損失・摩擦ダンピングフィルター (一巡ごとの高周波減衰)
+            const damped = lastDamped * 0.22 + delayed * 0.78;
+            lastDamped = damped;
+
+            // 進行波と反射波の結合
+            const w = rawCyl[i] + rCol * damped;
+            const out = w + rOpen * damped;
+            pipeOut[i] = out;
+
+            delayBuf[delayIdx] = w;
+            delayIdx = (delayIdx + 1) % delayPipe;
+        }
+
+        // 3. マフラー太鼓（サイレンサー膨張室）の音響透過 (Muffler Silencer Cavity)
+        const mufflerOut = new Float32Array(N);
+        const bodyFreq = profile.bodyFreq || 110.0;
+        const w0 = 2.0 * Math.PI * bodyFreq / sampleRate;
+        const qVal = profile.bodyQ || 2.0;
+        const alpha = Math.sin(w0) / (2.0 * qVal);
+        const cosw0 = Math.cos(w0);
+
+        // 二次共振器（ヘルムホルツ太鼓共振フィルター）係数
+        const b0 = alpha;
+        const b1 = 0.0;
+        const b2 = -alpha;
+        const a0 = 1.0 + alpha;
+        const a1 = -2.0 * cosw0;
+        const a2 = 1.0 - alpha;
+
+        let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        let lpVal = 0;
+        // 膨張室吸音ローパス係数 (約280Hz)
+        const lpCoef = Math.min(0.25, 2.0 * Math.PI * 280.0 / sampleRate);
+
+        for (let i = 0; i < N; i++) {
+            const inSig = pipeOut[i];
+            // 太鼓内パンチングパイプ・グラスウール吸音
+            lpVal += lpCoef * (inSig - lpVal);
+
+            // 太鼓胴鳴りヘルムホルツ共振
+            const x0 = lpVal;
+            const y0 = (b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+            x2 = x1; x1 = x0;
+            y2 = y1; y1 = y0;
+
+            mufflerOut[i] = lpVal * 0.65 + y0 * 2.2;
+        }
+
+        // 4. 直管放射（Rasp & Crackle）と太鼓胴鳴り（Muffler Boom）のハイブリッドブレンド
+        const rBase = profile.raspRatioBase || 0.20;
+        const rMax = profile.raspRatioMax || 0.75;
+        let raspRatio = rBase;
+        if (speedMode === 'idle') raspRatio = rBase * 0.75;
+        else if (speedMode === 'low') raspRatio = rBase * 1.15;
+        else if (speedMode === 'mid') raspRatio = rBase + (rMax - rBase) * 0.50;
+        else if (speedMode === 'high') raspRatio = rMax;
+
+        const bufData = new Float32Array(N);
+        for (let i = 0; i < N; i++) {
+            const straightPipe = pipeOut[i];
+            const mufflerBoom = mufflerOut[i];
+            // 直管の非線形波面急峻化（Wave Steepening）
+            const steepRasp = Math.tanh(1.8 * straightPipe) + 0.10 * (straightPipe * straightPipe) * Math.sign(straightPipe);
+            bufData[i] = mufflerBoom * (1.0 - raspRatio) + steepRasp * raspRatio;
+        }
+
+        // 5. DCオフセットの除去
         let mean = 0;
         for (let i = 0; i < N; i++) mean += bufData[i];
         mean /= N;
         for (let i = 0; i < N; i++) bufData[i] -= mean;
 
-        // ④ ピーク正規化 (0.88)
+        // 6. ピーク正規化 (0.88)
         let maxAbs = 0.0001;
         for (let i = 0; i < N; i++) {
             const a = Math.abs(bufData[i]);
@@ -765,7 +840,6 @@ class AudioManager {
         audioBuf.copyToChannel(bufData, 0);
 
         this._proceduralBufferCache[cacheKey] = audioBuf;
-        // 単一引数呼び出し互換（フォールバック用）
         if (speedMode === 'low') {
             this._proceduralBufferCache[soundType] = audioBuf;
         }
@@ -1159,16 +1233,17 @@ class AudioManager {
         }
 
         // 5. 吸排気可変ダイナミックローパスフィルター (スロットル開閉にダイレクト連動)
-        let baseCutoff = 700;
-        let rangeCutoff = 6200;
-        let throttleCutoff = 4200;
+        // アイドリング時でも籠もりを排除し、乾いた排気の歯切れ良さを保つため 1800Hz を確保
+        let baseCutoff = 1800;
+        let rangeCutoff = 7500;
+        let throttleCutoff = 4800;
 
         if (this.soundType === 'b16b') {
-            // EK9 VTEC: 5800rpm以上でハイカム吸排気が炸裂！超高域11000Hzまで突き抜ける
+            // EK9 VTEC: 5800rpm以上でハイカム吸排気が炸裂！超高域13000Hzまで突き抜ける
             const isVtec = (rpm > 5800);
-            baseCutoff = isVtec ? 1200 : 680;
-            rangeCutoff = isVtec ? 11000 : 5800;
-            throttleCutoff = isVtec ? 5800 : 2800;
+            baseCutoff = isVtec ? 2800 : 1600;
+            rangeCutoff = isVtec ? 12000 : 6800;
+            throttleCutoff = isVtec ? 5800 : 3600;
             if (isVtec) {
                 // ハイカム作動時の排気喉鳴りと金属鳴きを強烈にブースト
                 this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 3.0, curTime, 0.03);
