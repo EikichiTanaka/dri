@@ -103,30 +103,30 @@ const ENGINE_PROFILES = {
         numCyl: 6,
         orderMult: 3.0,            // 直6: 1回転あたり3回点火 (完全等間隔120°点火)
         cycleFreqRatio: 1 / 120,
-        idleRpm: 900,
-        idleBaseRpm: 900,
-        lowBaseRpm: 2400,
-        midBaseRpm: 4500,
-        highBaseRpm: 7200,
+        idleRpm: 880,
+        idleBaseRpm: 880,
+        lowBaseRpm: 2200,
+        midBaseRpm: 4200,
+        highBaseRpm: 6800,
         redlineRpm: 8000,
-        maxRpm: 8600,
-        mainWeight: 0.82,
-        exhaustDrive: 3.2,
+        maxRpm: 8500,
+        mainWeight: 0.85,          // 圧倒的な音圧・存在感
+        exhaustDrive: 3.4,
         // 音響管ウェーブガイド・マフラー物理パラメータ
-        pipeLen: 3.00,             // 3.00m等長フロントパイプ〜ストレート管長
+        pipeLen: 3.15,             // 3.15mの極太マフラー長尺管（長波長・重低音共鳴）
         primLen: 0.65,             // 等長6-2-1
-        tailRef: -0.72,            // 大口径ステン直管マフラー
-        bodyFreq: 98, bodyGain: 10.5, bodyQ: 2.0,  // 重苦しい低音を抑え、引き締まった直6の厚み (98Hz)
-        raspFreq: 620, raspGain: 14.5,            // 直6完全バランスによるシルキーで太い排気喉鳴り「クォォォォン」 (620Hz)
-        ringFreq: 2800, ringGain: 14.5,           // 大口径等長ステン管の澄んだ甲高いレーシングGT-R鳴き (2800Hz)
-        raspRatioBase: 0.22,
-        raspRatioMax: 0.82,
-        intakePeak: 450, intakeQ: 3.0, intakeGain: 0.65, // ツインターボキノコ型エアクリの強烈な吸気音
-        mechWeight: 0.08, mechFreq: 3300,
+        tailRef: -0.76,            // 大口径φ115砲弾マフラー出口
+        bodyFreq: 82, bodyGain: 15.5, bodyQ: 1.6,  // 2.6Lツインターボの地響き重低音（82Hz広帯域でズッシリ腹に響く！）
+        raspFreq: 440, raspGain: 13.5,            // 直6特有の野太く重い中低音排気咆哮「ズォォォォン」(440Hz)
+        ringFreq: 2200, ringGain: 9.5,            // 高音のキンキン感を抑え、大口径ステン管の重厚なしっとりした鳴き (2200Hz)
+        raspRatioBase: 0.20,
+        raspRatioMax: 0.74,        // 高回転でも甲高く割れすぎず、重厚な音圧を維持
+        intakePeak: 380, intakeQ: 2.6, intakeGain: 0.52, // ツインターボの分厚い過給吸気音
+        mechWeight: 0.08, mechFreq: 3100,
         headerDelays: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], // 完全等長・完全バランス（ドロドロ感ゼロ、時計の精度）
         cylAmps: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        shockSharpness: 2.8,       // 研ぎ澄まされた直6燃焼衝撃波
-        gasAmp: 0.90,
+        shockSharpness: 2.4,       // 重厚で厚みのあるシリンダー燃焼衝撃波
+        gasAmp: 0.95,              // 分厚い排気風圧
         revBounceHz: 10.5,
         isTurbo: true,
         isTwinTurbo: true,
@@ -1216,9 +1216,9 @@ class AudioManager {
         } else if (this.soundType === 'b16b' && rpm > 5800 && throttle > 0.40) {
             // EK9 VTEC：ハイカム突入時の爆圧
             driveMult += throttle * 0.30;
-        } else if (this.soundType === 'rb26' && throttle > 0.40) {
+        } else if (this.soundType === 'rb26' && throttle > 0.35) {
             // BNR32 GT-R：ツインターボフルブースト時の分厚い排気圧轟音！
-            driveMult += throttle * 0.40 + rpmNorm * 0.30;
+            driveMult += throttle * 0.50 + rpmNorm * 0.35;
         }
         const targetDrive = profile.mainWeight * driveMult;
         if (this.exhaustDriveGain) {
@@ -1232,6 +1232,9 @@ class AudioManager {
         if (this.soundType === '2jz') {
             // 2JZ：3.0L超重低音の圧倒的音圧を常に維持
             bodyGainVal += (1.0 - rpmNorm * 0.2) * 2.5;
+        } else if (this.soundType === 'rb26') {
+            // BNR32 GT-R：2.6Lツインターボの重厚な地響き低音圧を常に太く保つ！
+            bodyGainVal += (1.0 - rpmNorm * 0.15) * 3.5 + throttle * 2.0;
         }
         this.engineBodyFilter.frequency.setTargetAtTime(bodyFreq, curTime, 0.04);
         this.engineBodyFilter.gain.setTargetAtTime(bodyGainVal, curTime, 0.04);
@@ -1253,9 +1256,9 @@ class AudioManager {
             // AE86：4-1等長ステン管の突き抜ける高音金属鳴き
             ringGainVal *= 1.25;
         } else if (this.soundType === 'rb26' && throttle > 0.35) {
-            // BNR32 GT-R：等長6-2-1フロントパイプ＆ステン直管マフラーの突き抜けるレーシングGT-R鳴き！
-            ringGainVal *= 1.35;
-            raspGainVal += 2.5;
+            // BNR32 GT-R：高音キンキンを抑え、野太い中低域喉鳴りをドッシリブースト
+            raspGainVal += 3.0;
+            ringGainVal *= 1.05;
         }
         this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
         this.engineRingFilter.gain.setTargetAtTime(ringGainVal, curTime, 0.04);
@@ -1308,10 +1311,11 @@ class AudioManager {
                 this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.35, curTime, 0.02);
             }
         } else if (this.soundType === 'rb26') {
-            // BNR32 GT-R：直6完全等間隔爆発によるシルキーで澄み切った高域抜け（12500Hzまで綺麗に伸びる）
-            baseCutoff = 2200;
-            rangeCutoff = 9000;
-            throttleCutoff = 5000;
+            // BNR32 GT-R：高音シャリシャリをカットし、低めで重みのある重厚な直6ツインターボサウンドへ！
+            // 低〜中域の分厚い排気圧を押し出し、腹に響く野太い咆哮「ズォォォォン」を再現
+            baseCutoff = 1600;
+            rangeCutoff = 5600;
+            throttleCutoff = 3400;
         }
 
         const targetCutoff = baseCutoff + (rpmNorm * rangeCutoff) + (throttle * throttleCutoff);
