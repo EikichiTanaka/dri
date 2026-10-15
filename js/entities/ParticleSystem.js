@@ -202,16 +202,11 @@ class ParticleSystem {
         this.skidQuadInitialAlpha = new Float32Array(this.maxSkidQuads);
         this.skidQuadAge.fill(9999.0); // 初期状態は完全に冷却済み
 
-        // 左右車輪ごとの打刻トラッキング状態（リア駆動輪＋【1】フロント操舵輪）
+        // 左右リア車輪ごとの打刻トラッキング状態（確定位置・累積距離・UV進行・摩擦熱・微小脈動距離）
         this.playerTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
         this.playerTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-        this.playerFrontTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-        this.playerFrontTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-
         this.rivalTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
         this.rivalTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-        this.rivalFrontTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-        this.rivalFrontTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
 
         this.playerLastL = null;
         this.playerLastR = null;
@@ -771,14 +766,14 @@ class ParticleSystem {
         let alpha = Math.min(0.95, baseAlpha * fade);
         if (this.isRaining) alpha *= 0.35; // 雨天ウェット路面は薄いタイヤ痕
 
-        // 【4】刻みたての「熱い漆黒」から「マットな冷えグレー」への経年変化トラッキング
+        // 【4】刻みたての「ダークグラファイトグレー」から「マットな冷えグレー」への経年変化トラッキング
         const qIdx = this.skidQuadIndex;
         if (this.skidQuadAge) this.skidQuadAge[qIdx] = 0.0;
         if (this.skidQuadInitialAlpha) this.skidQuadInitialAlpha[qIdx] = alpha;
 
-        // 刻みたての生々しい熱い漆黒 (R:0.016, G:0.016, B:0.020)
-        // 高熱で溶け出たゴム油分の濃厚ブラック。数秒後に冷却されマットグレー (0.052, 0.052, 0.062) へ滑らかに推移
-        const cr = 0.016, cg = 0.016, cb = 0.020;
+        // ドリフトしたては真っ黒ではなく、上品なダークグラファイトグレー（道路にカモフラージュしない十分なコントラストを保持）
+        // アスファルト路面（0.18〜0.25）に対して明確な明度差（0.062）を持ち、くっきり視認可能
+        const cr = 0.062, cg = 0.062, cb = 0.070;
         colAttr.setXYZW(vBase,     cr, cg, cb, alpha);
         colAttr.setXYZW(vBase + 1, cr, cg, cb, alpha);
         colAttr.setXYZW(vBase + 2, cr, cg, cb, alpha);
@@ -796,19 +791,17 @@ class ParticleSystem {
     }
 
     /**
-     * プレイヤーの車輪に動的荷重移動と【1】フロント前輪カウンターステア痕（4輪フル軌跡）を反映したドリフトタイヤ痕を追加
+     * プレイヤーの左右リアタイヤに動的左右荷重移動（Lateral Weight Transfer）を反映したドリフトタイヤ痕を追加
      * @param {THREE.Vector3} leftPos - 左後輪の接地位置
      * @param {THREE.Vector3} rightPos - 右後輪の接地位置
      * @param {number} intensity - 基本スリップ強度
      * @param {number} driftAngle - 自車のドリフト角（ラジアン）
-     * @param {Object} frontWheels - { left: Vector3, right: Vector3 } フロント前輪接地位置（任意）
-     * @param {number} steerAngle - ステアリング操舵角（任意）
      */
-    addPlayerDriftMark(leftPos, rightPos, intensity = 0.8, driftAngle = 0.0, frontWheels = null, steerAngle = 0.0) {
+    addPlayerDriftMark(leftPos, rightPos, intensity = 0.8, driftAngle = 0.0) {
         if (!this.playerTireL) this.playerTireL = { lastPos: null, uvV: 0, slipSegments: 0 };
         if (!this.playerTireR) this.playerTireR = { lastPos: null, uvV: 0, slipSegments: 0 };
 
-        // 左右荷重移動（外側輪は高荷重で太く漆黒、内側輪は抜重で細くかすれたグレー）
+        // 左右荷重移動（外側輪は高荷重で太く濃いグレー、内側輪は抜重で細くかすれたグレー）
         let leftWidth = 0.24;
         let rightWidth = 0.24;
         let leftIntensity = intensity;
@@ -836,39 +829,6 @@ class ParticleSystem {
         this.addWheelMark(this.playerTireR, rightPos, rightIntensity, rightWidth);
         this.playerLastL = this.playerTireL.lastPos;
         this.playerLastR = this.playerTireR.lastPos;
-
-        // 【1】フロント前輪のカウンターステア痕（実車FRフルカウンター時のスクラブ摩擦痕・4輪フル軌跡）
-        if (frontWheels && frontWheels.left && frontWheels.right && absAngle > 0.08) {
-            if (!this.playerFrontTireL) this.playerFrontTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-            if (!this.playerFrontTireR) this.playerFrontTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-
-            // 実車FRドリフトでは、逆ハンドル（カウンターステア）を切ることで外側前輪が路面に対して横滑り（スクラブ）を起こす
-            if (driftAngle > 0) {
-                // 右ドリフト（車体右滑り）: 左前輪が外側（Outer Front）。スクラブ強度はリアの約68%、幅0.21m
-                const fLeftIntensity = leftIntensity * 0.68;
-                this.addWheelMark(this.playerFrontTireL, frontWheels.left, fLeftIntensity, 0.21);
-                // 内側（右前輪）: ドリフト角が大きい（absAngle > 0.32）時にのみ薄く補助痕
-                if (absAngle > 0.32) {
-                    this.addWheelMark(this.playerFrontTireR, frontWheels.right, rightIntensity * 0.32, 0.18);
-                } else {
-                    this.finalizeWheelMark(this.playerFrontTireR);
-                }
-            } else {
-                // 左ドリフト（車体左滑り）: 右前輪が外側（Outer Front）。
-                const fRightIntensity = rightIntensity * 0.68;
-                this.addWheelMark(this.playerFrontTireR, frontWheels.right, fRightIntensity, 0.21);
-                // 内側（左前輪）: ドリフト角が大きい時にのみ薄く補助痕
-                if (absAngle > 0.32) {
-                    this.addWheelMark(this.playerFrontTireL, frontWheels.left, leftIntensity * 0.32, 0.18);
-                } else {
-                    this.finalizeWheelMark(this.playerFrontTireL);
-                }
-            }
-        } else {
-            // ドリフト終了時・浅い角度ではフロント前輪痕を終了リセット
-            if (this.playerFrontTireL) this.finalizeWheelMark(this.playerFrontTireL);
-            if (this.playerFrontTireR) this.finalizeWheelMark(this.playerFrontTireR);
-        }
     }
 
     /**
@@ -878,16 +838,14 @@ class ParticleSystem {
     endPlayerDrift() {
         this.finalizeWheelMark(this.playerTireL);
         this.finalizeWheelMark(this.playerTireR);
-        if (this.playerFrontTireL) this.finalizeWheelMark(this.playerFrontTireL);
-        if (this.playerFrontTireR) this.finalizeWheelMark(this.playerFrontTireR);
         this.playerLastL = null;
         this.playerLastR = null;
     }
 
     /**
-     * ライバル車（FD3S）の車輪に動的荷重移動＋【1】フロントカウンターステア痕付きドリフトタイヤ痕を追加
+     * ライバル車（FD3S）の左右リアタイヤに動的荷重移動付きリアルタイム・ドリフトタイヤ痕を追加
      */
-    addRivalDriftMark(leftPos, rightPos, intensity = 0.7, driftAngle = 0.0, frontWheels = null) {
+    addRivalDriftMark(leftPos, rightPos, intensity = 0.7, driftAngle = 0.0) {
         if (!this.rivalTireL) this.rivalTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
         if (!this.rivalTireR) this.rivalTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
 
@@ -916,31 +874,6 @@ class ParticleSystem {
         this.addWheelMark(this.rivalTireR, rightPos, rightIntensity, rightWidth);
         this.rivalLastL = this.rivalTireL.lastPos;
         this.rivalLastR = this.rivalTireR.lastPos;
-
-        // ライバル車フロント操舵輪スクラブ痕
-        if (frontWheels && frontWheels.left && frontWheels.right && absAngle > 0.08) {
-            if (!this.rivalFrontTireL) this.rivalFrontTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-            if (!this.rivalFrontTireR) this.rivalFrontTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
-
-            if (driftAngle > 0) {
-                this.addWheelMark(this.rivalFrontTireL, frontWheels.left, leftIntensity * 0.65, 0.21);
-                if (absAngle > 0.32) {
-                    this.addWheelMark(this.rivalFrontTireR, frontWheels.right, rightIntensity * 0.30, 0.18);
-                } else {
-                    this.finalizeWheelMark(this.rivalFrontTireR);
-                }
-            } else {
-                this.addWheelMark(this.rivalFrontTireR, frontWheels.right, rightIntensity * 0.65, 0.21);
-                if (absAngle > 0.32) {
-                    this.addWheelMark(this.rivalFrontTireL, frontWheels.left, leftIntensity * 0.30, 0.18);
-                } else {
-                    this.finalizeWheelMark(this.rivalFrontTireL);
-                }
-            }
-        } else {
-            if (this.rivalFrontTireL) this.finalizeWheelMark(this.rivalFrontTireL);
-            if (this.rivalFrontTireR) this.finalizeWheelMark(this.rivalFrontTireR);
-        }
     }
 
     /**
@@ -949,8 +882,6 @@ class ParticleSystem {
     endRivalDrift() {
         this.finalizeWheelMark(this.rivalTireL);
         this.finalizeWheelMark(this.rivalTireR);
-        if (this.rivalFrontTireL) this.finalizeWheelMark(this.rivalFrontTireL);
-        if (this.rivalFrontTireR) this.finalizeWheelMark(this.rivalFrontTireR);
         this.rivalLastL = null;
         this.rivalLastR = null;
     }
@@ -1045,7 +976,7 @@ class ParticleSystem {
     }
 
     update(dt, camera) {
-        // 【4】刻みたての「熱い漆黒」から「マットな冷えグレー」への経年変化更新
+        // 【4】刻みたての「ダークグラファイトグレー」から「マットな冷えグレー」への経年変化更新
         if (this.skidQuadAge) {
             let colorUpdated = false;
             const maxCoolingTime = 10.0; // 10秒かけて外気冷却＆路面粉塵吸着
@@ -1054,16 +985,17 @@ class ParticleSystem {
                 if (this.skidQuadAge[q] < maxCoolingTime) {
                     this.skidQuadAge[q] += dt;
                     const age = this.skidQuadAge[q];
-                    // 0.0〜1.2秒: 生々しい熱い漆黒 (cr: 0.016, cg: 0.016, cb: 0.020)
-                    // 1.2〜10.0秒: 滑らかに外気冷却され、乾いたマットダークグレー (cr: 0.052, cg: 0.052, cb: 0.062) へ推移
+                    // 0.0〜1.2秒: ドリフトしたてのダークグラファイトグレー (cr: 0.062, cg: 0.062, cb: 0.070)
+                    // 1.2〜10.0秒: 滑らかに外気冷却され、乾いたマットな冷えグレー (cr: 0.088, cg: 0.088, cb: 0.098) へ推移
+                    // ※アスファルト路面（0.18〜0.25）に対して明確な明度差を持ち、道路にカモフラージュ（同化）せず明瞭に視認可能
                     const coolProgress = Math.min(1.0, Math.max(0.0, (age - 1.2) / 8.8));
-                    const cr = 0.016 + (0.052 - 0.016) * coolProgress;
-                    const cg = 0.016 + (0.052 - 0.016) * coolProgress;
-                    const cb = 0.020 + (0.062 - 0.020) * coolProgress;
+                    const cr = 0.062 + (0.088 - 0.062) * coolProgress;
+                    const cg = 0.062 + (0.088 - 0.062) * coolProgress;
+                    const cb = 0.070 + (0.098 - 0.070) * coolProgress;
 
-                    // アルファもゴム揮発油分が抜けてほんのり落ち着いたマット調に推移 (初期アルファの約86%)
+                    // アルファもゴム揮発油分が抜けてほんのり落ち着いたマット調に推移 (初期アルファの約88%)
                     const initA = this.skidQuadInitialAlpha ? this.skidQuadInitialAlpha[q] : 0.8;
-                    const curA = initA * (1.0 - coolProgress * 0.14);
+                    const curA = initA * (1.0 - coolProgress * 0.12);
 
                     const vBase = q * 4;
                     colAttr.setXYZW(vBase,     cr, cg, cb, curA);
