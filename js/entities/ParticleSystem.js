@@ -524,6 +524,13 @@ class ParticleSystem {
      * @param {number} tireWidth - タイヤ幅 (実車サイズ: 0.20〜0.27m)
      */
     addWheelMark(state, currPos, intensity = 0.8, tireWidth = 0.24) {
+        if (intensity < 0.18) {
+            state.lastPos = null;
+            state.uvV = 0;
+            state.slipSegments = 0;
+            return;
+        }
+
         if (!state.lastPos) {
             state.lastPos = currPos.clone();
             state.uvV = 0;

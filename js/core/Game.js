@@ -627,37 +627,53 @@ class Game {
             }
         }
 
-        // ★自車（プレイヤー）ドリフト・スリップ・ブレーキング時のリアルタイム・スキッドマーク（タイヤ痕）
-        const pSpeed = this.playerPhysics.speed;
-        const pAbsAngle = Math.abs(this.playerPhysics.driftAngle);
-        const pIsDrifting = this.playerPhysics.isDrifting;
+        // =========================================================================
+        // ★リアルタイム・スキッドマーク（タイヤ痕）＆ドリフトスモーク更新
+        // 通常のステアリング操作（グリップ旋回）ではタイヤ痕を絶対に発生させず、
+        // ドリフト・本格パワースライド・急制動（ハードブレーキ/サイド）・発進ホイールスピン時のみ刻印
+        // =========================================================================
+        const pSpeed = this.playerPhysics.speed || 0;
+        const pAbsAngle = Math.abs(this.playerPhysics.driftAngle || 0);
+        // 本格ドリフト中（driftAngle が一定以上ある時）
+        const pIsDrifting = this.playerPhysics.isDrifting && (pAbsAngle > 0.08);
         const pVLat = Math.abs(this.playerPhysics.velocity ? (
             this.playerPhysics.velocity.x * Math.cos(this.playerPhysics.yaw) - 
             this.playerPhysics.velocity.z * Math.sin(this.playerPhysics.yaw)
         ) : 0);
-        const pIsBraking = (this.playerPhysics.brake > 0.20 || this.playerPhysics.handbrake) && pSpeed > 12;
-        const pIsPowerSliding = (pAbsAngle > 0.055 || pVLat > 0.85) && pSpeed > 14;
-        const pIsLaunchSpin = (this.playerPhysics.launchBoostTimer > 0) && pSpeed < 50 && (this.input.throttle > 0.35);
 
-        // ドリフト・スライド状態の瞬間検出
+        // 強烈なブレーキング（ABS作動域の急制動、またはサイドブレーキでのリアロック）
+        // ※通常の減速操作（brake 0.2〜0.5）ではタイヤ痕は出さない
+        const pIsBraking = ((this.playerPhysics.brake > 0.70 && pSpeed > 24) || (this.playerPhysics.handbrake && pSpeed > 15));
+
+        // ドリフト未判定だがテールが限界摩擦を超えて激しく流れた本格パワースライド
+        // ※通常のステアリング操作（pAbsAngle: 0.04〜0.12, pVLat: 1〜2m/s）を完全に除外し、明確な滑走のみ検知
+        const pIsPowerSliding = (pAbsAngle > 0.22 && pVLat > 2.8 && pSpeed > 18);
+
+        // 発進時の急加速ホイールスピン（ローンチバーンアウト）
+        const pIsLaunchSpin = (this.playerPhysics.launchBoostTimer > 0) && pSpeed < 45 && (this.input.throttle > 0.50);
+
+        // 現フレームでタイヤが限界摩擦を超えて滑っているか
         const isTireSlippingNow = pIsDrifting || pIsPowerSliding || pIsBraking || pIsLaunchSpin;
 
-        // ★振り返し時のゼロクロスによる途切れ・チャタリングを完全防止するホールドタイマー (0.22秒)
-        if (isTireSlippingNow) {
-            this.playerTireBurnTimer = 0.22;
+        // ★振り返し（S字等の切り返し）時のゼロクロスによる途切れを防止するホールドタイマー
+        // ※本格ドリフト中（pIsDrifting）の時のみホールドし、通常走行や軽いスライドでは一切引き延ばさない！
+        if (pIsDrifting) {
+            this.playerTireBurnTimer = 0.18;
+        } else if (isTireSlippingNow) {
+            this.playerTireBurnTimer = Math.max(this.playerTireBurnTimer, 0.06);
         } else if (this.playerTireBurnTimer > 0) {
             this.playerTireBurnTimer -= dt;
         }
 
-        const isPlayerBurningTire = (this.playerTireBurnTimer > 0) && pSpeed > 10;
+        const isPlayerBurningTire = isTireSlippingNow || (pIsDrifting && this.playerTireBurnTimer > 0);
         let pTireIntensity = 0.65;
 
         if (pIsDrifting && pSpeed > 14) {
-            pTireIntensity = Math.min(1.4, Math.max(0.45, pAbsAngle * 3.2));
+            pTireIntensity = Math.min(1.4, Math.max(0.40, pAbsAngle * 3.2));
         } else if (pIsPowerSliding) {
-            pTireIntensity = Math.min(1.15, Math.max(0.40, pAbsAngle * 3.5 + pVLat * 0.15));
+            pTireIntensity = Math.min(1.15, Math.max(0.40, (pAbsAngle - 0.15) * 3.5 + pVLat * 0.12));
         } else if (pIsBraking) {
-            pTireIntensity = this.playerPhysics.handbrake ? 0.95 : Math.min(0.95, this.playerPhysics.brake * 1.2);
+            pTireIntensity = this.playerPhysics.handbrake ? 0.95 : Math.min(0.95, (this.playerPhysics.brake - 0.5) * 2.0);
         } else if (pIsLaunchSpin) {
             pTireIntensity = 1.0;
         }
