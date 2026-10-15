@@ -172,18 +172,26 @@ class ParticleSystem {
         this.skidGeom.setAttribute('color', new THREE.BufferAttribute(skidColors, 4));
         this.skidGeom.setIndex(new THREE.BufferAttribute(skidIndices, 1));
 
+        // ★GPUへの動的バッファ更新属性を明示（GPUキャッシュ問題を完全防止）
+        this.skidGeom.attributes.position.setUsage(THREE.DynamicDrawUsage);
+        this.skidGeom.attributes.color.setUsage(THREE.DynamicDrawUsage);
+
+        // ★視錐台カリング用の超巨大バウンディングスフィアを固定定義
+        this.skidGeom.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 100000);
+
         const skidMat = new THREE.MeshBasicMaterial({
             vertexColors: true,
             transparent: true,
             depthWrite: false,
             polygonOffset: true,
-            polygonOffsetFactor: -1.2,
+            polygonOffsetFactor: -1.5,
             polygonOffsetUnits: -4.0,
             side: THREE.DoubleSide
         });
 
         this.skidMesh = new THREE.Mesh(this.skidGeom, skidMat);
         this.skidMesh.renderOrder = 3; // 路面および事前タイヤ痕の直後に描画
+        this.skidMesh.frustumCulled = false; // ★絶対に視錐台カリングさせない（画面外スキップを完全防止）
         this.scene.add(this.skidMesh);
 
         // 左右車輪ごとの打刻トラッキング状態（確定位置・累積距離）
@@ -498,9 +506,9 @@ class ParticleSystem {
         const nz = dx * invLen;
         const halfW = tireWidth * 0.5;
 
-        // 路面直上（Y + 0.016m）に配置してアスファルトと自然に密着（Z-fight完全防止）
-        const y0 = prevPos.y + 0.016;
-        const y1 = currPos.y + 0.016;
+        // 路面直上（Y + 0.018m）に配置してアスファルトと自然に密着（事前タイヤ痕0.016mよりわずか上にレイヤーしZ-fight完全防止）
+        const y0 = prevPos.y + 0.018;
+        const y1 = currPos.y + 0.018;
 
         const posAttr = this.skidGeom.attributes.position;
         const colAttr = this.skidGeom.attributes.color;
@@ -512,8 +520,8 @@ class ParticleSystem {
         posAttr.setXYZ(vBase + 2, currPos.x - nx * halfW, y1, currPos.z - nz * halfW);
         posAttr.setXYZ(vBase + 3, currPos.x + nx * halfW, y1, currPos.z + nz * halfW);
 
-        // ドリフト強度・天候に応じたブラックマーク濃度
-        let alpha = Math.max(0.32, Math.min(0.85, 0.30 + intensity * 0.52));
+        // ドリフト強度・天候に応じたブラックマーク濃度（低速・軽微なスライドでも確実に視認できる0.40〜0.88）
+        let alpha = Math.max(0.40, Math.min(0.88, 0.38 + intensity * 0.50));
         if (this.isRaining) alpha *= 0.35; // 雨天ウェット路面は薄いタイヤ痕
 
         // 焼き付きタイヤゴムの漆黒 (R:0.04, G:0.04, B:0.05)

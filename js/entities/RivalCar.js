@@ -451,13 +451,22 @@ class RivalCar {
         this.meshGroup.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
     }
 
-    getRearWheelPositions() {
+    getRearWheelPositions(track = null, hintT = null) {
         this.meshGroup.updateMatrixWorld(true);
         const leftRear = new THREE.Vector3(-0.82, 0.1, -1.3).applyMatrix4(this.meshGroup.matrixWorld);
         const rightRear = new THREE.Vector3(0.82, 0.1, -1.3).applyMatrix4(this.meshGroup.matrixWorld);
-        const groundY = this.position ? this.position.y : this.meshGroup.position.y;
-        leftRear.y = groundY;
-        rightRear.y = groundY;
+
+        const trackRef = track || this.track;
+        const tHint = (hintT !== null && hintT !== undefined) ? hintT : (this.progressT || this.trackT || null);
+
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            leftRear.y = trackRef.getRoadSurfaceY(leftRear, tHint);
+            rightRear.y = trackRef.getRoadSurfaceY(rightRear, tHint);
+        } else {
+            leftRear.y -= 0.31;
+            rightRear.y -= 0.31;
+        }
+
         return { left: leftRear, right: rightRear };
     }
 

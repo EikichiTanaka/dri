@@ -31,6 +31,7 @@ class Game {
         this.input = null;
         this.audio = null;
         this.hud = null;
+        this.playerTireBurnTimer = 0;
 
         this.init();
     }
@@ -630,29 +631,41 @@ class Game {
         const pSpeed = this.playerPhysics.speed;
         const pAbsAngle = Math.abs(this.playerPhysics.driftAngle);
         const pIsDrifting = this.playerPhysics.isDrifting;
-        const pIsBraking = (this.playerPhysics.brake > 0.25 || this.playerPhysics.handbrake) && pSpeed > 14;
-        const pIsPowerSliding = (pAbsAngle > 0.065) && pSpeed > 15;
+        const pVLat = Math.abs(this.playerPhysics.velocity ? (
+            this.playerPhysics.velocity.x * Math.cos(this.playerPhysics.yaw) - 
+            this.playerPhysics.velocity.z * Math.sin(this.playerPhysics.yaw)
+        ) : 0);
+        const pIsBraking = (this.playerPhysics.brake > 0.20 || this.playerPhysics.handbrake) && pSpeed > 12;
+        const pIsPowerSliding = (pAbsAngle > 0.055 || pVLat > 0.85) && pSpeed > 14;
         const pIsLaunchSpin = (this.playerPhysics.launchBoostTimer > 0) && pSpeed < 50 && (this.input.throttle > 0.35);
 
-        let isPlayerBurningTire = false;
-        let pTireIntensity = 0;
+        // ドリフト・スライド状態の瞬間検出
+        const isTireSlippingNow = pIsDrifting || pIsPowerSliding || pIsBraking || pIsLaunchSpin;
+
+        // ★振り返し時のゼロクロスによる途切れ・チャタリングを完全防止するホールドタイマー (0.22秒)
+        if (isTireSlippingNow) {
+            this.playerTireBurnTimer = 0.22;
+        } else if (this.playerTireBurnTimer > 0) {
+            this.playerTireBurnTimer -= dt;
+        }
+
+        const isPlayerBurningTire = (this.playerTireBurnTimer > 0) && pSpeed > 10;
+        let pTireIntensity = 0.65;
 
         if (pIsDrifting && pSpeed > 14) {
-            isPlayerBurningTire = true;
-            pTireIntensity = Math.min(1.4, Math.max(0.40, pAbsAngle * 3.0));
+            pTireIntensity = Math.min(1.4, Math.max(0.45, pAbsAngle * 3.2));
         } else if (pIsPowerSliding) {
-            isPlayerBurningTire = true;
-            pTireIntensity = Math.min(1.1, (pAbsAngle - 0.065) * 3.6 + 0.38);
+            pTireIntensity = Math.min(1.15, Math.max(0.40, pAbsAngle * 3.5 + pVLat * 0.15));
         } else if (pIsBraking) {
-            isPlayerBurningTire = true;
-            pTireIntensity = this.playerPhysics.handbrake ? 0.95 : Math.min(0.95, this.playerPhysics.brake * 1.15);
+            pTireIntensity = this.playerPhysics.handbrake ? 0.95 : Math.min(0.95, this.playerPhysics.brake * 1.2);
         } else if (pIsLaunchSpin) {
-            isPlayerBurningTire = true;
             pTireIntensity = 1.0;
         }
 
         if (isPlayerBurningTire) {
-            const wheels = this.playerCar.getRearWheelPositions();
+            // ★左右タイヤ直下の真のアスファルト路面表面の標高（ミリ単位）をサンプリング！
+            // 秋名山などの急勾配ダウンヒルでも、下り坂の標高差（約10〜14cm）を完璧に捉えてアスファルト表面に100%吸着
+            const wheels = this.playerCar.getRearWheelPositions(this.track, this.playerPhysics.trackT);
             const intensity = (this.currentWeather === 'rain') ? pTireIntensity * 0.40 : pTireIntensity;
 
             // スモーク発生（ドリフトおよびホイールスピン時、雨天は水しぶき）
@@ -670,7 +683,7 @@ class Game {
         const rSpeed = this.rivalCar.speed || 0;
         const rIsDrifting = this.rivalCar.isDrifting && rSpeed > 20;
         if (rIsDrifting) {
-            const rWheels = this.rivalCar.getRearWheelPositions();
+            const rWheels = this.rivalCar.getRearWheelPositions(this.track, this.rivalCar.progressT);
             const rIntensity = (this.currentWeather === 'rain') ? 0.35 : 0.75;
             this.particles.emitSmoke(rWheels.left, new THREE.Vector3(0, 0, 0), rIntensity);
             this.particles.emitSmoke(rWheels.right, new THREE.Vector3(0, 0, 0), rIntensity);

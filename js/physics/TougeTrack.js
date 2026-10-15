@@ -5618,6 +5618,16 @@ if (courseType === 'myogi') {
     getPointAt(t) {
         return this.curve.getPointAt(Math.max(0, Math.min(1, t)));
     }
+
+    /**
+     * 任意の位置 (X, Z) 直下におけるアスファルト道路表面の真の標高 (Y) を高精度算出
+     * 下り坂・登り坂・立体カント傾斜をミリ単位で完全反映
+     */
+    getRoadSurfaceY(worldPos, hintT = null) {
+        const info = this.getSmoothTrackInfo(worldPos, hintT);
+        const bankOffsetY = Math.sin(info.bankAngle || 0) * info.offset;
+        return info.centerPos.y + bankOffsetY;
+    }
 }
 
 window.TougeTrack = TougeTrack;

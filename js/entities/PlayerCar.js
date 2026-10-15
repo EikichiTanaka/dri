@@ -176,15 +176,24 @@ class PlayerCar {
         }
     }
 
-    getRearWheelPositions() {
+    getRearWheelPositions(track = null, hintT = null) {
         this.meshGroup.updateMatrixWorld(true);
         const leftRear = this.rearWheelLPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
         const rightRear = this.rearWheelRPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
 
-        // 接地面高さを路面サーフェスに正確に接地（ホイールハブの浮き上がりを完全解消）
-        const groundY = this.physics ? this.physics.position.y : this.meshGroup.position.y;
-        leftRear.y = groundY;
-        rightRear.y = groundY;
+        // トラック参照がある場合は、左右タイヤそれぞれの直下のアスファルト路面高さを直接サンプリング
+        // 秋名山などの急勾配ダウンヒルでも、下り坂の標高差（約10〜14cm）を完璧に捉えてアスファルト表面に100%吸着
+        const trackRef = track || (this.physics ? this.physics.track : null);
+        const tHint = (hintT !== null && hintT !== undefined) ? hintT : (this.physics ? this.physics.trackT : null);
+
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            leftRear.y = trackRef.getRoadSurfaceY(leftRear, tHint);
+            rightRear.y = trackRef.getRoadSurfaceY(rightRear, tHint);
+        } else {
+            // フォールバック：車体の傾き（ピッチ）を維持したままタイヤ半径0.31m分を接地面にオフセット
+            leftRear.y -= 0.31;
+            rightRear.y -= 0.31;
+        }
 
         return { left: leftRear, right: rightRear };
     }
