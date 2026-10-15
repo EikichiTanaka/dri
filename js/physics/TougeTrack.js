@@ -25,11 +25,13 @@ class TougeTrack {
         this.courseType = courseType;
         while (this.trackGroup.children.length > 0) {
             const obj = this.trackGroup.children[0];
-            if (obj.geometry) obj.geometry.dispose();
-            if (obj.material) {
-                if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-                else obj.material.dispose();
-            }
+            obj.traverse((child) => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                    else child.material.dispose();
+                }
+            });
             this.trackGroup.remove(obj);
         }
 
@@ -5269,8 +5271,8 @@ if (courseType === 'myogi') {
         const ctx = canvas.getContext('2d');
 
         ctx.clearRect(0, 0, 256, 256);
-        ctx.strokeStyle = '#00e1ff';
-        ctx.shadowColor = '#00aaff';
+        ctx.strokeStyle = '#ffffff';
+        ctx.shadowColor = '#ffffff';
         ctx.shadowBlur = 18;
         ctx.lineWidth = 28;
         ctx.lineCap = 'round';

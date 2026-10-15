@@ -50,8 +50,9 @@ class Game {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.1;
-        this.container.appendChild(this.renderer.domElement);
+        if (this.container) {
+            this.container.appendChild(this.renderer.domElement);
+        }
 
         this.hemiLight = new THREE.HemisphereLight(0x334466, 0x111622, 0.6);
         this.scene.add(this.hemiLight);
@@ -415,9 +416,16 @@ class Game {
         this.audio.playCountdownBeep(false);
 
         this.passedSections = new Set();
-        if (this.hud && this.hud.resetSections) {
-            this.hud.resetSections();
+        if (this.hud) {
+            this.hud.currentTime = 0;
+            this.hud.isFinished = false;
+            if (this.hud.resetSections) {
+                this.hud.resetSections();
+            }
         }
+
+        const resultOverlay = document.getElementById('result-overlay');
+        if (resultOverlay) resultOverlay.style.display = 'none';
 
         document.getElementById('start-overlay').style.display = 'none';
         document.getElementById('hud-container').style.display = 'block';
@@ -452,16 +460,7 @@ class Game {
         }
 
         if (this.input.reset) {
-            this.playerPhysics.resetToTrack(0.003, -1.8);
-            this.rivalCar.resetPosition();
-            this.hud.currentTime = 0;
-            this.hud.isFinished = false;
-            this.passedSections = new Set();
-            if (this.hud && this.hud.resetSections) {
-                this.hud.resetSections();
-            }
-            document.getElementById('result-overlay').style.display = 'none';
-            this.state = 'RACING';
+            this.startRace();
         }
 
         if (this.state === 'COUNTDOWN') {
@@ -612,7 +611,7 @@ class Game {
 
         // ライバル車が路肩を踏んだ場合の土煙（イン攻め演出）
         if (this.rivalCar && this.rivalCar.speed > 25 && this.rivalCar.position) {
-            const rInfo = this.track.getSmoothTrackInfo(this.rivalCar.position, this.rivalCar.trackT || 0);
+            const rInfo = this.track.getSmoothTrackInfo(this.rivalCar.position, this.rivalCar.progressT || this.rivalCar.trackT || 0);
             const rOffset = Math.abs(rInfo.offset);
             if (rOffset > (this.track.roadWidth / 2 - 0.70)) {
                 const rWheels = this.rivalCar.getRearWheelPositions();

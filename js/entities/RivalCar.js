@@ -37,6 +37,14 @@ class RivalCar {
         this.resetPosition();
     }
 
+    get trackT() {
+        return this.progressT;
+    }
+
+    set trackT(val) {
+        this.progressT = val;
+    }
+
     buildCarModel() {
         const yellowMat = new THREE.MeshStandardMaterial({
             color: 0xffcc00, // コンペティションイエローマイカ

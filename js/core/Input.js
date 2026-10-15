@@ -78,7 +78,7 @@ class InputManager {
         let kBrake = 0;
         if (this.keys['KeyS'] || this.keys['ArrowDown'] || this.keys['s'] || this.keys['S']) kBrake = 1.0;
 
-        let kHandbrake = !!this.keys['Space'];
+        let kHandbrake = !!(this.keys['Space'] || this.keys[' ']);
 
         // ★ユーザー指定：矢印キーの左右でシフトチェンジ（←：シフトダウン、→：シフトアップ）
         let rawShiftUp = !!(

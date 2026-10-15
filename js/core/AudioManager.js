@@ -1180,7 +1180,7 @@ class AudioManager {
                 // アクセル全閉＆減速クラックル＋アフターファイヤ
                 currentRpm -= (currentRpm - 1000) * 0.22;
                 this.updateEngine(currentRpm, 0.0, false, 0, false, redline);
-                if (step === 36) {
+                if (step === 42) {
                     this.playAfterfireSound(1.3);
                     if (onPopCallback) onPopCallback(1.3);
                 }

@@ -525,11 +525,6 @@
             const btnRetry = document.getElementById('btn-retry');
             btnRetry.addEventListener('click', () => {
                 if (game.audio) game.audio.resume();
-                game.playerPhysics.resetToTrack(0.003, -1.8);
-                game.rivalCar.resetPosition();
-                game.hud.currentTime = 0;
-                game.hud.isFinished = false;
-                document.getElementById('result-overlay').style.display = 'none';
                 game.startRace();
             });
             window.game = game;

@@ -45,9 +45,16 @@ class PlayerCar {
         this.carId = carId;
         this.colorIndex = colorIndex;
 
-        // 既存メッシュの全削除
+        // 既存メッシュの全削除（GPUリソースを完全に解放）
         while (this.meshGroup.children.length > 0) {
             const child = this.meshGroup.children[0];
+            child.traverse((c) => {
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) {
+                    if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+                    else c.material.dispose();
+                }
+            });
             this.meshGroup.remove(child);
         }
         this.wheels = [];
