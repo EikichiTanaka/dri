@@ -128,12 +128,8 @@ class ParticleSystem {
         }
 
         // =========================================================================
-        // ★リアルタイム・スキッドマーク（タイヤ痕）クワッド・リングバッファ
-        // 左右タイヤ独立の本格的リボンメッシュ（Zファイト防止、不連続対応、濃淡アルファ）
-        // =========================================================================
-        // =========================================================================
-        // ★リアルタイム・スキッドマーク（タイヤ痕）クワッド・リングバッファ
-        // 左右タイヤ独立の本格的リボンメッシュ（Zファイト防止、不連続対応、濃淡アルファ）
+        // ★リアルタイム・スキッドマーク（タイヤ痕）クワッド・リングバッファ 2.0
+        // 実車スポーツタイヤのリアルなトレッド溝・ショルダー高接地圧プロファイルテクスチャ
         // ドリフト後も長時間路面に残り続ける超大容量バッファ (4,800クワッド / 19,200頂点)
         // =========================================================================
         this.maxSkidQuads = 4800; // 4,800クワッド（全コーナーのドリフト痕が数分間美しく持続）
@@ -144,6 +140,7 @@ class ParticleSystem {
         const totalIndices = this.maxSkidQuads * 6;
         const skidPositions = new Float32Array(totalVerts * 3);
         const skidColors = new Float32Array(totalVerts * 4);
+        const skidUvs = new Float32Array(totalVerts * 2);
         const skidIndices = new Uint16Array(totalIndices);
 
         // 初期状態は画面外（Y = -9999）に退避
@@ -167,19 +164,25 @@ class ParticleSystem {
             skidIndices[iBase + 5] = vBase + 3;
         }
 
+        // ★実車のラジアル/Sタイヤの焼き付きトレッドパターン（溝＋ショルダー高接地圧）テクスチャ生成
+        this.skidTexture = this.generateSkidTexture();
+
         this.skidGeom = new THREE.BufferGeometry();
         this.skidGeom.setAttribute('position', new THREE.BufferAttribute(skidPositions, 3));
         this.skidGeom.setAttribute('color', new THREE.BufferAttribute(skidColors, 4));
+        this.skidGeom.setAttribute('uv', new THREE.BufferAttribute(skidUvs, 2));
         this.skidGeom.setIndex(new THREE.BufferAttribute(skidIndices, 1));
 
         // ★GPUへの動的バッファ更新属性を明示（GPUキャッシュ問題を完全防止）
         this.skidGeom.attributes.position.setUsage(THREE.DynamicDrawUsage);
         this.skidGeom.attributes.color.setUsage(THREE.DynamicDrawUsage);
+        this.skidGeom.attributes.uv.setUsage(THREE.DynamicDrawUsage);
 
         // ★視錐台カリング用の超巨大バウンディングスフィアを固定定義
         this.skidGeom.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 100000);
 
         const skidMat = new THREE.MeshBasicMaterial({
+            map: this.skidTexture,
             vertexColors: true,
             transparent: true,
             depthWrite: false,
@@ -194,11 +197,11 @@ class ParticleSystem {
         this.skidMesh.frustumCulled = false; // ★絶対に視錐台カリングさせない（画面外スキップを完全防止）
         this.scene.add(this.skidMesh);
 
-        // 左右車輪ごとの打刻トラッキング状態（確定位置・累積距離）
-        this.playerTireL = { lastPos: null };
-        this.playerTireR = { lastPos: null };
-        this.rivalTireL = { lastPos: null };
-        this.rivalTireR = { lastPos: null };
+        // 左右車輪ごとの打刻トラッキング状態（確定位置・累積距離・UV進行）
+        this.playerTireL = { lastPos: null, uvV: 0, slipCount: 0 };
+        this.playerTireR = { lastPos: null, uvV: 0, slipCount: 0 };
+        this.rivalTireL = { lastPos: null, uvV: 0, slipCount: 0 };
+        this.rivalTireR = { lastPos: null, uvV: 0, slipCount: 0 };
         this.playerLastL = null;
         this.playerLastR = null;
         this.rivalLastL = null;
@@ -440,15 +443,91 @@ class ParticleSystem {
     }
 
     /**
+     * ★実車のスポーツラジアル（ネオバ/ポテンザ等）のトレッド面をプロシージャル生成
+     * ショルダー高接地圧ピーク、縦主溝（グルーブ抜けスリット）、アスファルト骨材擦過縦筋を完全再現
+     */
+    generateSkidTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.createImageData(128, 64);
+        const data = imgData.data;
+
+        for (let y = 0; y < 64; y++) {
+            const v = y / 64.0;
+            // 進行方向の微小なアスファルト擦れ波（シームレス周期関数）
+            const longitudinalNoise = 
+                Math.sin(v * Math.PI * 2) * 0.04 +
+                Math.sin(v * Math.PI * 6) * 0.03 +
+                Math.cos(v * Math.PI * 10) * 0.02;
+
+            for (let x = 0; x < 128; x++) {
+                const u = x / 127.0; // 0.0 (左端) 〜 1.0 (右端)
+
+                // 1. ショルダー高接地圧ピーク（両端部にかけて旋回横Gで面圧が集中）
+                let edgePeak = 0;
+                if (u < 0.15) {
+                    const edgeFrac = u / 0.15;
+                    edgePeak = Math.sin(edgeFrac * Math.PI * 0.5) * 0.32;
+                } else if (u > 0.85) {
+                    const edgeFrac = (1.0 - u) / 0.15;
+                    edgePeak = Math.sin(edgeFrac * Math.PI * 0.5) * 0.32;
+                }
+
+                // 2. 主溝（グルーブ）：実車スポーツラジアルの3本ストレートグルーブ抜け
+                const g1 = Math.exp(-Math.pow((u - 0.30) / 0.038, 2));
+                const g2 = Math.exp(-Math.pow((u - 0.50) / 0.034, 2));
+                const g3 = Math.exp(-Math.pow((u - 0.70) / 0.038, 2));
+                const grooveDeduction = (g1 * 0.72 + g2 * 0.62 + g3 * 0.72);
+
+                // 3. アスファルト粗粒に削られたゴムの微小な引きずり縦筋ノイズ
+                const scratchNoise = 
+                    Math.sin(u * 125.0 + 1.2) * 0.07 +
+                    Math.cos(u * 290.0 + 0.4) * 0.05 +
+                    Math.sin(u * 440.0 + v * 30.0) * 0.04;
+
+                // 4. 端部の自然なソフトフェード（カクつきを完全排除）
+                let sideFade = 1.0;
+                if (u < 0.035) sideFade = u / 0.035;
+                else if (u > 0.965) sideFade = (1.0 - u) / 0.035;
+
+                // 統合アルファ (0.0 〜 1.0)
+                let a = (0.76 + edgePeak - grooveDeduction + longitudinalNoise + scratchNoise);
+                a = Math.max(0.0, Math.min(1.0, a)) * sideFade;
+
+                const idx = (y * 128 + x) * 4;
+                // RGBは白(255)にして頂点カラー(0.04, 0.04, 0.05)との乗算で完全なリアルダークゴム色にする
+                data[idx] = 255;
+                data[idx + 1] = 255;
+                data[idx + 2] = 255;
+                data[idx + 3] = Math.floor(a * 255);
+            }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = true;
+        return texture;
+    }
+
+    /**
      * 単一車輪の移動距離を累積し、低速でも高速でも均一で滑らかなクワッドリボンを生成
-     * @param {Object} state - { lastPos: THREE.Vector3 | null } 追跡状態オブジェクト
+     * @param {Object} state - { lastPos, uvV, slipSegments } 追跡状態オブジェクト
      * @param {THREE.Vector3} currPos - 現フレーム車輪接地位置
      * @param {number} intensity - スリップ強度 (0.2〜1.5)
-     * @param {number} tireWidth - タイヤ幅 (実車サイズ: 0.22〜0.26m)
+     * @param {number} tireWidth - タイヤ幅 (実車サイズ: 0.20〜0.27m)
      */
     addWheelMark(state, currPos, intensity = 0.8, tireWidth = 0.24) {
         if (!state.lastPos) {
             state.lastPos = currPos.clone();
+            state.uvV = 0;
+            state.slipSegments = 0;
             return;
         }
 
@@ -459,18 +538,24 @@ class ParticleSystem {
         // ワープ・リセット（6.0m以上離れた場合はワープなので線を引かず再アンカー）
         if (dist > 6.0) {
             state.lastPos.copy(currPos);
+            state.uvV = 0;
+            state.slipSegments = 0;
             return;
         }
 
-        // 最小セグメント長（0.14m）。この距離に達するまでは前回の確定打刻位置を維持して累積！
+        // 最小セグメント長（0.12m）。この距離に達するまでは前回の確定打刻位置を維持して累積！
         // これにより時速10〜25km/hの低速ドリフトでも確実にタイヤ痕が刻まれる
-        const minStep = 0.14;
+        const minStep = 0.12;
         if (dist < minStep) {
             return; // state.lastPos は更新しない（累積待機）
         }
 
-        // 高速移動時の細分化（subdivision）：1フレームで 0.36m 以上進んだ場合は中間分割して滑らかな円弧を維持
-        const steps = Math.min(3, Math.max(1, Math.floor(dist / 0.26)));
+        state.slipSegments = (state.slipSegments || 0) + 1;
+        // スリップ開始直後の摩擦熱立ち上がりを再現する滑らかなフェードイン
+        const fade = Math.min(1.0, 0.35 + (state.slipSegments / 4.0) * 0.65);
+
+        // 高速移動時の細分化（subdivision）：1フレームで 0.24m 以上進んだ場合は中間分割して滑らかな円弧を維持
+        const steps = Math.min(3, Math.max(1, Math.floor(dist / 0.24)));
         let prev = state.lastPos.clone();
 
         for (let s = 1; s <= steps; s++) {
@@ -480,7 +565,13 @@ class ParticleSystem {
                 state.lastPos.y + (currPos.y - state.lastPos.y) * frac,
                 state.lastPos.z + dz * frac
             );
-            this.emitTireQuad(prev, subCurr, intensity, tireWidth);
+            const subDist = prev.distanceTo(subCurr);
+            const v0 = state.uvV || 0;
+            // 1m移動あたり約1.8テクスチャ周期（実車タイヤ外径0.64m・周長約2.0mの接地トレッドスケール）
+            const v1 = v0 + subDist * 1.8;
+            state.uvV = v1 % 1000.0;
+
+            this.emitTireQuad(prev, subCurr, intensity, tireWidth, v0, v1, fade);
             prev = subCurr;
         }
 
@@ -493,12 +584,15 @@ class ParticleSystem {
      * @param {THREE.Vector3} currPos - 終点接地位置
      * @param {number} intensity - スリップ強度 (0.2〜1.5)
      * @param {number} tireWidth - タイヤ幅 (m)
+     * @param {number} v0 - テクスチャUV開始V座標
+     * @param {number} v1 - テクスチャUV終了V座標
+     * @param {number} fade - 進入フェード係数 (0.0〜1.0)
      */
-    emitTireQuad(prevPos, currPos, intensity = 0.8, tireWidth = 0.24) {
+    emitTireQuad(prevPos, currPos, intensity = 0.8, tireWidth = 0.24, v0 = 0.0, v1 = 1.0, fade = 1.0) {
         const dx = currPos.x - prevPos.x;
         const dz = currPos.z - prevPos.z;
         const dist = Math.hypot(dx, dz);
-        if (dist < 0.04) return;
+        if (dist < 0.03) return;
 
         // タイヤ進行方向に直交する横方向法線ベクトル（正規化）
         const invLen = 1.0 / dist;
@@ -512,6 +606,7 @@ class ParticleSystem {
 
         const posAttr = this.skidGeom.attributes.position;
         const colAttr = this.skidGeom.attributes.color;
+        const uvAttr = this.skidGeom.attributes.uv;
         const vBase = this.skidQuadIndex * 4;
 
         // 4頂点（四角形リボン）
@@ -520,8 +615,14 @@ class ParticleSystem {
         posAttr.setXYZ(vBase + 2, currPos.x - nx * halfW, y1, currPos.z - nz * halfW);
         posAttr.setXYZ(vBase + 3, currPos.x + nx * halfW, y1, currPos.z + nz * halfW);
 
-        // ドリフト強度・天候に応じたブラックマーク濃度（低速・軽微なスライドでも確実に視認できる0.40〜0.88）
-        let alpha = Math.max(0.40, Math.min(0.88, 0.38 + intensity * 0.50));
+        // トレッドパターンのシームレスUVマッピング
+        uvAttr.setXY(vBase,     0.0, v0);
+        uvAttr.setXY(vBase + 1, 1.0, v0);
+        uvAttr.setXY(vBase + 2, 0.0, v1);
+        uvAttr.setXY(vBase + 3, 1.0, v1);
+
+        // ドリフト強度・天候・フェードに応じたブラックマーク濃度
+        let alpha = Math.max(0.35, Math.min(0.92, 0.32 + intensity * 0.55)) * fade;
         if (this.isRaining) alpha *= 0.35; // 雨天ウェット路面は薄いタイヤ痕
 
         // 焼き付きタイヤゴムの漆黒 (R:0.04, G:0.04, B:0.05)
@@ -539,17 +640,46 @@ class ParticleSystem {
      * 後方互換用
      */
     addTireQuad(prevPos, currPos, intensity = 0.8, tireWidth = 0.24) {
-        this.emitTireQuad(prevPos, currPos, intensity, tireWidth);
+        this.emitTireQuad(prevPos, currPos, intensity, tireWidth, 0.0, 1.0, 1.0);
     }
 
     /**
-     * プレイヤーの左右リアタイヤにリアルタイム・ドリフトタイヤ痕を追加
+     * プレイヤーの左右リアタイヤに動的左右荷重移動（Lateral Weight Transfer）を反映したドリフトタイヤ痕を追加
+     * @param {THREE.Vector3} leftPos - 左後輪の接地位置
+     * @param {THREE.Vector3} rightPos - 右後輪の接地位置
+     * @param {number} intensity - 基本スリップ強度
+     * @param {number} driftAngle - 自車のドリフト角（ラジアン）
      */
-    addPlayerDriftMark(leftPos, rightPos, intensity = 0.8) {
-        if (!this.playerTireL) this.playerTireL = { lastPos: null };
-        if (!this.playerTireR) this.playerTireR = { lastPos: null };
-        this.addWheelMark(this.playerTireL, leftPos, intensity, 0.24);
-        this.addWheelMark(this.playerTireR, rightPos, intensity, 0.24);
+    addPlayerDriftMark(leftPos, rightPos, intensity = 0.8, driftAngle = 0.0) {
+        if (!this.playerTireL) this.playerTireL = { lastPos: null, uvV: 0, slipSegments: 0 };
+        if (!this.playerTireR) this.playerTireR = { lastPos: null, uvV: 0, slipSegments: 0 };
+
+        // 左右荷重移動（外側輪は高荷重で太く漆黒、内側輪は抜重で細くかすれたグレー）
+        let leftWidth = 0.24;
+        let rightWidth = 0.24;
+        let leftIntensity = intensity;
+        let rightIntensity = intensity;
+
+        const absAngle = Math.abs(driftAngle);
+        if (absAngle > 0.04) {
+            const wt = Math.min(0.50, absAngle * 0.85); // 最大50%の荷重移動
+            if (driftAngle > 0) {
+                // 右ドリフト（車両右スライド）：遠心力で左外輪が高荷重！
+                leftWidth = 0.24 * (1.0 + wt * 0.22);
+                leftIntensity = intensity * (1.0 + wt * 0.45);
+                rightWidth = 0.24 * (1.0 - wt * 0.20);
+                rightIntensity = intensity * (1.0 - wt * 0.55);
+            } else {
+                // 左ドリフト（車両左スライド）：遠心力で右外輪が高荷重！
+                rightWidth = 0.24 * (1.0 + wt * 0.22);
+                rightIntensity = intensity * (1.0 + wt * 0.45);
+                leftWidth = 0.24 * (1.0 - wt * 0.20);
+                leftIntensity = intensity * (1.0 - wt * 0.55);
+            }
+        }
+
+        this.addWheelMark(this.playerTireL, leftPos, leftIntensity, leftWidth);
+        this.addWheelMark(this.playerTireR, rightPos, rightIntensity, rightWidth);
         this.playerLastL = this.playerTireL.lastPos;
         this.playerLastR = this.playerTireR.lastPos;
     }
@@ -559,20 +689,50 @@ class ParticleSystem {
      * 前回のドリフト終点と次のドリフト始点が直線で結ばれるのを完全に防止
      */
     endPlayerDrift() {
-        if (this.playerTireL) this.playerTireL.lastPos = null;
-        if (this.playerTireR) this.playerTireR.lastPos = null;
+        if (this.playerTireL) {
+            this.playerTireL.lastPos = null;
+            this.playerTireL.uvV = 0;
+            this.playerTireL.slipSegments = 0;
+        }
+        if (this.playerTireR) {
+            this.playerTireR.lastPos = null;
+            this.playerTireR.uvV = 0;
+            this.playerTireR.slipSegments = 0;
+        }
         this.playerLastL = null;
         this.playerLastR = null;
     }
 
     /**
-     * ライバル車（FD3S）の左右リアタイヤにリアルタイム・ドリフトタイヤ痕を追加
+     * ライバル車（FD3S）の左右リアタイヤに動的荷重移動付きリアルタイム・ドリフトタイヤ痕を追加
      */
-    addRivalDriftMark(leftPos, rightPos, intensity = 0.7) {
-        if (!this.rivalTireL) this.rivalTireL = { lastPos: null };
-        if (!this.rivalTireR) this.rivalTireR = { lastPos: null };
-        this.addWheelMark(this.rivalTireL, leftPos, intensity, 0.24);
-        this.addWheelMark(this.rivalTireR, rightPos, intensity, 0.24);
+    addRivalDriftMark(leftPos, rightPos, intensity = 0.7, driftAngle = 0.0) {
+        if (!this.rivalTireL) this.rivalTireL = { lastPos: null, uvV: 0, slipSegments: 0 };
+        if (!this.rivalTireR) this.rivalTireR = { lastPos: null, uvV: 0, slipSegments: 0 };
+
+        let leftWidth = 0.24;
+        let rightWidth = 0.24;
+        let leftIntensity = intensity;
+        let rightIntensity = intensity;
+
+        const absAngle = Math.abs(driftAngle);
+        if (absAngle > 0.04) {
+            const wt = Math.min(0.50, absAngle * 0.85);
+            if (driftAngle > 0) {
+                leftWidth = 0.24 * (1.0 + wt * 0.22);
+                leftIntensity = intensity * (1.0 + wt * 0.45);
+                rightWidth = 0.24 * (1.0 - wt * 0.20);
+                rightIntensity = intensity * (1.0 - wt * 0.55);
+            } else {
+                rightWidth = 0.24 * (1.0 + wt * 0.22);
+                rightIntensity = intensity * (1.0 + wt * 0.45);
+                leftWidth = 0.24 * (1.0 - wt * 0.20);
+                leftIntensity = intensity * (1.0 - wt * 0.55);
+            }
+        }
+
+        this.addWheelMark(this.rivalTireL, leftPos, leftIntensity, leftWidth);
+        this.addWheelMark(this.rivalTireR, rightPos, rightIntensity, rightWidth);
         this.rivalLastL = this.rivalTireL.lastPos;
         this.rivalLastR = this.rivalTireR.lastPos;
     }
@@ -581,8 +741,16 @@ class ParticleSystem {
      * ライバル車ドリフト終了時の不連続リセット
      */
     endRivalDrift() {
-        if (this.rivalTireL) this.rivalTireL.lastPos = null;
-        if (this.rivalTireR) this.rivalTireR.lastPos = null;
+        if (this.rivalTireL) {
+            this.rivalTireL.lastPos = null;
+            this.rivalTireL.uvV = 0;
+            this.rivalTireL.slipSegments = 0;
+        }
+        if (this.rivalTireR) {
+            this.rivalTireR.lastPos = null;
+            this.rivalTireR.uvV = 0;
+            this.rivalTireR.slipSegments = 0;
+        }
         this.rivalLastL = null;
         this.rivalLastR = null;
     }
@@ -680,6 +848,7 @@ class ParticleSystem {
         if (this.skidNeedsUpdate) {
             this.skidGeom.attributes.position.needsUpdate = true;
             this.skidGeom.attributes.color.needsUpdate = true;
+            this.skidGeom.attributes.uv.needsUpdate = true;
             this.skidNeedsUpdate = false;
         }
 

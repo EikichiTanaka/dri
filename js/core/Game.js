@@ -673,8 +673,8 @@ class Game {
                 this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, intensity);
                 this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, intensity);
             }
-            // ★路面にクッキリと自車のタイヤ痕（ブラックマーク）を刻み込む
-            this.particles.addPlayerDriftMark(wheels.left, wheels.right, intensity);
+            // ★路面にクッキリと自車のタイヤ痕（ブラックマーク：左右動的荷重移動付き）を刻み込む
+            this.particles.addPlayerDriftMark(wheels.left, wheels.right, intensity, this.playerPhysics.driftAngle || 0);
         } else {
             this.particles.endPlayerDrift();
         }
@@ -687,7 +687,7 @@ class Game {
             const rIntensity = (this.currentWeather === 'rain') ? 0.35 : 0.75;
             this.particles.emitSmoke(rWheels.left, new THREE.Vector3(0, 0, 0), rIntensity);
             this.particles.emitSmoke(rWheels.right, new THREE.Vector3(0, 0, 0), rIntensity);
-            this.particles.addRivalDriftMark(rWheels.left, rWheels.right, rIntensity);
+            this.particles.addRivalDriftMark(rWheels.left, rWheels.right, rIntensity, this.rivalCar.driftAngle || 0);
         } else {
             this.particles.endRivalDrift();
         }
