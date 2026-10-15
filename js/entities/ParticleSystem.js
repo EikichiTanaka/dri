@@ -197,11 +197,11 @@ class ParticleSystem {
         this.skidMesh.frustumCulled = false; // ★絶対に視錐台カリングさせない（画面外スキップを完全防止）
         this.scene.add(this.skidMesh);
 
-        // 左右車輪ごとの打刻トラッキング状態（確定位置・累積距離・UV進行）
-        this.playerTireL = { lastPos: null, uvV: 0, slipCount: 0 };
-        this.playerTireR = { lastPos: null, uvV: 0, slipCount: 0 };
-        this.rivalTireL = { lastPos: null, uvV: 0, slipCount: 0 };
-        this.rivalTireR = { lastPos: null, uvV: 0, slipCount: 0 };
+        // 左右車輪ごとの打刻トラッキング状態（確定位置・累積距離・UV進行・摩擦熱・微小脈動距離）
+        this.playerTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+        this.playerTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+        this.rivalTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+        this.rivalTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
         this.playerLastL = null;
         this.playerLastR = null;
         this.rivalLastL = null;
@@ -518,16 +518,15 @@ class ParticleSystem {
 
     /**
      * 単一車輪の移動距離を累積し、低速でも高速でも均一で滑らかなクワッドリボンを生成
-     * @param {Object} state - { lastPos, uvV, slipSegments } 追跡状態オブジェクト
+     * 摩擦熱蓄積カーブ、抜け直前の幅テーパリング、スティックスリップ微小脈動を統合
+     * @param {Object} state - { lastPos, uvV, slipSegments, thermalHeat, cumDist } 追跡状態オブジェクト
      * @param {THREE.Vector3} currPos - 現フレーム車輪接地位置
-     * @param {number} intensity - スリップ強度 (0.2〜1.5)
+     * @param {number} intensity - スリップ強度 (0.15〜1.5)
      * @param {number} tireWidth - タイヤ幅 (実車サイズ: 0.20〜0.27m)
      */
     addWheelMark(state, currPos, intensity = 0.8, tireWidth = 0.24) {
-        if (intensity < 0.18) {
-            state.lastPos = null;
-            state.uvV = 0;
-            state.slipSegments = 0;
+        if (intensity < 0.15) {
+            this.finalizeWheelMark(state);
             return;
         }
 
@@ -535,6 +534,8 @@ class ParticleSystem {
             state.lastPos = currPos.clone();
             state.uvV = 0;
             state.slipSegments = 0;
+            state.thermalHeat = 0.25;
+            state.cumDist = 0;
             return;
         }
 
@@ -547,19 +548,36 @@ class ParticleSystem {
             state.lastPos.copy(currPos);
             state.uvV = 0;
             state.slipSegments = 0;
+            state.thermalHeat = 0.25;
+            state.cumDist = 0;
             return;
         }
 
         // 最小セグメント長（0.12m）。この距離に達するまでは前回の確定打刻位置を維持して累積！
-        // これにより時速10〜25km/hの低速ドリフトでも確実にタイヤ痕が刻まれる
         const minStep = 0.12;
         if (dist < minStep) {
-            return; // state.lastPos は更新しない（累積待機）
+            return;
         }
 
         state.slipSegments = (state.slipSegments || 0) + 1;
-        // スリップ開始直後の摩擦熱立ち上がりを再現する滑らかなフェードイン
-        const fade = Math.min(1.0, 0.35 + (state.slipSegments / 4.0) * 0.65);
+        state.cumDist = (state.cumDist || 0) + dist;
+
+        // 1. 摩擦熱の蓄積（Thermal Friction Curve）: スライド持続でゴムが熱分解して徐々に濃く焼き付く
+        state.thermalHeat = Math.min(1.0, (state.thermalHeat || 0.25) + dist * 0.38);
+        const thermalFactor = 0.50 + state.thermalHeat * 0.50; // 0.50 -> 1.0
+
+        // 2. 進入時の滑らかな立ち上がりフェードイン
+        const entryFade = Math.min(1.0, 0.30 + (state.slipSegments / 4.0) * 0.70);
+
+        // 3. ドリフト抜け・低スリップ時の幅テーパリング（細く収束）
+        const widthScale = Math.max(0.58, Math.min(1.0, 0.30 + intensity * 0.75));
+        const effectiveWidth = tireWidth * widthScale;
+
+        // 4. スティックスリップ（微小摩擦脈動）による自然な濃淡の波
+        const ripple = 1.0 + Math.sin(state.cumDist * 13.0) * 0.08 + Math.cos(state.cumDist * 25.0) * 0.05;
+
+        // 総合フェード係数
+        const totalFade = entryFade * thermalFactor * ripple;
 
         // 高速移動時の細分化（subdivision）：1フレームで 0.24m 以上進んだ場合は中間分割して滑らかな円弧を維持
         const steps = Math.min(3, Math.max(1, Math.floor(dist / 0.24)));
@@ -578,7 +596,7 @@ class ParticleSystem {
             const v1 = v0 + subDist * 1.8;
             state.uvV = v1 % 1000.0;
 
-            this.emitTireQuad(prev, subCurr, intensity, tireWidth, v0, v1, fade);
+            this.emitTireQuad(prev, subCurr, intensity, effectiveWidth, v0, v1, totalFade);
             prev = subCurr;
         }
 
@@ -586,14 +604,26 @@ class ParticleSystem {
     }
 
     /**
+     * 車輪打刻トラッキングの終了・リセット
+     */
+    finalizeWheelMark(state) {
+        if (!state) return;
+        state.lastPos = null;
+        state.uvV = 0;
+        state.slipSegments = 0;
+        state.thermalHeat = 0.25;
+        state.cumDist = 0;
+    }
+
+    /**
      * 単一タイヤの四角形（2ポリゴン）クワッドセグメントをリングバッファに書き込み
      * @param {THREE.Vector3} prevPos - 始点接地位置
      * @param {THREE.Vector3} currPos - 終点接地位置
-     * @param {number} intensity - スリップ強度 (0.2〜1.5)
+     * @param {number} intensity - スリップ強度 (0.15〜1.5)
      * @param {number} tireWidth - タイヤ幅 (m)
      * @param {number} v0 - テクスチャUV開始V座標
      * @param {number} v1 - テクスチャUV終了V座標
-     * @param {number} fade - 進入フェード係数 (0.0〜1.0)
+     * @param {number} fade - 進入・熱・脈動総合フェード係数
      */
     emitTireQuad(prevPos, currPos, intensity = 0.8, tireWidth = 0.24, v0 = 0.0, v1 = 1.0, fade = 1.0) {
         const dx = currPos.x - prevPos.x;
@@ -628,8 +658,10 @@ class ParticleSystem {
         uvAttr.setXY(vBase + 2, 0.0, v1);
         uvAttr.setXY(vBase + 3, 1.0, v1);
 
-        // ドリフト強度・天候・フェードに応じたブラックマーク濃度
-        let alpha = Math.max(0.35, Math.min(0.92, 0.32 + intensity * 0.55)) * fade;
+        // 物理的摩擦エネルギーに基づく非線形濃度カーブ（抜け直前の極薄かすれ 0.06 〜 Apexフルカウンターの漆黒 0.94）
+        let baseAlpha = Math.pow(Math.min(1.0, intensity / 1.05), 1.30) * 0.90;
+        baseAlpha = Math.max(0.06, baseAlpha);
+        let alpha = Math.min(0.95, baseAlpha * fade);
         if (this.isRaining) alpha *= 0.35; // 雨天ウェット路面は薄いタイヤ痕
 
         // 焼き付きタイヤゴムの漆黒 (R:0.04, G:0.04, B:0.05)
@@ -696,16 +728,8 @@ class ParticleSystem {
      * 前回のドリフト終点と次のドリフト始点が直線で結ばれるのを完全に防止
      */
     endPlayerDrift() {
-        if (this.playerTireL) {
-            this.playerTireL.lastPos = null;
-            this.playerTireL.uvV = 0;
-            this.playerTireL.slipSegments = 0;
-        }
-        if (this.playerTireR) {
-            this.playerTireR.lastPos = null;
-            this.playerTireR.uvV = 0;
-            this.playerTireR.slipSegments = 0;
-        }
+        this.finalizeWheelMark(this.playerTireL);
+        this.finalizeWheelMark(this.playerTireR);
         this.playerLastL = null;
         this.playerLastR = null;
     }
@@ -714,8 +738,8 @@ class ParticleSystem {
      * ライバル車（FD3S）の左右リアタイヤに動的荷重移動付きリアルタイム・ドリフトタイヤ痕を追加
      */
     addRivalDriftMark(leftPos, rightPos, intensity = 0.7, driftAngle = 0.0) {
-        if (!this.rivalTireL) this.rivalTireL = { lastPos: null, uvV: 0, slipSegments: 0 };
-        if (!this.rivalTireR) this.rivalTireR = { lastPos: null, uvV: 0, slipSegments: 0 };
+        if (!this.rivalTireL) this.rivalTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+        if (!this.rivalTireR) this.rivalTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
 
         let leftWidth = 0.24;
         let rightWidth = 0.24;
@@ -748,16 +772,8 @@ class ParticleSystem {
      * ライバル車ドリフト終了時の不連続リセット
      */
     endRivalDrift() {
-        if (this.rivalTireL) {
-            this.rivalTireL.lastPos = null;
-            this.rivalTireL.uvV = 0;
-            this.rivalTireL.slipSegments = 0;
-        }
-        if (this.rivalTireR) {
-            this.rivalTireR.lastPos = null;
-            this.rivalTireR.uvV = 0;
-            this.rivalTireR.slipSegments = 0;
-        }
+        this.finalizeWheelMark(this.rivalTireL);
+        this.finalizeWheelMark(this.rivalTireR);
         this.rivalLastL = null;
         this.rivalLastR = null;
     }

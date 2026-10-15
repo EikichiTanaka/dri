@@ -665,15 +665,30 @@ class Game {
             this.playerTireBurnTimer -= dt;
         }
 
+        // ドリフト抜け（収束フェーズ）のプログレッシブ・フェードアウト係数 (0.16〜1.0)
+        // スリップ角が 0.08 〜 0.22 rad (約4.5°〜12.6°) の収束領域に入った時、グリップ回復とともに滑らかに濃度減衰
+        let exitFadeFactor = 1.0;
+        if (pIsDrifting) {
+            if (pAbsAngle < 0.22) {
+                exitFadeFactor = Math.max(0.18, Math.pow((pAbsAngle - 0.06) / 0.16, 1.25));
+            }
+        } else if (this.playerTireBurnTimer > 0) {
+            // ホールドタイマー中（振り返しゼロクロスやスリップ収束の滑らかな余韻）
+            exitFadeFactor = Math.max(0.16, this.playerTireBurnTimer / 0.18);
+        }
+
         const isPlayerBurningTire = isTireSlippingNow || (pIsDrifting && this.playerTireBurnTimer > 0);
         let pTireIntensity = 0.65;
 
         if (pIsDrifting && pSpeed > 14) {
-            pTireIntensity = Math.min(1.4, Math.max(0.40, pAbsAngle * 3.2));
+            // 車速とスリップ角に応じたダイナミック強度（下限を 0.18 まで広げて繊細な抜け際フェードアウトを実現）
+            const rawIntensity = Math.min(1.35, Math.max(0.18, pAbsAngle * 2.8 + (pSpeed - 30) * 0.008));
+            pTireIntensity = rawIntensity * exitFadeFactor;
         } else if (pIsPowerSliding) {
-            pTireIntensity = Math.min(1.15, Math.max(0.40, (pAbsAngle - 0.15) * 3.5 + pVLat * 0.12));
+            const rawIntensity = Math.min(1.15, Math.max(0.20, (pAbsAngle - 0.15) * 3.0 + pVLat * 0.10));
+            pTireIntensity = rawIntensity * exitFadeFactor;
         } else if (pIsBraking) {
-            pTireIntensity = this.playerPhysics.handbrake ? 0.95 : Math.min(0.95, (this.playerPhysics.brake - 0.5) * 2.0);
+            pTireIntensity = this.playerPhysics.handbrake ? 0.95 : Math.min(0.95, (this.playerPhysics.brake - 0.65) * 3.0);
         } else if (pIsLaunchSpin) {
             pTireIntensity = 1.0;
         }
