@@ -470,6 +470,37 @@ class RivalCar {
         return { left: leftRear, right: rightRear };
     }
 
+    /**
+     * フロント前輪（操舵輪）の左右接地位置の算出（カウンターステア痕用）
+     */
+    getFrontWheelPositions(track = null, hintT = null) {
+        this.meshGroup.updateMatrixWorld(true);
+        let leftFront, rightFront;
+
+        if (this.frontWheelL && this.frontWheelR) {
+            leftFront = new THREE.Vector3();
+            rightFront = new THREE.Vector3();
+            this.frontWheelL.getWorldPosition(leftFront);
+            this.frontWheelR.getWorldPosition(rightFront);
+        } else {
+            leftFront = new THREE.Vector3(-0.82, 0.1, 1.25).applyMatrix4(this.meshGroup.matrixWorld);
+            rightFront = new THREE.Vector3(0.82, 0.1, 1.25).applyMatrix4(this.meshGroup.matrixWorld);
+        }
+
+        const trackRef = track || this.track;
+        const tHint = (hintT !== null && hintT !== undefined) ? hintT : (this.progressT || this.trackT || null);
+
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            leftFront.y = trackRef.getRoadSurfaceY(leftFront, tHint);
+            rightFront.y = trackRef.getRoadSurfaceY(rightFront, tHint);
+        } else {
+            leftFront.y -= 0.31;
+            rightFront.y -= 0.31;
+        }
+
+        return { left: leftFront, right: rightFront };
+    }
+
     getTailLightPositions() {
         this.meshGroup.updateMatrixWorld(true);
         const leftTail = new THREE.Vector3(-0.55, 0.54, -2.06).applyMatrix4(this.meshGroup.matrixWorld);

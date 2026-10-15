@@ -29,6 +29,8 @@ class PlayerCar {
         this.tailRPos = new THREE.Vector3(0.62, 0.62, -2.02);
         this.rearWheelLPos = new THREE.Vector3(-0.78, 0.1, -1.25);
         this.rearWheelRPos = new THREE.Vector3(0.78, 0.1, -1.25);
+        this.frontWheelLPos = new THREE.Vector3(-0.78, 0.1, 1.25);
+        this.frontWheelRPos = new THREE.Vector3(0.78, 0.1, 1.25);
 
         this.scene.add(this.meshGroup);
         this.setCar(this.carId, this.colorIndex);
@@ -196,6 +198,37 @@ class PlayerCar {
         }
 
         return { left: leftRear, right: rightRear };
+    }
+
+    /**
+     * フロント前輪（操舵輪）の左右接地位置の算出（カウンターステア痕用）
+     */
+    getFrontWheelPositions(track = null, hintT = null) {
+        this.meshGroup.updateMatrixWorld(true);
+        let leftFront, rightFront;
+
+        if (this.frontWheelL && this.frontWheelR) {
+            leftFront = new THREE.Vector3();
+            rightFront = new THREE.Vector3();
+            this.frontWheelL.getWorldPosition(leftFront);
+            this.frontWheelR.getWorldPosition(rightFront);
+        } else {
+            leftFront = this.frontWheelLPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
+            rightFront = this.frontWheelRPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
+        }
+
+        const trackRef = track || (this.physics ? this.physics.track : null);
+        const tHint = (hintT !== null && hintT !== undefined) ? hintT : (this.physics ? this.physics.trackT : null);
+
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            leftFront.y = trackRef.getRoadSurfaceY(leftFront, tHint);
+            rightFront.y = trackRef.getRoadSurfaceY(rightFront, tHint);
+        } else {
+            leftFront.y -= 0.31;
+            rightFront.y -= 0.31;
+        }
+
+        return { left: leftFront, right: rightFront };
     }
 
     getTailLightPositions() {

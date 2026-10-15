@@ -5620,13 +5620,37 @@ if (courseType === 'myogi') {
     }
 
     /**
-     * 任意の位置 (X, Z) 直下におけるアスファルト道路表面の真の標高 (Y) を高精度算出
-     * 下り坂・登り坂・立体カント傾斜をミリ単位で完全反映
+     * 任意の位置 (X, Z) 直下におけるアスファルト道路表面・縁石・U字側溝の真の標高 (Y) を高精度算出
+     * 下り坂・登り坂・縁石天面・U字側溝底面（溝落とし深さ22cm）をミリ単位で完全反映
      */
     getRoadSurfaceY(worldPos, hintT = null) {
         const info = this.getSmoothTrackInfo(worldPos, hintT);
         const bankOffsetY = Math.sin(info.bankAngle || 0) * info.offset;
-        return info.centerPos.y + bankOffsetY;
+        const baseY = info.centerPos.y + bankOffsetY;
+
+        // コースごとの側溝・縁石ジオメトリとの連動（妙義以外は立体側溝構造をサポート）
+        const hasGutterCourse = (this.courseType !== 'myogi');
+        if (hasGutterCourse) {
+            const halfW = (this.roadWidth || 9.2) * 0.5;
+            const gutterW = 0.65;
+            const absOffset = Math.abs(info.offset || 0);
+
+            if (absOffset > halfW) {
+                // 溝落とし可能区間判定（info.hasGutterがtrue、または縁石・側溝部）
+                if (info.hasGutter && absOffset > halfW + 0.06 && absOffset < halfW + gutterW) {
+                    // ★U字側溝の底面（道路基準標高 -0.22m）：溝落としドリフト時にタイヤ痕が完璧に溝底に吸着！
+                    return info.centerPos.y - 0.22;
+                } else if (absOffset <= halfW + 0.06) {
+                    // ★道路境界・縁石（赤白ゼブラ/コンクリート天面：+0.015m）
+                    return info.centerPos.y + 0.015;
+                } else {
+                    // 溝外壁・ガードレール基礎天面（+0.02m）
+                    return info.centerPos.y + 0.02;
+                }
+            }
+        }
+
+        return baseY;
     }
 }
 
