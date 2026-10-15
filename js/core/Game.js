@@ -620,29 +620,39 @@ class Game {
             }
         }
 
-        if (this.playerPhysics.isDrifting && this.playerPhysics.speed > 24) {
+        // ★プレイヤー ドリフト中のタイヤスモーク＆リアルタイム・スキッドマーク（タイヤ痕）
+        let isPlayerBurningTire = false;
+        if (this.playerPhysics.isDrifting && this.playerPhysics.speed > 22) {
+            isPlayerBurningTire = true;
             const wheels = this.playerCar.getRearWheelPositions();
-            const baseIntensity = Math.min(1.2, Math.abs(this.playerPhysics.driftAngle) * 2.5);
+            const baseIntensity = Math.min(1.4, Math.abs(this.playerPhysics.driftAngle) * 2.8);
             const intensity = (this.currentWeather === 'rain') ? baseIntensity * 0.40 : baseIntensity;
 
             this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, intensity);
             this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, intensity);
-            this.particles.addSkidSegment(wheels.left, wheels.right);
-        }
-
-        // ★ロケットスタート中の猛烈なホイールスピン白煙＆スキッドマーク
-        if (this.playerPhysics.launchBoostTimer > 0 && this.playerPhysics.speed < 45 && this.input.throttle > 0.4) {
+            this.particles.addPlayerDriftMark(wheels.left, wheels.right, intensity);
+        } else if (this.playerPhysics.launchBoostTimer > 0 && this.playerPhysics.speed < 45 && this.input.throttle > 0.4) {
+            // ★ロケットスタート中の猛烈なホイールスピン白煙＆発進スキッドマーク
+            isPlayerBurningTire = true;
             const wheels = this.playerCar.getRearWheelPositions();
-            this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, 0.85);
-            this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, 0.85);
-            this.particles.addSkidSegment(wheels.left, wheels.right);
+            this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, 0.95);
+            this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, 0.95);
+            this.particles.addPlayerDriftMark(wheels.left, wheels.right, 0.95);
         }
 
-        if (this.rivalCar.isDrifting && this.rivalCar.speed > 30) {
+        if (!isPlayerBurningTire) {
+            this.particles.endPlayerDrift();
+        }
+
+        // ★ライバル車（高橋啓介FD3S）ドリフト時のタイヤスモーク＆リアルタイム・スキッドマーク
+        if (this.rivalCar.isDrifting && this.rivalCar.speed > 26) {
             const rWheels = this.rivalCar.getRearWheelPositions();
-            const rIntensity = (this.currentWeather === 'rain') ? 0.35 : 0.7;
+            const rIntensity = (this.currentWeather === 'rain') ? 0.35 : 0.75;
             this.particles.emitSmoke(rWheels.left, new THREE.Vector3(0, 0, 0), rIntensity);
             this.particles.emitSmoke(rWheels.right, new THREE.Vector3(0, 0, 0), rIntensity);
+            this.particles.addRivalDriftMark(rWheels.left, rWheels.right, rIntensity);
+        } else {
+            this.particles.endRivalDrift();
         }
 
         // ★頭文字D名物：ドリフト時のテールランプ残像（Light Trails）更新

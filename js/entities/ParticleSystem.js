@@ -127,21 +127,65 @@ class ParticleSystem {
             });
         }
 
-        // スキッドマーク（タイヤ痕）ライン
-        this.maxSkidSegments = 600;
-        this.skidPoints = [];
+        // =========================================================================
+        // ★リアルタイム・スキッドマーク（タイヤ痕）クワッド・リングバッファ
+        // 左右タイヤ独立の本格的リボンメッシュ（Zファイト防止、不連続対応、濃淡アルファ）
+        // =========================================================================
+        this.maxSkidQuads = 1600; // 最大1,600クワッド（左右各輪で峠数コーナー分持続）
+        this.skidQuadIndex = 0;
+        this.skidNeedsUpdate = false;
+
+        const totalVerts = this.maxSkidQuads * 4;
+        const totalIndices = this.maxSkidQuads * 6;
+        const skidPositions = new Float32Array(totalVerts * 3);
+        const skidColors = new Float32Array(totalVerts * 4);
+        const skidIndices = new Uint16Array(totalIndices);
+
+        // 初期状態は画面外（Y = -9999）に退避
+        for (let i = 0; i < totalVerts; i++) {
+            skidPositions[i * 3 + 1] = -9999;
+            skidColors[i * 4] = 0.04;
+            skidColors[i * 4 + 1] = 0.04;
+            skidColors[i * 4 + 2] = 0.05;
+            skidColors[i * 4 + 3] = 0.0;
+        }
+
+        // クワッド（2ポリゴン）インデックスの静的構築 [0,1,2, 2,1,3, 4,5,6, ...]
+        for (let q = 0; q < this.maxSkidQuads; q++) {
+            const vBase = q * 4;
+            const iBase = q * 6;
+            skidIndices[iBase] = vBase;
+            skidIndices[iBase + 1] = vBase + 1;
+            skidIndices[iBase + 2] = vBase + 2;
+            skidIndices[iBase + 3] = vBase + 2;
+            skidIndices[iBase + 4] = vBase + 1;
+            skidIndices[iBase + 5] = vBase + 3;
+        }
+
         this.skidGeom = new THREE.BufferGeometry();
-        const skidPosArray = new Float32Array(this.maxSkidSegments * 2 * 3);
-        this.skidGeom.setAttribute('position', new THREE.BufferAttribute(skidPosArray, 3));
+        this.skidGeom.setAttribute('position', new THREE.BufferAttribute(skidPositions, 3));
+        this.skidGeom.setAttribute('color', new THREE.BufferAttribute(skidColors, 4));
+        this.skidGeom.setIndex(new THREE.BufferAttribute(skidIndices, 1));
+
         const skidMat = new THREE.MeshBasicMaterial({
-            color: 0x111111,
+            vertexColors: true,
             transparent: true,
-            opacity: 0.7,
-            depthWrite: false
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1.5,
+            polygonOffsetUnits: -4.0,
+            side: THREE.DoubleSide
         });
+
         this.skidMesh = new THREE.Mesh(this.skidGeom, skidMat);
+        this.skidMesh.renderOrder = 3; // 路面および事前タイヤ痕の直後に描画
         this.scene.add(this.skidMesh);
-        this.skidIndex = 0;
+
+        // 前フレームの車輪接地位置（ドリフト切れ目の不連続性判定用）
+        this.playerLastL = null;
+        this.playerLastR = null;
+        this.rivalLastL = null;
+        this.rivalLastR = null;
 
         // ★アフターファイヤ（マフラー火炎）パーティクルプール
         this.maxFlames = 90;
@@ -378,20 +422,106 @@ class ParticleSystem {
         colorsAttr.needsUpdate = true;
     }
 
-    addSkidSegment(leftPos, rightPos) {
-        if (this.isRaining && Math.random() < 0.65) return; // 雨天ウェット路面では焼き付きタイヤ痕を抑制
-        if (this.skidIndex >= this.maxSkidSegments) {
-            this.skidIndex = 0; // ループ
-        }
+    /**
+     * 単一タイヤの四角形（2ポリゴン）クワッドセグメントをリングバッファに追加
+     * @param {THREE.Vector3} prevPos - 前フレーム接地位置
+     * @param {THREE.Vector3} currPos - 現フレーム接地位置
+     * @param {number} intensity - スリップ強度 (0.0〜1.5)
+     * @param {number} tireWidth - タイヤ幅 (実車サイズ: 0.22〜0.25m)
+     */
+    addTireQuad(prevPos, currPos, intensity = 0.8, tireWidth = 0.22) {
+        const dx = currPos.x - prevPos.x;
+        const dz = currPos.z - prevPos.z;
+        const dist = Math.hypot(dx, dz);
+
+        // 微小な移動はスキップして頂点消費を節約、遠すぎる場合はワープ（不連続）なので接続しない
+        if (dist < 0.22 || dist > 4.5) return;
+
+        // タイヤ進行方向に直交する横方向ベクトル（正規化）
+        const invLen = 1.0 / dist;
+        const nx = -dz * invLen;
+        const nz = dx * invLen;
+        const halfW = tireWidth * 0.5;
+
+        // 路面直上（Y + 0.022m）に配置してアスファルトと自然にブレンド
+        const y0 = prevPos.y + 0.022;
+        const y1 = currPos.y + 0.022;
 
         const posAttr = this.skidGeom.attributes.position;
-        const base = this.skidIndex * 2;
+        const colAttr = this.skidGeom.attributes.color;
+        const vBase = this.skidQuadIndex * 4;
 
-        posAttr.setXYZ(base, leftPos.x, leftPos.y + 0.03, leftPos.z);
-        posAttr.setXYZ(base + 1, rightPos.x, rightPos.y + 0.03, rightPos.z);
-        posAttr.needsUpdate = true;
+        // 4頂点（四角形リボン）
+        posAttr.setXYZ(vBase, prevPos.x - nx * halfW, y0, prevPos.z - nz * halfW);
+        posAttr.setXYZ(vBase + 1, prevPos.x + nx * halfW, y0, prevPos.z + nz * halfW);
+        posAttr.setXYZ(vBase + 2, currPos.x - nx * halfW, y1, currPos.z - nz * halfW);
+        posAttr.setXYZ(vBase + 3, currPos.x + nx * halfW, y1, currPos.z + nz * halfW);
 
-        this.skidIndex++;
+        // ドリフト強度・天候に応じたブラックマーク濃度
+        let alpha = Math.max(0.24, Math.min(0.82, 0.28 + intensity * 0.50));
+        if (this.isRaining) alpha *= 0.35; // 雨天ウェット路面は薄いタイヤ痕
+
+        // 焼き付きタイヤゴムの漆黒 (R:0.04, G:0.04, B:0.05)
+        const cr = 0.04, cg = 0.04, cb = 0.05;
+        colAttr.setXYZW(vBase, cr, cg, cb, alpha);
+        colAttr.setXYZW(vBase + 1, cr, cg, cb, alpha);
+        colAttr.setXYZW(vBase + 2, cr, cg, cb, alpha);
+        colAttr.setXYZW(vBase + 3, cr, cg, cb, alpha);
+
+        this.skidQuadIndex = (this.skidQuadIndex + 1) % this.maxSkidQuads;
+        this.skidNeedsUpdate = true;
+    }
+
+    /**
+     * プレイヤーの左右リアタイヤにリアルタイム・ドリフトタイヤ痕を追加
+     */
+    addPlayerDriftMark(leftPos, rightPos, intensity = 0.8) {
+        if (this.playerLastL) {
+            this.addTireQuad(this.playerLastL, leftPos, intensity);
+        }
+        if (this.playerLastR) {
+            this.addTireQuad(this.playerLastR, rightPos, intensity);
+        }
+        this.playerLastL = leftPos.clone();
+        this.playerLastR = rightPos.clone();
+    }
+
+    /**
+     * プレイヤードリフト終了時（直進復帰）の不連続リセット
+     * 前回のドリフト終点と次のドリフト始点が直線で結ばれるのを完全に防止
+     */
+    endPlayerDrift() {
+        this.playerLastL = null;
+        this.playerLastR = null;
+    }
+
+    /**
+     * ライバル車（FD3S）の左右リアタイヤにリアルタイム・ドリフトタイヤ痕を追加
+     */
+    addRivalDriftMark(leftPos, rightPos, intensity = 0.7) {
+        if (this.rivalLastL) {
+            this.addTireQuad(this.rivalLastL, leftPos, intensity);
+        }
+        if (this.rivalLastR) {
+            this.addTireQuad(this.rivalLastR, rightPos, intensity);
+        }
+        this.rivalLastL = leftPos.clone();
+        this.rivalLastR = rightPos.clone();
+    }
+
+    /**
+     * ライバル車ドリフト終了時の不連続リセット
+     */
+    endRivalDrift() {
+        this.rivalLastL = null;
+        this.rivalLastR = null;
+    }
+
+    /**
+     * 後方互換用メソッド
+     */
+    addSkidSegment(leftPos, rightPos, intensity = 0.8) {
+        this.addPlayerDriftMark(leftPos, rightPos, intensity);
     }
 
     /**
@@ -457,6 +587,13 @@ class ParticleSystem {
     }
 
     update(dt, camera) {
+        // スキッドマーク（タイヤ痕）バッファの動的転送
+        if (this.skidNeedsUpdate) {
+            this.skidGeom.attributes.position.needsUpdate = true;
+            this.skidGeom.attributes.color.needsUpdate = true;
+            this.skidNeedsUpdate = false;
+        }
+
         // マフラーフラッシュライト減衰
         if (this.playerFlameLightTimer > 0) {
             this.playerFlameLightTimer -= dt;
