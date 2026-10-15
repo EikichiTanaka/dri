@@ -432,8 +432,19 @@ class RivalCar {
         this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1.0, 10.0 * dt);
 
         if (this.frontWheelL && this.frontWheelR) {
-            this.frontWheelL.rotation.y = this.steerAngle;
-            this.frontWheelR.rotation.y = this.steerAngle;
+            let steerL = this.steerAngle;
+            let steerR = this.steerAngle;
+            if (this.steerAngle > 0.02) {
+                steerL = this.steerAngle * 1.08;
+                steerR = this.steerAngle * 0.94;
+            } else if (this.steerAngle < -0.02) {
+                steerR = this.steerAngle * 1.08;
+                steerL = this.steerAngle * 0.94;
+            }
+            this.frontWheelL.rotation.y = steerL;
+            this.frontWheelR.rotation.y = steerR;
+            this.frontWheelL.rotation.z = -this.steerAngle * 0.045;
+            this.frontWheelR.rotation.z = -this.steerAngle * 0.045;
         }
 
         // 5. 車体サスペンションの動的ロール＆ピッチ（立体カント＋遠心力ロール）
