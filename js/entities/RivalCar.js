@@ -452,8 +452,12 @@ class RivalCar {
     }
 
     getRearWheelPositions() {
+        this.meshGroup.updateMatrixWorld(true);
         const leftRear = new THREE.Vector3(-0.82, 0.1, -1.3).applyMatrix4(this.meshGroup.matrixWorld);
         const rightRear = new THREE.Vector3(0.82, 0.1, -1.3).applyMatrix4(this.meshGroup.matrixWorld);
+        const groundY = this.position ? this.position.y : this.meshGroup.position.y;
+        leftRear.y = groundY;
+        rightRear.y = groundY;
         return { left: leftRear, right: rightRear };
     }
 

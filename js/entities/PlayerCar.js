@@ -180,6 +180,12 @@ class PlayerCar {
         this.meshGroup.updateMatrixWorld(true);
         const leftRear = this.rearWheelLPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
         const rightRear = this.rearWheelRPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
+
+        // 接地面高さを路面サーフェスに正確に接地（ホイールハブの浮き上がりを完全解消）
+        const groundY = this.physics ? this.physics.position.y : this.meshGroup.position.y;
+        leftRear.y = groundY;
+        rightRear.y = groundY;
+
         return { left: leftRear, right: rightRear };
     }
 

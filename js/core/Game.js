@@ -132,6 +132,9 @@ class Game {
         this.applyEnvironment();
         this.playerPhysics.resetToTrack(0.003, -1.8);
         this.rivalCar.resetPosition();
+        if (this.particles && this.particles.clearSkidMarks) {
+            this.particles.clearSkidMarks();
+        }
         this.hud.setTrack(this.track);
     }
 
@@ -408,6 +411,9 @@ class Game {
         this.playerPhysics.resetToTrack(0.003, -1.8);
         this.playerPhysics.isLocked = true; // ★カウントダウン中は完全ロック！
         this.rivalCar.resetPosition();
+        if (this.particles && this.particles.clearSkidMarks) {
+            this.particles.clearSkidMarks();
+        }
 
         this.state = 'COUNTDOWN';
         this.countdownStep = 3;
@@ -620,32 +626,50 @@ class Game {
             }
         }
 
-        // ★プレイヤー ドリフト中のタイヤスモーク＆リアルタイム・スキッドマーク（タイヤ痕）
-        let isPlayerBurningTire = false;
-        if (this.playerPhysics.isDrifting && this.playerPhysics.speed > 22) {
-            isPlayerBurningTire = true;
-            const wheels = this.playerCar.getRearWheelPositions();
-            const baseIntensity = Math.min(1.4, Math.abs(this.playerPhysics.driftAngle) * 2.8);
-            const intensity = (this.currentWeather === 'rain') ? baseIntensity * 0.40 : baseIntensity;
+        // ★自車（プレイヤー）ドリフト・スリップ・ブレーキング時のリアルタイム・スキッドマーク（タイヤ痕）
+        const pSpeed = this.playerPhysics.speed;
+        const pAbsAngle = Math.abs(this.playerPhysics.driftAngle);
+        const pIsDrifting = this.playerPhysics.isDrifting;
+        const pIsBraking = (this.playerPhysics.brake > 0.25 || this.playerPhysics.handbrake) && pSpeed > 14;
+        const pIsPowerSliding = (pAbsAngle > 0.065) && pSpeed > 15;
+        const pIsLaunchSpin = (this.playerPhysics.launchBoostTimer > 0) && pSpeed < 50 && (this.input.throttle > 0.35);
 
-            this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, intensity);
-            this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, intensity);
-            this.particles.addPlayerDriftMark(wheels.left, wheels.right, intensity);
-        } else if (this.playerPhysics.launchBoostTimer > 0 && this.playerPhysics.speed < 45 && this.input.throttle > 0.4) {
-            // ★ロケットスタート中の猛烈なホイールスピン白煙＆発進スキッドマーク
+        let isPlayerBurningTire = false;
+        let pTireIntensity = 0;
+
+        if (pIsDrifting && pSpeed > 14) {
             isPlayerBurningTire = true;
-            const wheels = this.playerCar.getRearWheelPositions();
-            this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, 0.95);
-            this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, 0.95);
-            this.particles.addPlayerDriftMark(wheels.left, wheels.right, 0.95);
+            pTireIntensity = Math.min(1.4, Math.max(0.40, pAbsAngle * 3.0));
+        } else if (pIsPowerSliding) {
+            isPlayerBurningTire = true;
+            pTireIntensity = Math.min(1.1, (pAbsAngle - 0.065) * 3.6 + 0.38);
+        } else if (pIsBraking) {
+            isPlayerBurningTire = true;
+            pTireIntensity = this.playerPhysics.handbrake ? 0.95 : Math.min(0.95, this.playerPhysics.brake * 1.15);
+        } else if (pIsLaunchSpin) {
+            isPlayerBurningTire = true;
+            pTireIntensity = 1.0;
         }
 
-        if (!isPlayerBurningTire) {
+        if (isPlayerBurningTire) {
+            const wheels = this.playerCar.getRearWheelPositions();
+            const intensity = (this.currentWeather === 'rain') ? pTireIntensity * 0.40 : pTireIntensity;
+
+            // スモーク発生（ドリフトおよびホイールスピン時、雨天は水しぶき）
+            if (pIsDrifting || pIsPowerSliding || pIsLaunchSpin) {
+                this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, intensity);
+                this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, intensity);
+            }
+            // ★路面にクッキリと自車のタイヤ痕（ブラックマーク）を刻み込む
+            this.particles.addPlayerDriftMark(wheels.left, wheels.right, intensity);
+        } else {
             this.particles.endPlayerDrift();
         }
 
         // ★ライバル車（高橋啓介FD3S）ドリフト時のタイヤスモーク＆リアルタイム・スキッドマーク
-        if (this.rivalCar.isDrifting && this.rivalCar.speed > 26) {
+        const rSpeed = this.rivalCar.speed || 0;
+        const rIsDrifting = this.rivalCar.isDrifting && rSpeed > 20;
+        if (rIsDrifting) {
             const rWheels = this.rivalCar.getRearWheelPositions();
             const rIntensity = (this.currentWeather === 'rain') ? 0.35 : 0.75;
             this.particles.emitSmoke(rWheels.left, new THREE.Vector3(0, 0, 0), rIntensity);
