@@ -127,21 +127,123 @@ class ParticleSystem {
             });
         }
 
-        // スキッドマーク（タイヤ痕）ライン
-        this.maxSkidSegments = 600;
-        this.skidPoints = [];
+        // =========================================================================
+        // ★リアルタイム・スキッドマーク（タイヤ痕）クワッド・リングバッファ 2.0
+        // 実車スポーツタイヤのリアルなトレッド溝・ショルダー高接地圧プロファイルテクスチャ
+        // ドリフト後も長時間路面に残り続ける超大容量バッファ (4,800クワッド / 19,200頂点)
+        // =========================================================================
+        this.maxSkidQuads = 4800; // 4,800クワッド（全コーナーのドリフト痕が数分間美しく持続）
+        this.skidQuadIndex = 0;
+        this.skidNeedsUpdate = false;
+
+        const totalVerts = this.maxSkidQuads * 4;
+        const totalIndices = this.maxSkidQuads * 6;
+        const skidPositions = new Float32Array(totalVerts * 3);
+        const skidColors = new Float32Array(totalVerts * 4);
+        const skidUvs = new Float32Array(totalVerts * 2);
+        const skidIndices = new Uint16Array(totalIndices);
+
+        // 初期状態は画面外（Y = -9999）に退避
+        for (let i = 0; i < totalVerts; i++) {
+            skidPositions[i * 3 + 1] = -9999;
+            skidColors[i * 4] = 0.04;
+            skidColors[i * 4 + 1] = 0.04;
+            skidColors[i * 4 + 2] = 0.05;
+            skidColors[i * 4 + 3] = 0.0;
+        }
+
+        // クワッド（2ポリゴン）インデックスの静的構築 [0,1,2, 2,1,3, 4,5,6, ...]
+        for (let q = 0; q < this.maxSkidQuads; q++) {
+            const vBase = q * 4;
+            const iBase = q * 6;
+            skidIndices[iBase] = vBase;
+            skidIndices[iBase + 1] = vBase + 1;
+            skidIndices[iBase + 2] = vBase + 2;
+            skidIndices[iBase + 3] = vBase + 2;
+            skidIndices[iBase + 4] = vBase + 1;
+            skidIndices[iBase + 5] = vBase + 3;
+        }
+
+        // ★実車のラジアル/Sタイヤの焼き付きトレッドパターン（溝＋ショルダー高接地圧）テクスチャ生成
+        this.skidTexture = this.generateSkidTexture();
+
         this.skidGeom = new THREE.BufferGeometry();
-        const skidPosArray = new Float32Array(this.maxSkidSegments * 2 * 3);
-        this.skidGeom.setAttribute('position', new THREE.BufferAttribute(skidPosArray, 3));
+        this.skidGeom.setAttribute('position', new THREE.BufferAttribute(skidPositions, 3));
+        this.skidGeom.setAttribute('color', new THREE.BufferAttribute(skidColors, 4));
+        this.skidGeom.setAttribute('uv', new THREE.BufferAttribute(skidUvs, 2));
+        this.skidGeom.setIndex(new THREE.BufferAttribute(skidIndices, 1));
+
+        // ★GPUへの動的バッファ更新属性を明示（GPUキャッシュ問題を完全防止）
+        this.skidGeom.attributes.position.setUsage(THREE.DynamicDrawUsage);
+        this.skidGeom.attributes.color.setUsage(THREE.DynamicDrawUsage);
+        this.skidGeom.attributes.uv.setUsage(THREE.DynamicDrawUsage);
+
+        // ★視錐台カリング用の超巨大バウンディングスフィアを固定定義
+        this.skidGeom.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 100000);
+
         const skidMat = new THREE.MeshBasicMaterial({
-            color: 0x111111,
+            map: this.skidTexture,
+            vertexColors: true,
             transparent: true,
-            opacity: 0.7,
-            depthWrite: false
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1.5,
+            polygonOffsetUnits: -4.0,
+            side: THREE.DoubleSide
         });
+
         this.skidMesh = new THREE.Mesh(this.skidGeom, skidMat);
+        this.skidMesh.renderOrder = 3; // 路面および事前タイヤ痕の直後に描画
+        this.skidMesh.frustumCulled = false; // ★絶対に視錐台カリングさせない（画面外スキップを完全防止）
         this.scene.add(this.skidMesh);
-        this.skidIndex = 0;
+
+        // 【4】クワッドごとの経過時間（age）と初期アルファの記録バッファ（熱い漆黒から冷えたマットグレーへの経年変化用）
+        this.skidQuadAge = new Float32Array(this.maxSkidQuads);
+        this.skidQuadInitialAlpha = new Float32Array(this.maxSkidQuads);
+        this.skidQuadAge.fill(9999.0); // 初期状態は完全に冷却済み
+
+        // 左右リア車輪ごとの打刻トラッキング状態（確定位置・累積距離・UV進行・摩擦熱・微小脈動距離）
+        this.playerTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+        this.playerTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+        this.rivalTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+        this.rivalTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+
+        this.playerLastL = null;
+        this.playerLastR = null;
+        this.rivalLastL = null;
+        this.rivalLastR = null;
+
+        // 【3】タイヤ痕直後からの微細な路面余熱ヴェイパー（Hot Surface Wisps / 熱気スモーク）プール
+        this.maxHeatWisps = 60;
+        this.heatWisps = [];
+        this.heatWispGeom = new THREE.PlaneGeometry(0.35, 0.35);
+        this.heatWispTexture = this.generateWispTexture();
+        this.heatWispMat = new THREE.MeshBasicMaterial({
+            map: this.heatWispTexture,
+            transparent: true,
+            opacity: 0.12,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        this.heatWispGroup = new THREE.Group();
+        this.heatWispGroup.renderOrder = 4; // スキッドマークの直後に描画
+
+        for (let i = 0; i < this.maxHeatWisps; i++) {
+            const mesh = new THREE.Mesh(this.heatWispGeom, this.heatWispMat.clone());
+            mesh.visible = false;
+            this.heatWispGroup.add(mesh);
+            this.heatWisps.push({
+                mesh: mesh,
+                active: false,
+                life: 0,
+                maxLife: 1.6,
+                baseScale: 0.35,
+                targetScale: 0.75,
+                baseOpacity: 0.12,
+                velocity: new THREE.Vector3()
+            });
+        }
+        this.scene.add(this.heatWispGroup);
 
         // ★アフターファイヤ（マフラー火炎）パーティクルプール
         this.maxFlames = 90;
@@ -378,20 +480,437 @@ class ParticleSystem {
         colorsAttr.needsUpdate = true;
     }
 
-    addSkidSegment(leftPos, rightPos) {
-        if (this.isRaining && Math.random() < 0.65) return; // 雨天ウェット路面では焼き付きタイヤ痕を抑制
-        if (this.skidIndex >= this.maxSkidSegments) {
-            this.skidIndex = 0; // ループ
+    /**
+     * ★実車のスポーツラジアル（ネオバ/ポテンザ等）のトレッド面をプロシージャル生成
+     * ショルダー高接地圧ピーク、縦主溝（グルーブ抜けスリット）、アスファルト骨材擦過縦筋を完全再現
+     */
+    generateSkidTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.createImageData(128, 64);
+        const data = imgData.data;
+
+        for (let y = 0; y < 64; y++) {
+            const v = y / 64.0;
+            // 進行方向の微小なアスファルト擦れ波（シームレス周期関数）
+            const longitudinalNoise = 
+                Math.sin(v * Math.PI * 2) * 0.04 +
+                Math.sin(v * Math.PI * 6) * 0.03 +
+                Math.cos(v * Math.PI * 10) * 0.02;
+
+            for (let x = 0; x < 128; x++) {
+                const u = x / 127.0; // 0.0 (左端) 〜 1.0 (右端)
+
+                // 1. ショルダー高接地圧ピーク（両端部にかけて旋回横Gで面圧が集中）
+                let edgePeak = 0;
+                if (u < 0.15) {
+                    const edgeFrac = u / 0.15;
+                    edgePeak = Math.sin(edgeFrac * Math.PI * 0.5) * 0.32;
+                } else if (u > 0.85) {
+                    const edgeFrac = (1.0 - u) / 0.15;
+                    edgePeak = Math.sin(edgeFrac * Math.PI * 0.5) * 0.32;
+                }
+
+                // 2. 主溝（グルーブ）：実車スポーツラジアルの3本ストレートグルーブ抜け
+                const g1 = Math.exp(-Math.pow((u - 0.30) / 0.038, 2));
+                const g2 = Math.exp(-Math.pow((u - 0.50) / 0.034, 2));
+                const g3 = Math.exp(-Math.pow((u - 0.70) / 0.038, 2));
+                const grooveDeduction = (g1 * 0.72 + g2 * 0.62 + g3 * 0.72);
+
+                // 3. アスファルト粗粒に削られたゴムの微小な引きずり縦筋ノイズ
+                const scratchNoise = 
+                    Math.sin(u * 125.0 + 1.2) * 0.07 +
+                    Math.cos(u * 290.0 + 0.4) * 0.05 +
+                    Math.sin(u * 440.0 + v * 30.0) * 0.04;
+
+                // 4. 端部の自然なソフトフェード（カクつきを完全排除）
+                let sideFade = 1.0;
+                if (u < 0.035) sideFade = u / 0.035;
+                else if (u > 0.965) sideFade = (1.0 - u) / 0.035;
+
+                // 統合アルファ (0.0 〜 1.0)
+                let a = (0.76 + edgePeak - grooveDeduction + longitudinalNoise + scratchNoise);
+                a = Math.max(0.0, Math.min(1.0, a)) * sideFade;
+
+                const idx = (y * 128 + x) * 4;
+                // RGBは白(255)にして頂点カラー(0.04, 0.04, 0.05)との乗算で完全なリアルダークゴム色にする
+                data[idx] = 255;
+                data[idx + 1] = 255;
+                data[idx + 2] = 255;
+                data[idx + 3] = Math.floor(a * 255);
+            }
         }
 
+        ctx.putImageData(imgData, 0, 0);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = true;
+        return texture;
+    }
+
+    /**
+     * 【3】路面余熱ヴェイパー（熱気・スモーク）用ソフト円形グラデーションテクスチャの生成
+     */
+    generateWispTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0.0, 'rgba(235, 235, 240, 0.85)');
+        grad.addColorStop(0.35, 'rgba(215, 215, 225, 0.45)');
+        grad.addColorStop(0.70, 'rgba(185, 185, 195, 0.15)');
+        grad.addColorStop(1.0, 'rgba(160, 160, 170, 0.0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 64, 64);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    /**
+     * 【3】焼き付いたばかりのアスファルト表面から立ち上る微細な路面余熱ヴェイパー（熱気スモーク）を発生
+     * 車速で吹き飛ぶ通常のタイヤスモークとは異なり、路面直上に留まってフワッと漂う熱気
+     */
+    emitHeatWisp(pos, intensity = 0.8) {
+        for (let i = 0; i < this.maxHeatWisps; i++) {
+            const w = this.heatWisps[i];
+            if (!w.active) {
+                w.active = true;
+                w.life = 0;
+                w.maxLife = 1.3 + Math.random() * 0.7; // 1.3〜2.0秒間ふんわり持続
+                w.mesh.position.set(
+                    pos.x + (Math.random() - 0.5) * 0.16,
+                    pos.y + 0.035, // 路面直上に密着して滞留
+                    pos.z + (Math.random() - 0.5) * 0.16
+                );
+                // 水平速度はほぼ静止（微小乱気流）、熱対流によるわずかな垂直上昇 (vy: 0.10〜0.18 m/s)
+                w.velocity.set(
+                    (Math.random() - 0.5) * 0.04,
+                    0.10 + Math.random() * 0.08,
+                    (Math.random() - 0.5) * 0.04
+                );
+                w.baseScale = 0.28 + Math.random() * 0.10;
+                w.targetScale = 0.65 + Math.random() * 0.30;
+                // 薄く繊細な透明度（0.08〜0.14）
+                w.baseOpacity = (0.08 + Math.random() * 0.05) * Math.min(1.2, intensity);
+                w.mesh.material.opacity = w.baseOpacity;
+                w.mesh.scale.set(w.baseScale, w.baseScale, w.baseScale);
+                w.mesh.visible = true;
+                break;
+            }
+        }
+    }
+
+    /**
+     * 単一車輪の移動距離を累積し、低速でも高速でも均一で滑らかなクワッドリボンを生成
+     * 摩擦熱蓄積カーブ、抜け直前の幅テーパリング、スティックスリップ微小脈動を統合
+     * @param {Object} state - { lastPos, uvV, slipSegments, thermalHeat, cumDist } 追跡状態オブジェクト
+     * @param {THREE.Vector3} currPos - 現フレーム車輪接地位置
+     * @param {number} intensity - スリップ強度 (0.15〜1.5)
+     * @param {number} tireWidth - タイヤ幅 (実車サイズ: 0.20〜0.27m)
+     */
+    addWheelMark(state, currPos, intensity = 0.8, tireWidth = 0.24) {
+        if (intensity < 0.15) {
+            this.finalizeWheelMark(state);
+            return;
+        }
+
+        if (!state.lastPos) {
+            state.lastPos = currPos.clone();
+            state.uvV = 0;
+            state.slipSegments = 0;
+            state.thermalHeat = 0.25;
+            state.cumDist = 0;
+            return;
+        }
+
+        const dx = currPos.x - state.lastPos.x;
+        const dz = currPos.z - state.lastPos.z;
+        const dist = Math.hypot(dx, dz);
+
+        // ワープ・リセット（6.0m以上離れた場合はワープなので線を引かず再アンカー）
+        if (dist > 6.0) {
+            state.lastPos.copy(currPos);
+            state.uvV = 0;
+            state.slipSegments = 0;
+            state.thermalHeat = 0.25;
+            state.cumDist = 0;
+            return;
+        }
+
+        // 最小セグメント長（0.12m）。この距離に達するまでは前回の確定打刻位置を維持して累積！
+        const minStep = 0.12;
+        if (dist < minStep) {
+            return;
+        }
+
+        state.slipSegments = (state.slipSegments || 0) + 1;
+        state.cumDist = (state.cumDist || 0) + dist;
+
+        // 1. 摩擦熱の蓄積（Thermal Friction Curve）: スライド持続でゴムが熱分解して徐々に濃く焼き付く
+        state.thermalHeat = Math.min(1.0, (state.thermalHeat || 0.25) + dist * 0.38);
+        const thermalFactor = 0.50 + state.thermalHeat * 0.50; // 0.50 -> 1.0
+
+        // 2. 進入時の滑らかな立ち上がりフェードイン
+        const entryFade = Math.min(1.0, 0.30 + (state.slipSegments / 4.0) * 0.70);
+
+        // 3. ドリフト抜け・低スリップ時の幅テーパリング（細く収束）
+        const widthScale = Math.max(0.58, Math.min(1.0, 0.30 + intensity * 0.75));
+        const effectiveWidth = tireWidth * widthScale;
+
+        // 4. スティックスリップ（微小摩擦脈動）による自然な濃淡の波
+        const ripple = 1.0 + Math.sin(state.cumDist * 13.0) * 0.08 + Math.cos(state.cumDist * 25.0) * 0.05;
+
+        // 総合フェード係数
+        const totalFade = entryFade * thermalFactor * ripple;
+
+        // 【3】高摩擦スリップ時、路面に微細な余熱ヴェイパー（熱気スモーク）を漂わせる
+        if (intensity > 0.40 && Math.random() < 0.28) {
+            this.emitHeatWisp(currPos, intensity);
+        }
+
+        // 高速移動時の細分化（subdivision）：1フレームで 0.24m 以上進んだ場合は中間分割して滑らかな円弧を維持
+        const steps = Math.min(3, Math.max(1, Math.floor(dist / 0.24)));
+        let prev = state.lastPos.clone();
+
+        for (let s = 1; s <= steps; s++) {
+            const frac = s / steps;
+            const subCurr = new THREE.Vector3(
+                state.lastPos.x + dx * frac,
+                state.lastPos.y + (currPos.y - state.lastPos.y) * frac,
+                state.lastPos.z + dz * frac
+            );
+            const subDist = prev.distanceTo(subCurr);
+            const v0 = state.uvV || 0;
+            // 1m移動あたり約1.8テクスチャ周期（実車タイヤ外径0.64m・周長約2.0mの接地トレッドスケール）
+            const v1 = v0 + subDist * 1.8;
+            state.uvV = v1 % 1000.0;
+
+            this.emitTireQuad(prev, subCurr, intensity, effectiveWidth, v0, v1, totalFade);
+            prev = subCurr;
+        }
+
+        state.lastPos.copy(currPos);
+    }
+
+    /**
+     * 車輪打刻トラッキングの終了・リセット
+     */
+    finalizeWheelMark(state) {
+        if (!state) return;
+        state.lastPos = null;
+        state.uvV = 0;
+        state.slipSegments = 0;
+        state.thermalHeat = 0.25;
+        state.cumDist = 0;
+    }
+
+    /**
+     * 単一タイヤの四角形（2ポリゴン）クワッドセグメントをリングバッファに書き込み
+     * @param {THREE.Vector3} prevPos - 始点接地位置
+     * @param {THREE.Vector3} currPos - 終点接地位置
+     * @param {number} intensity - スリップ強度 (0.15〜1.5)
+     * @param {number} tireWidth - タイヤ幅 (m)
+     * @param {number} v0 - テクスチャUV開始V座標
+     * @param {number} v1 - テクスチャUV終了V座標
+     * @param {number} fade - 進入・熱・脈動総合フェード係数
+     */
+    emitTireQuad(prevPos, currPos, intensity = 0.8, tireWidth = 0.24, v0 = 0.0, v1 = 1.0, fade = 1.0) {
+        const dx = currPos.x - prevPos.x;
+        const dz = currPos.z - prevPos.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 0.03) return;
+
+        // タイヤ進行方向に直交する横方向法線ベクトル（正規化）
+        const invLen = 1.0 / dist;
+        const nx = -dz * invLen;
+        const nz = dx * invLen;
+        let effectiveTireWidth = tireWidth;
+        // 【5】U字側溝内（溝落とし深さ -0.20m以下）では溝底幅に合わせてタイヤ痕幅を安全クランプ
+        if (prevPos.y < -0.15 || currPos.y < -0.15) {
+            effectiveTireWidth = Math.min(tireWidth, 0.22);
+        }
+        const halfW = effectiveTireWidth * 0.5;
+
+        // 路面・縁石・U字側溝底面の直上（Y + 0.018m）に配置して正確に密着（Z-fight完全防止）
+        const y0 = prevPos.y + 0.018;
+        const y1 = currPos.y + 0.018;
+
         const posAttr = this.skidGeom.attributes.position;
-        const base = this.skidIndex * 2;
+        const colAttr = this.skidGeom.attributes.color;
+        const uvAttr = this.skidGeom.attributes.uv;
+        const vBase = this.skidQuadIndex * 4;
 
-        posAttr.setXYZ(base, leftPos.x, leftPos.y + 0.03, leftPos.z);
-        posAttr.setXYZ(base + 1, rightPos.x, rightPos.y + 0.03, rightPos.z);
+        // 4頂点（四角形リボン：縁石や側溝の立体高低差にミリ単位で完全追従）
+        posAttr.setXYZ(vBase,     prevPos.x - nx * halfW, y0, prevPos.z - nz * halfW);
+        posAttr.setXYZ(vBase + 1, prevPos.x + nx * halfW, y0, prevPos.z + nz * halfW);
+        posAttr.setXYZ(vBase + 2, currPos.x - nx * halfW, y1, currPos.z - nz * halfW);
+        posAttr.setXYZ(vBase + 3, currPos.x + nx * halfW, y1, currPos.z + nz * halfW);
+
+        // トレッドパターンのシームレスUVマッピング
+        uvAttr.setXY(vBase,     0.0, v0);
+        uvAttr.setXY(vBase + 1, 1.0, v0);
+        uvAttr.setXY(vBase + 2, 0.0, v1);
+        uvAttr.setXY(vBase + 3, 1.0, v1);
+
+        // 物理的摩擦エネルギーに基づく非線形濃度カーブ（抜け直前の極薄かすれ 0.06 〜 Apexフルカウンターの漆黒 0.94）
+        let baseAlpha = Math.pow(Math.min(1.0, intensity / 1.05), 1.30) * 0.90;
+        baseAlpha = Math.max(0.06, baseAlpha);
+        let alpha = Math.min(0.95, baseAlpha * fade);
+        if (this.isRaining) alpha *= 0.35; // 雨天ウェット路面は薄いタイヤ痕
+
+        // 【4】刻みたての「ダークグラファイトグレー」から「マットな冷えグレー」への経年変化トラッキング
+        const qIdx = this.skidQuadIndex;
+        if (this.skidQuadAge) this.skidQuadAge[qIdx] = 0.0;
+        if (this.skidQuadInitialAlpha) this.skidQuadInitialAlpha[qIdx] = alpha;
+
+        // ドリフトしたては真っ黒ではなく、上品なダークグラファイトグレー（道路にカモフラージュしない十分なコントラストを保持）
+        // アスファルト路面（0.18〜0.25）に対して明確な明度差（0.062）を持ち、くっきり視認可能
+        const cr = 0.062, cg = 0.062, cb = 0.070;
+        colAttr.setXYZW(vBase,     cr, cg, cb, alpha);
+        colAttr.setXYZW(vBase + 1, cr, cg, cb, alpha);
+        colAttr.setXYZW(vBase + 2, cr, cg, cb, alpha);
+        colAttr.setXYZW(vBase + 3, cr, cg, cb, alpha);
+
+        this.skidQuadIndex = (this.skidQuadIndex + 1) % this.maxSkidQuads;
+        this.skidNeedsUpdate = true;
+    }
+
+    /**
+     * 後方互換用
+     */
+    addTireQuad(prevPos, currPos, intensity = 0.8, tireWidth = 0.24) {
+        this.emitTireQuad(prevPos, currPos, intensity, tireWidth, 0.0, 1.0, 1.0);
+    }
+
+    /**
+     * プレイヤーの左右リアタイヤに動的左右荷重移動（Lateral Weight Transfer）を反映したドリフトタイヤ痕を追加
+     * @param {THREE.Vector3} leftPos - 左後輪の接地位置
+     * @param {THREE.Vector3} rightPos - 右後輪の接地位置
+     * @param {number} intensity - 基本スリップ強度
+     * @param {number} driftAngle - 自車のドリフト角（ラジアン）
+     */
+    addPlayerDriftMark(leftPos, rightPos, intensity = 0.8, driftAngle = 0.0) {
+        if (!this.playerTireL) this.playerTireL = { lastPos: null, uvV: 0, slipSegments: 0 };
+        if (!this.playerTireR) this.playerTireR = { lastPos: null, uvV: 0, slipSegments: 0 };
+
+        // 左右荷重移動（外側輪は高荷重で太く濃いグレー、内側輪は抜重で細くかすれたグレー）
+        let leftWidth = 0.24;
+        let rightWidth = 0.24;
+        let leftIntensity = intensity;
+        let rightIntensity = intensity;
+
+        const absAngle = Math.abs(driftAngle);
+        if (absAngle > 0.04) {
+            const wt = Math.min(0.50, absAngle * 0.85); // 最大50%の荷重移動
+            if (driftAngle > 0) {
+                // 右ドリフト（車両右スライド）：遠心力で左外輪が高荷重！
+                leftWidth = 0.24 * (1.0 + wt * 0.22);
+                leftIntensity = intensity * (1.0 + wt * 0.45);
+                rightWidth = 0.24 * (1.0 - wt * 0.20);
+                rightIntensity = intensity * (1.0 - wt * 0.55);
+            } else {
+                // 左ドリフト（車両左スライド）：遠心力で右外輪が高荷重！
+                rightWidth = 0.24 * (1.0 + wt * 0.22);
+                rightIntensity = intensity * (1.0 + wt * 0.45);
+                leftWidth = 0.24 * (1.0 - wt * 0.20);
+                leftIntensity = intensity * (1.0 - wt * 0.55);
+            }
+        }
+
+        this.addWheelMark(this.playerTireL, leftPos, leftIntensity, leftWidth);
+        this.addWheelMark(this.playerTireR, rightPos, rightIntensity, rightWidth);
+        this.playerLastL = this.playerTireL.lastPos;
+        this.playerLastR = this.playerTireR.lastPos;
+    }
+
+    /**
+     * プレイヤードリフト終了時（直進復帰）の不連続リセット
+     * 前回のドリフト終点と次のドリフト始点が直線で結ばれるのを完全に防止
+     */
+    endPlayerDrift() {
+        this.finalizeWheelMark(this.playerTireL);
+        this.finalizeWheelMark(this.playerTireR);
+        this.playerLastL = null;
+        this.playerLastR = null;
+    }
+
+    /**
+     * ライバル車（FD3S）の左右リアタイヤに動的荷重移動付きリアルタイム・ドリフトタイヤ痕を追加
+     */
+    addRivalDriftMark(leftPos, rightPos, intensity = 0.7, driftAngle = 0.0) {
+        if (!this.rivalTireL) this.rivalTireL = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+        if (!this.rivalTireR) this.rivalTireR = { lastPos: null, uvV: 0, slipSegments: 0, thermalHeat: 0.25, cumDist: 0 };
+
+        let leftWidth = 0.24;
+        let rightWidth = 0.24;
+        let leftIntensity = intensity;
+        let rightIntensity = intensity;
+
+        const absAngle = Math.abs(driftAngle);
+        if (absAngle > 0.04) {
+            const wt = Math.min(0.50, absAngle * 0.85);
+            if (driftAngle > 0) {
+                leftWidth = 0.24 * (1.0 + wt * 0.22);
+                leftIntensity = intensity * (1.0 + wt * 0.45);
+                rightWidth = 0.24 * (1.0 - wt * 0.20);
+                rightIntensity = intensity * (1.0 - wt * 0.55);
+            } else {
+                rightWidth = 0.24 * (1.0 + wt * 0.22);
+                rightIntensity = intensity * (1.0 + wt * 0.45);
+                leftWidth = 0.24 * (1.0 - wt * 0.20);
+                leftIntensity = intensity * (1.0 - wt * 0.55);
+            }
+        }
+
+        this.addWheelMark(this.rivalTireL, leftPos, leftIntensity, leftWidth);
+        this.addWheelMark(this.rivalTireR, rightPos, rightIntensity, rightWidth);
+        this.rivalLastL = this.rivalTireL.lastPos;
+        this.rivalLastR = this.rivalTireR.lastPos;
+    }
+
+    /**
+     * ライバル車ドリフト終了時の不連続リセット
+     */
+    endRivalDrift() {
+        this.finalizeWheelMark(this.rivalTireL);
+        this.finalizeWheelMark(this.rivalTireR);
+        this.rivalLastL = null;
+        this.rivalLastR = null;
+    }
+
+    /**
+     * コース変更時・再スタート時のタイヤ痕全消去
+     */
+    clearSkidMarks() {
+        this.endPlayerDrift();
+        this.endRivalDrift();
+        this.skidQuadIndex = 0;
+        if (this.skidQuadAge) this.skidQuadAge.fill(9999.0);
+        const posAttr = this.skidGeom.attributes.position;
+        const colAttr = this.skidGeom.attributes.color;
+        const totalVerts = this.maxSkidQuads * 4;
+        for (let i = 0; i < totalVerts; i++) {
+            posAttr.setXYZ(i, 0, -9999, 0);
+            colAttr.setXYZW(i, 0.04, 0.04, 0.05, 0.0);
+        }
         posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+        this.skidNeedsUpdate = false;
+    }
 
-        this.skidIndex++;
+    /**
+     * 後方互換用メソッド
+     */
+    addSkidSegment(leftPos, rightPos, intensity = 0.8) {
+        this.addPlayerDriftMark(leftPos, rightPos, intensity);
     }
 
     /**
@@ -457,6 +976,70 @@ class ParticleSystem {
     }
 
     update(dt, camera) {
+        // 【4】刻みたての「ダークグラファイトグレー」から「マットな冷えグレー」への経年変化更新
+        if (this.skidQuadAge) {
+            let colorUpdated = false;
+            const maxCoolingTime = 10.0; // 10秒かけて外気冷却＆路面粉塵吸着
+            const colAttr = this.skidGeom.attributes.color;
+            for (let q = 0; q < this.maxSkidQuads; q++) {
+                if (this.skidQuadAge[q] < maxCoolingTime) {
+                    this.skidQuadAge[q] += dt;
+                    const age = this.skidQuadAge[q];
+                    // 0.0〜1.2秒: ドリフトしたてのダークグラファイトグレー (cr: 0.062, cg: 0.062, cb: 0.070)
+                    // 1.2〜10.0秒: 滑らかに外気冷却され、乾いたマットな冷えグレー (cr: 0.088, cg: 0.088, cb: 0.098) へ推移
+                    // ※アスファルト路面（0.18〜0.25）に対して明確な明度差を持ち、道路にカモフラージュ（同化）せず明瞭に視認可能
+                    const coolProgress = Math.min(1.0, Math.max(0.0, (age - 1.2) / 8.8));
+                    const cr = 0.062 + (0.088 - 0.062) * coolProgress;
+                    const cg = 0.062 + (0.088 - 0.062) * coolProgress;
+                    const cb = 0.070 + (0.098 - 0.070) * coolProgress;
+
+                    // アルファもゴム揮発油分が抜けてほんのり落ち着いたマット調に推移 (初期アルファの約88%)
+                    const initA = this.skidQuadInitialAlpha ? this.skidQuadInitialAlpha[q] : 0.8;
+                    const curA = initA * (1.0 - coolProgress * 0.12);
+
+                    const vBase = q * 4;
+                    colAttr.setXYZW(vBase,     cr, cg, cb, curA);
+                    colAttr.setXYZW(vBase + 1, cr, cg, cb, curA);
+                    colAttr.setXYZW(vBase + 2, cr, cg, cb, curA);
+                    colAttr.setXYZW(vBase + 3, cr, cg, cb, curA);
+                    colorUpdated = true;
+                }
+            }
+            if (colorUpdated) {
+                this.skidGeom.attributes.color.needsUpdate = true;
+            }
+        }
+
+        // スキッドマーク（タイヤ痕）バッファの動的転送
+        if (this.skidNeedsUpdate) {
+            this.skidGeom.attributes.position.needsUpdate = true;
+            this.skidGeom.attributes.color.needsUpdate = true;
+            this.skidGeom.attributes.uv.needsUpdate = true;
+            this.skidNeedsUpdate = false;
+        }
+
+        // 【3】路面余熱ヴェイパー（熱気スモーク）更新（ビルボード化・低空滞留）
+        if (this.heatWisps) {
+            for (let i = 0; i < this.maxHeatWisps; i++) {
+                const w = this.heatWisps[i];
+                if (w.active) {
+                    w.life += dt;
+                    if (w.life >= w.maxLife) {
+                        w.active = false;
+                        w.mesh.visible = false;
+                    } else {
+                        const progress = w.life / w.maxLife;
+                        w.mesh.position.add(w.velocity.clone().multiplyScalar(dt));
+                        const curScale = w.baseScale + (w.targetScale - w.baseScale) * progress;
+                        w.mesh.scale.set(curScale, curScale, curScale);
+                        // 滑らかにフェードアウト
+                        w.mesh.material.opacity = w.baseOpacity * (1.0 - Math.pow(progress, 1.2));
+                        if (camera) w.mesh.quaternion.copy(camera.quaternion);
+                    }
+                }
+            }
+        }
+
         // マフラーフラッシュライト減衰
         if (this.playerFlameLightTimer > 0) {
             this.playerFlameLightTimer -= dt;

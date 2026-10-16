@@ -383,7 +383,7 @@ class CarPhysics {
             const curDriveRpm = (this.speedMs / curWheelCircum) * curGearRatio * this.finalDrive * 60;
             const canAutoShiftUp = this.isDrifting ? (curDriveRpm > redline * 0.86) : (this.rpm > upShiftRpm);
 
-            if (canAutoShiftUp && this.rpm > upShiftRpm && this.gear < 5 && this.shiftTimer <= 0) {
+            if (canAutoShiftUp && this.rpm > upShiftRpm && this.gear < (this.maxGear || 5) && this.shiftTimer <= 0) {
                 const prevGear = this.gear;
                 this.gear++;
                 this.shiftTimer = 0.20;
@@ -420,7 +420,7 @@ class CarPhysics {
             const wantShiftUp = (this.shiftBuffer === 'up') || input.shiftUp;
             const wantShiftDown = (this.shiftBuffer === 'down') || input.shiftDown;
 
-            if (wantShiftUp && this.gear < 5 && this.shiftTimer <= 0) {
+            if (wantShiftUp && this.gear < (this.maxGear || 5) && this.shiftTimer <= 0) {
                 const prevGear = this.gear;
                 this.gear++;
                 this.shiftTimer = 0.16; // キビキビとした軽快なシフトフィーリング
@@ -911,8 +911,8 @@ class CarPhysics {
         // 「アクセルOFF・シフトダウン時に強烈なバックトルクとポンピングロスが働き、確実な減速と前荷重移動（ノーズダイブ）を生む」
         this.engineBrakeForce = 0;
         if (this.gear > 0 && this.speedMs > 1.0) {
-            // 各ギアに応じた実車スポーツカー準拠のバックトルク制動力 (低速ギアほど強烈に減速)
-            const baseGearBrake = [0, 5.2, 4.0, 2.8, 1.9, 1.3][this.gear] || 1.8;
+            // 各ギアに応じた実車スポーツカー準拠のバックトルク制動力 (低速ギアほど強烈に減速、6速は0.95)
+            const baseGearBrake = [0, 5.2, 4.0, 2.8, 1.9, 1.3, 0.95][this.gear] || 1.1;
 
             // アクセル開度に応じたポンピングロスの自然な推移 (アクセル全閉で100%作動、開度に応じてリニアにフェード)
             const throttleBrakeFade = Math.max(0.0, 1.0 - (this.throttle / 0.22));
@@ -1396,7 +1396,7 @@ class CarPhysics {
 
             if (this.isRevLimiterCut) {
                 // 車種別のレブ打ち点火カット周波数 (AE86: 11.5Hz, FD3S: 13.5Hz, GT-R/JZX: 10.5Hz, EK9: 12.0Hz)
-                const bounceHz = (this.carId === 'fd3s') ? 13.5 : ((this.carId === 'bnr32' || this.carId === 'jzx100') ? 10.5 : ((this.carId === 'ek9') ? 12.0 : 11.5));
+                const bounceHz = (this.carId === 'fd3s') ? 13.5 : ((this.carId === 'r32' || this.carId === 'bnr32' || this.carId === 'jzx100') ? 10.5 : ((this.carId === 'ek9') ? 12.0 : 11.5));
                 // 周期パルス（点火遮断の瞬間急降下し、即座に跳ね上がる高速ノコギリ／パルス波）
                 const bouncePhase = (Date.now() * 0.001 * bounceHz) % 1.0;
                 const bounceDip = (bouncePhase < 0.45) ? (bouncePhase / 0.45) * 190 : (1.0 - (bouncePhase - 0.45) / 0.55) * 190;
