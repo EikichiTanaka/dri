@@ -1268,8 +1268,8 @@ class AudioManager {
             const isVtec = (rpm >= 5800);
             driveMult += (isVtec ? (0.22 + throttle * 0.32) : (throttle * 0.10));
         } else if (this.soundType === 'rb26' && throttle > 0.35) {
-            // BNR32 GT-R：ツインターボフルブースト時の分厚い排気圧轟音！
-            driveMult += throttle * 0.50 + rpmNorm * 0.35;
+            // BNR32 GT-R：ツインターボ過給時の排気圧ブーストを控えめで上品な立ち上がりに調整
+            driveMult += throttle * 0.22 + rpmNorm * 0.15;
         }
         const targetDrive = profile.mainWeight * driveMult;
         if (this.exhaustDriveGain) {
@@ -1284,8 +1284,8 @@ class AudioManager {
             // 2JZ：3.0L超重低音の圧倒的音圧を常に維持
             bodyGainVal += (1.0 - rpmNorm * 0.2) * 2.5;
         } else if (this.soundType === 'rb26') {
-            // BNR32 GT-R：2.6Lツインターボの重厚な地響き低音圧を太く維持！
-            bodyGainVal += 3.0 + (1.0 - rpmNorm * 0.15) * 3.0 + throttle * 2.5;
+            // BNR32 GT-R：2.6Lツインターボの重厚な地響き低音圧を維持しつつ過給時の過剰膨張を抑制
+            bodyGainVal += 1.5 + (1.0 - rpmNorm * 0.15) * 1.5 + throttle * 1.2;
         }
         this.engineBodyFilter.frequency.setTargetAtTime(bodyFreq, curTime, 0.04);
         this.engineBodyFilter.gain.setTargetAtTime(bodyGainVal, curTime, 0.04);
@@ -1297,8 +1297,8 @@ class AudioManager {
             // 1JZ直管の激しい高音破裂割れ
             raspGainVal += 3.5;
         } else if (this.soundType === 'rb26' && throttle > 0.35) {
-            // BNR32 GT-R：直6澄み切った排気咆哮「クォォォォン」を力強く響かせる
-            raspGainVal += 2.5;
+            // BNR32 GT-R：過給開始時の喉鳴りブーストを控えめに適正化
+            raspGainVal += 1.0;
         } else if (this.soundType === 'b16b' && rpm >= 5800 && throttle > 0.25) {
             // EK9 VTEC：ハイカム排気咆哮「クォォォォン！」
             raspGainVal += 5.0;
@@ -1313,8 +1313,8 @@ class AudioManager {
             // AE86：4-1等長ステン管の突き抜ける高音金属鳴き
             ringGainVal *= 1.25;
         } else if (this.soundType === 'rb26' && throttle > 0.35) {
-            // BNR32 GT-R：大口径ステン管の澄んだレーシング鳴き・抜けの良さを維持（籠もり完全解消）
-            ringGainVal *= 1.20;
+            // BNR32 GT-R：過給開始時の高域鳴きブーストを控えめに適正化
+            ringGainVal *= 1.08;
         } else if (this.soundType === 'b16b' && rpm >= 5800 && throttle > 0.30) {
             // EK9 VTEC：4-2-1等長ステンエキマニの突き抜ける乾いた高周波鳴き
             ringGainVal *= 1.35;
@@ -1363,14 +1363,14 @@ class AudioManager {
             }
         } else if (this.soundType === '13b') {
             // FD3S 13B-REW：排気弁のないロータリー特有の超高域抜け（13500Hzまで全開解放）
-            // 澄み切った高密度ハミングと、セカンダリータービン始動時の鋭い咆哮！
+            // セカンダリータービン始動時（3,800rpm）の過給ブーストのうるささを控えめに調整
             baseCutoff = 2400;
             rangeCutoff = 9800;
             throttleCutoff = 5400;
             if (rpm > 3800) {
-                // セカンダリー過給域での高回転ロータリー咆哮ブースト
-                this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 3.5, curTime, 0.02);
-                this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.35, curTime, 0.02);
+                // セカンダリー過給域での高回転ロータリー咆哮ブーストを控えめに適正化
+                this.engineRaspFilter.gain.setTargetAtTime(profile.raspGain + 1.2, curTime, 0.02);
+                this.engineRingFilter.gain.setTargetAtTime(ringGainVal * 1.10, curTime, 0.02);
             }
         } else if (this.soundType === 'rb26') {
             // BNR32 GT-R：音が籠もらないよう高域の抜けを完全開放！
@@ -1397,14 +1397,14 @@ class AudioManager {
             intakeVol = Math.max(0, (throttle * (isVtec ? 0.28 : 0.14)) + (rpmNorm * 0.10 * throttle));
             intakeFreq = isVtec ? (580 + throttle * 320 + rpmNorm * 160) : (360 + throttle * 200);
         } else if (this.soundType === '13b') {
-            // FD3S 13B-REW：3800rpmシーケンシャルツインターボ切り替え
+            // FD3S 13B-REW：過給開始時（特に3800rpmセカンダリー切替時）の吸気ノイズを控えめに抑制
             const isSecondary = (rpm > 3800);
-            intakeVol = Math.max(0, (throttle * (isSecondary ? 0.52 : 0.36)) + (rpmNorm * 0.24 * throttle));
-            intakeFreq = profile.intakePeak + (throttle * 380) + (rpmNorm * 240);
+            intakeVol = Math.max(0, (throttle * (isSecondary ? 0.22 : 0.16)) + (rpmNorm * 0.10 * throttle));
+            intakeFreq = profile.intakePeak + (throttle * 320) + (rpmNorm * 200);
         } else if (this.soundType === 'rb26') {
-            // BNR32 RB26DETT：ツインターボ剥き出しキノコ型エアクリーナーの過給吸気咆哮
-            intakeVol = Math.max(0, (throttle * 0.58) + (rpmNorm * 0.28 * throttle));
-            intakeFreq = 450 + (throttle * 420) + (rpmNorm * 260);
+            // BNR32 RB26DETT：ツインターボ過給開始時の吸気ノイズを控えめに抑制
+            intakeVol = Math.max(0, (throttle * 0.24) + (rpmNorm * 0.12 * throttle));
+            intakeFreq = 450 + (throttle * 340) + (rpmNorm * 200);
         } else if (profile.isTurbo) {
             intakeVol = Math.max(0, (throttle * 0.44) + (rpmNorm * 0.22 * throttle));
             intakeFreq = profile.intakePeak + (throttle * 350) + (rpmNorm * 220);
@@ -1431,10 +1431,13 @@ class AudioManager {
         // 8. ターボチャージャー過給エアラッシュ ＆ ブローオフバルブ
         const throttleDrop = (this.prevThrottle > 0.35 && throttle < 0.15);
         if (profile.isTurbo && throttle > 0.12 && rpm > 2400) {
-            // FD3S 3800rpmツインターボ過給急上昇
             let turboScale = profile.isTwinTurbo ? 1.25 : 1.0;
-            if (this.soundType === '13b' && rpm > 3800) {
-                turboScale = 1.45; // セカンダリータービン始動時の過給音
+            if (this.soundType === '13b') {
+                // FD3S：過給開始時（2400rpm〜および3800rpmセカンダリー始動時）の過給音を控えめに抑制
+                turboScale = (rpm > 3800) ? 0.52 : 0.38;
+            } else if (this.soundType === 'rb26') {
+                // BNR32：ツインターボ過給開始時の過給エアラッシュ音を控えめに抑制
+                turboScale = 0.45;
             }
             const turboVol = Math.min(0.26, (0.04 + (throttle * 0.13) + (rpmNorm * 0.09)) * turboScale);
             const turboFreq = 2200 + (rpmNorm * 2200) + (throttle * 650);
