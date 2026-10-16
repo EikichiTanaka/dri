@@ -153,8 +153,9 @@ class HUD {
 
         // シフトアップ警告ランプ (各マシンのレッドゾーン手前で点滅)
         if (this.shiftLampElem) {
+            const maxGear = (this.player && this.player.maxGear) ? this.player.maxGear : 5;
             const shiftThreshold = (this.player.redlineRpm || 8500) * 0.96;
-            if (this.player.rpm > shiftThreshold && this.player.gear < 5) {
+            if (this.player.rpm > shiftThreshold && this.player.gear < maxGear) {
                 const blink = Math.floor(Date.now() / 80) % 2 === 0;
                 this.shiftLampElem.style.backgroundColor = blink ? '#ff1111' : '#330000';
                 this.shiftLampElem.style.boxShadow = blink ? '0 0 18px #ff1111' : 'none';

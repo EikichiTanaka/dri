@@ -37,6 +37,14 @@ class RivalCar {
         this.resetPosition();
     }
 
+    get trackT() {
+        return this.progressT;
+    }
+
+    set trackT(val) {
+        this.progressT = val;
+    }
+
     buildCarModel() {
         const yellowMat = new THREE.MeshStandardMaterial({
             color: 0xffcc00, // コンペティションイエローマイカ
@@ -424,8 +432,19 @@ class RivalCar {
         this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1.0, 10.0 * dt);
 
         if (this.frontWheelL && this.frontWheelR) {
-            this.frontWheelL.rotation.y = this.steerAngle;
-            this.frontWheelR.rotation.y = this.steerAngle;
+            let steerL = this.steerAngle;
+            let steerR = this.steerAngle;
+            if (this.steerAngle > 0.02) {
+                steerL = this.steerAngle * 1.08;
+                steerR = this.steerAngle * 0.94;
+            } else if (this.steerAngle < -0.02) {
+                steerR = this.steerAngle * 1.08;
+                steerL = this.steerAngle * 0.94;
+            }
+            this.frontWheelL.rotation.y = steerL;
+            this.frontWheelR.rotation.y = steerR;
+            this.frontWheelL.rotation.z = -this.steerAngle * 0.045;
+            this.frontWheelR.rotation.z = -this.steerAngle * 0.045;
         }
 
         // 5. 車体サスペンションの動的ロール＆ピッチ（立体カント＋遠心力ロール）
@@ -443,10 +462,54 @@ class RivalCar {
         this.meshGroup.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
     }
 
-    getRearWheelPositions() {
+    getRearWheelPositions(track = null, hintT = null) {
+        this.meshGroup.updateMatrixWorld(true);
         const leftRear = new THREE.Vector3(-0.82, 0.1, -1.3).applyMatrix4(this.meshGroup.matrixWorld);
         const rightRear = new THREE.Vector3(0.82, 0.1, -1.3).applyMatrix4(this.meshGroup.matrixWorld);
+
+        const trackRef = track || this.track;
+        const tHint = (hintT !== null && hintT !== undefined) ? hintT : (this.progressT || this.trackT || null);
+
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            leftRear.y = trackRef.getRoadSurfaceY(leftRear, tHint);
+            rightRear.y = trackRef.getRoadSurfaceY(rightRear, tHint);
+        } else {
+            leftRear.y -= 0.31;
+            rightRear.y -= 0.31;
+        }
+
         return { left: leftRear, right: rightRear };
+    }
+
+    /**
+     * フロント前輪（操舵輪）の左右接地位置の算出（カウンターステア痕用）
+     */
+    getFrontWheelPositions(track = null, hintT = null) {
+        this.meshGroup.updateMatrixWorld(true);
+        let leftFront, rightFront;
+
+        if (this.frontWheelL && this.frontWheelR) {
+            leftFront = new THREE.Vector3();
+            rightFront = new THREE.Vector3();
+            this.frontWheelL.getWorldPosition(leftFront);
+            this.frontWheelR.getWorldPosition(rightFront);
+        } else {
+            leftFront = new THREE.Vector3(-0.82, 0.1, 1.25).applyMatrix4(this.meshGroup.matrixWorld);
+            rightFront = new THREE.Vector3(0.82, 0.1, 1.25).applyMatrix4(this.meshGroup.matrixWorld);
+        }
+
+        const trackRef = track || this.track;
+        const tHint = (hintT !== null && hintT !== undefined) ? hintT : (this.progressT || this.trackT || null);
+
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            leftFront.y = trackRef.getRoadSurfaceY(leftFront, tHint);
+            rightFront.y = trackRef.getRoadSurfaceY(rightFront, tHint);
+        } else {
+            leftFront.y -= 0.31;
+            rightFront.y -= 0.31;
+        }
+
+        return { left: leftFront, right: rightFront };
     }
 
     getTailLightPositions() {

@@ -31,6 +31,7 @@ class Game {
         this.input = null;
         this.audio = null;
         this.hud = null;
+        this.playerTireBurnTimer = 0;
 
         this.init();
     }
@@ -50,8 +51,9 @@ class Game {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.1;
-        this.container.appendChild(this.renderer.domElement);
+        if (this.container) {
+            this.container.appendChild(this.renderer.domElement);
+        }
 
         this.hemiLight = new THREE.HemisphereLight(0x334466, 0x111622, 0.6);
         this.scene.add(this.hemiLight);
@@ -131,6 +133,9 @@ class Game {
         this.applyEnvironment();
         this.playerPhysics.resetToTrack(0.003, -1.8);
         this.rivalCar.resetPosition();
+        if (this.particles && this.particles.clearSkidMarks) {
+            this.particles.clearSkidMarks();
+        }
         this.hud.setTrack(this.track);
     }
 
@@ -407,6 +412,9 @@ class Game {
         this.playerPhysics.resetToTrack(0.003, -1.8);
         this.playerPhysics.isLocked = true; // ★カウントダウン中は完全ロック！
         this.rivalCar.resetPosition();
+        if (this.particles && this.particles.clearSkidMarks) {
+            this.particles.clearSkidMarks();
+        }
 
         this.state = 'COUNTDOWN';
         this.countdownStep = 3;
@@ -415,9 +423,16 @@ class Game {
         this.audio.playCountdownBeep(false);
 
         this.passedSections = new Set();
-        if (this.hud && this.hud.resetSections) {
-            this.hud.resetSections();
+        if (this.hud) {
+            this.hud.currentTime = 0;
+            this.hud.isFinished = false;
+            if (this.hud.resetSections) {
+                this.hud.resetSections();
+            }
         }
+
+        const resultOverlay = document.getElementById('result-overlay');
+        if (resultOverlay) resultOverlay.style.display = 'none';
 
         document.getElementById('start-overlay').style.display = 'none';
         document.getElementById('hud-container').style.display = 'block';
@@ -452,16 +467,7 @@ class Game {
         }
 
         if (this.input.reset) {
-            this.playerPhysics.resetToTrack(0.003, -1.8);
-            this.rivalCar.resetPosition();
-            this.hud.currentTime = 0;
-            this.hud.isFinished = false;
-            this.passedSections = new Set();
-            if (this.hud && this.hud.resetSections) {
-                this.hud.resetSections();
-            }
-            document.getElementById('result-overlay').style.display = 'none';
-            this.state = 'RACING';
+            this.startRace();
         }
 
         if (this.state === 'COUNTDOWN') {
@@ -612,7 +618,7 @@ class Game {
 
         // ライバル車が路肩を踏んだ場合の土煙（イン攻め演出）
         if (this.rivalCar && this.rivalCar.speed > 25 && this.rivalCar.position) {
-            const rInfo = this.track.getSmoothTrackInfo(this.rivalCar.position, this.rivalCar.trackT || 0);
+            const rInfo = this.track.getSmoothTrackInfo(this.rivalCar.position, this.rivalCar.progressT || this.rivalCar.trackT || 0);
             const rOffset = Math.abs(rInfo.offset);
             if (rOffset > (this.track.roadWidth / 2 - 0.70)) {
                 const rWheels = this.rivalCar.getRearWheelPositions();
@@ -621,29 +627,100 @@ class Game {
             }
         }
 
-        if (this.playerPhysics.isDrifting && this.playerPhysics.speed > 24) {
-            const wheels = this.playerCar.getRearWheelPositions();
-            const baseIntensity = Math.min(1.2, Math.abs(this.playerPhysics.driftAngle) * 2.5);
-            const intensity = (this.currentWeather === 'rain') ? baseIntensity * 0.40 : baseIntensity;
+        // =========================================================================
+        // ★リアルタイム・スキッドマーク（タイヤ痕）＆ドリフトスモーク更新
+        // 通常のステアリング操作（グリップ旋回）ではタイヤ痕を絶対に発生させず、
+        // ドリフト・本格パワースライド・急制動（ハードブレーキ/サイド）・発進ホイールスピン時のみ刻印
+        // =========================================================================
+        const pSpeed = this.playerPhysics.speed || 0;
+        const pAbsAngle = Math.abs(this.playerPhysics.driftAngle || 0);
+        // 本格ドリフト中（driftAngle が一定以上ある時）
+        const pIsDrifting = this.playerPhysics.isDrifting && (pAbsAngle > 0.08);
+        const pVLat = Math.abs(this.playerPhysics.velocity ? (
+            this.playerPhysics.velocity.x * Math.cos(this.playerPhysics.yaw) - 
+            this.playerPhysics.velocity.z * Math.sin(this.playerPhysics.yaw)
+        ) : 0);
 
-            this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, intensity);
-            this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, intensity);
-            this.particles.addSkidSegment(wheels.left, wheels.right);
+        // 強烈なブレーキング（ABS作動域の急制動、またはサイドブレーキでのリアロック）
+        // ※通常の減速操作（brake 0.2〜0.5）ではタイヤ痕は出さない
+        const pIsBraking = ((this.playerPhysics.brake > 0.70 && pSpeed > 24) || (this.playerPhysics.handbrake && pSpeed > 15));
+
+        // ドリフト未判定だがテールが限界摩擦を超えて激しく流れた本格パワースライド
+        // ※通常のステアリング操作（pAbsAngle: 0.04〜0.12, pVLat: 1〜2m/s）を完全に除外し、明確な滑走のみ検知
+        const pIsPowerSliding = (pAbsAngle > 0.22 && pVLat > 2.8 && pSpeed > 18);
+
+        // 発進時の急加速ホイールスピン（ローンチバーンアウト）
+        const pIsLaunchSpin = (this.playerPhysics.launchBoostTimer > 0) && pSpeed < 45 && (this.input.throttle > 0.50);
+
+        // 現フレームでタイヤが限界摩擦を超えて滑っているか
+        const isTireSlippingNow = pIsDrifting || pIsPowerSliding || pIsBraking || pIsLaunchSpin;
+
+        // ★振り返し（S字等の切り返し）時のゼロクロスによる途切れを防止するホールドタイマー
+        // ※本格ドリフト中（pIsDrifting）の時のみホールドし、通常走行や軽いスライドでは一切引き延ばさない！
+        if (pIsDrifting) {
+            this.playerTireBurnTimer = 0.18;
+        } else if (isTireSlippingNow) {
+            this.playerTireBurnTimer = Math.max(this.playerTireBurnTimer, 0.06);
+        } else if (this.playerTireBurnTimer > 0) {
+            this.playerTireBurnTimer -= dt;
         }
 
-        // ★ロケットスタート中の猛烈なホイールスピン白煙＆スキッドマーク
-        if (this.playerPhysics.launchBoostTimer > 0 && this.playerPhysics.speed < 45 && this.input.throttle > 0.4) {
-            const wheels = this.playerCar.getRearWheelPositions();
-            this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, 0.85);
-            this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, 0.85);
-            this.particles.addSkidSegment(wheels.left, wheels.right);
+        // ドリフト抜け（収束フェーズ）のプログレッシブ・フェードアウト係数 (0.16〜1.0)
+        // スリップ角が 0.08 〜 0.22 rad (約4.5°〜12.6°) の収束領域に入った時、グリップ回復とともに滑らかに濃度減衰
+        let exitFadeFactor = 1.0;
+        if (pIsDrifting) {
+            if (pAbsAngle < 0.22) {
+                exitFadeFactor = Math.max(0.18, Math.pow((pAbsAngle - 0.06) / 0.16, 1.25));
+            }
+        } else if (this.playerTireBurnTimer > 0) {
+            // ホールドタイマー中（振り返しゼロクロスやスリップ収束の滑らかな余韻）
+            exitFadeFactor = Math.max(0.16, this.playerTireBurnTimer / 0.18);
         }
 
-        if (this.rivalCar.isDrifting && this.rivalCar.speed > 30) {
-            const rWheels = this.rivalCar.getRearWheelPositions();
-            const rIntensity = (this.currentWeather === 'rain') ? 0.35 : 0.7;
+        const isPlayerBurningTire = isTireSlippingNow || (pIsDrifting && this.playerTireBurnTimer > 0);
+        let pTireIntensity = 0.65;
+
+        if (pIsDrifting && pSpeed > 14) {
+            // 車速とスリップ角に応じたダイナミック強度（下限を 0.18 まで広げて繊細な抜け際フェードアウトを実現）
+            const rawIntensity = Math.min(1.35, Math.max(0.18, pAbsAngle * 2.8 + (pSpeed - 30) * 0.008));
+            pTireIntensity = rawIntensity * exitFadeFactor;
+        } else if (pIsPowerSliding) {
+            const rawIntensity = Math.min(1.15, Math.max(0.20, (pAbsAngle - 0.15) * 3.0 + pVLat * 0.10));
+            pTireIntensity = rawIntensity * exitFadeFactor;
+        } else if (pIsBraking) {
+            pTireIntensity = this.playerPhysics.handbrake ? 0.95 : Math.min(0.95, (this.playerPhysics.brake - 0.65) * 3.0);
+        } else if (pIsLaunchSpin) {
+            pTireIntensity = 1.0;
+        }
+
+        if (isPlayerBurningTire) {
+            // ★左右タイヤ直下の真のアスファルト路面表面の標高（ミリ単位）をサンプリング！
+            // 秋名山などの急勾配ダウンヒルでも、下り坂の標高差（約10〜14cm）を完璧に捉えてアスファルト表面に100%吸着
+            const wheels = this.playerCar.getRearWheelPositions(this.track, this.playerPhysics.trackT);
+            const intensity = (this.currentWeather === 'rain') ? pTireIntensity * 0.40 : pTireIntensity;
+
+            // スモーク発生（ドリフトおよびホイールスピン時、雨天は水しぶき）
+            if (pIsDrifting || pIsPowerSliding || pIsLaunchSpin) {
+                this.particles.emitSmoke(wheels.left, this.playerPhysics.velocity, intensity);
+                this.particles.emitSmoke(wheels.right, this.playerPhysics.velocity, intensity);
+            }
+            // ★路面にクッキリと自車のタイヤ痕（ブラックマーク：左右動的荷重移動＋余熱ヴェイパー＋冷えグレー経年変化）を刻み込む
+            this.particles.addPlayerDriftMark(wheels.left, wheels.right, intensity, this.playerPhysics.driftAngle || 0);
+        } else {
+            this.particles.endPlayerDrift();
+        }
+
+        // ★ライバル車（高橋啓介FD3S）ドリフト時のタイヤスモーク＆リアルタイム・スキッドマーク
+        const rSpeed = this.rivalCar.speed || 0;
+        const rIsDrifting = this.rivalCar.isDrifting && rSpeed > 20;
+        if (rIsDrifting) {
+            const rWheels = this.rivalCar.getRearWheelPositions(this.track, this.rivalCar.progressT);
+            const rIntensity = (this.currentWeather === 'rain') ? 0.35 : 0.75;
             this.particles.emitSmoke(rWheels.left, new THREE.Vector3(0, 0, 0), rIntensity);
             this.particles.emitSmoke(rWheels.right, new THREE.Vector3(0, 0, 0), rIntensity);
+            this.particles.addRivalDriftMark(rWheels.left, rWheels.right, rIntensity, this.rivalCar.driftAngle || 0);
+        } else {
+            this.particles.endRivalDrift();
         }
 
         // ★頭文字D名物：ドリフト時のテールランプ残像（Light Trails）更新

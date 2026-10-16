@@ -14,6 +14,7 @@ class PlayerCar {
         this.wheels = [];
         this.frontWheelL = null;
         this.frontWheelR = null;
+        this.currentVisualSteer = 0; // 【視覚リアリズム】カウンターステア実舵角アニメーション用
         this.tailLightMat = null;
         this.brakeLight = null;
 
@@ -29,6 +30,8 @@ class PlayerCar {
         this.tailRPos = new THREE.Vector3(0.62, 0.62, -2.02);
         this.rearWheelLPos = new THREE.Vector3(-0.78, 0.1, -1.25);
         this.rearWheelRPos = new THREE.Vector3(0.78, 0.1, -1.25);
+        this.frontWheelLPos = new THREE.Vector3(-0.78, 0.1, 1.25);
+        this.frontWheelRPos = new THREE.Vector3(0.78, 0.1, 1.25);
 
         this.scene.add(this.meshGroup);
         this.setCar(this.carId, this.colorIndex);
@@ -45,9 +48,16 @@ class PlayerCar {
         this.carId = carId;
         this.colorIndex = colorIndex;
 
-        // 既存メッシュの全削除
+        // 既存メッシュの全削除（GPUリソースを完全に解放）
         while (this.meshGroup.children.length > 0) {
             const child = this.meshGroup.children[0];
+            child.traverse((c) => {
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) {
+                    if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+                    else c.material.dispose();
+                }
+            });
             this.meshGroup.remove(child);
         }
         this.wheels = [];
@@ -88,10 +98,51 @@ class PlayerCar {
         this.meshGroup.rotation.z = rollAmount + bankRoll + (this.physics.gutterRoll || 0);
         this.meshGroup.rotation.x = this.physics.pitch + accelPitch - engineBrakePitch;
 
-        // 前輪ステアリング角の反映（ハンドル操作方向とタイヤの向きを完全一致）
+        // ★【視覚リアリズム】フロントタイヤのカウンターステア実舵角アニメーション
+        // 通常走行時はドライバーの入力ステア角に自然に追従し、
+        // ドリフト発生時はスリップ角（driftAngle）とセルフアライニング・トルクにより、
+        // 前輪が進行方向を捉えて綺麗に逆ハンドル（フルカウンター）を切る実車の実舵角挙動を完全再現！
+        let targetVisualSteer = -this.physics.steerAngle;
+
+        const driftAngle = this.physics.driftAngle || 0;
+        const absDriftAngle = Math.abs(driftAngle);
+        const isDrifting = this.physics.isDrifting || (absDriftAngle > 0.05 && this.physics.speed > 15);
+
+        if (isDrifting) {
+            // スリップ角に基づくキャスタートルクによる逆ハンドル量（ドリフト角の約88%を自己整流）
+            const casterCounter = -driftAngle * 0.88;
+            // プレイヤーの能動的ステアリング修正（カウンター増し/戻し）の合成
+            const playerCorrection = -this.physics.steerAngle * 0.40;
+            // 実車ドリフトの最大ナックル切れ角（約38度 = 0.66 rad）でクランプ
+            const maxLock = 0.66;
+            targetVisualSteer = Math.max(-maxLock, Math.min(maxLock, casterCounter + playerCorrection));
+        }
+
+        // 素早く滑らかな実車ステア追従補間（lerp）
+        const steerLerpSpeed = isDrifting ? 16.0 : 18.0;
+        this.currentVisualSteer += (targetVisualSteer - this.currentVisualSteer) * Math.min(1.0, steerLerpSpeed * dt);
+
+        // アッカーマン・ステアリング幾何（内側輪が外側輪よりわずかに多く切れる実車ジオメトリ）
         if (this.frontWheelL && this.frontWheelR) {
-            this.frontWheelL.rotation.y = -this.physics.steerAngle;
-            this.frontWheelR.rotation.y = -this.physics.steerAngle;
+            let steerL = this.currentVisualSteer;
+            let steerR = this.currentVisualSteer;
+
+            if (this.currentVisualSteer > 0.02) {
+                // 左操舵：左前輪（イン側）が約8%大きく切れ、右前輪（アウト側）が約6%小さく切れる
+                steerL = this.currentVisualSteer * 1.08;
+                steerR = this.currentVisualSteer * 0.94;
+            } else if (this.currentVisualSteer < -0.02) {
+                // 右操舵：右前輪（イン側）が約8%大きく切れ、左前輪（アウト側）が約6%小さく切れる
+                steerR = this.currentVisualSteer * 1.08;
+                steerL = this.currentVisualSteer * 0.94;
+            }
+
+            this.frontWheelL.rotation.y = steerL;
+            this.frontWheelR.rotation.y = steerR;
+
+            // キャスターアクションによるネガティブキャンバーの微細な傾き（踏ん張り感）
+            this.frontWheelL.rotation.z = -this.currentVisualSteer * 0.045;
+            this.frontWheelR.rotation.z = -this.currentVisualSteer * 0.045;
         }
 
         // ブレーキ時のテールランプ高輝度点灯＆路面照射
@@ -169,11 +220,57 @@ class PlayerCar {
         }
     }
 
-    getRearWheelPositions() {
+    getRearWheelPositions(track = null, hintT = null) {
         this.meshGroup.updateMatrixWorld(true);
         const leftRear = this.rearWheelLPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
         const rightRear = this.rearWheelRPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
+
+        // トラック参照がある場合は、左右タイヤそれぞれの直下のアスファルト路面高さを直接サンプリング
+        // 秋名山などの急勾配ダウンヒルでも、下り坂の標高差（約10〜14cm）を完璧に捉えてアスファルト表面に100%吸着
+        const trackRef = track || (this.physics ? this.physics.track : null);
+        const tHint = (hintT !== null && hintT !== undefined) ? hintT : (this.physics ? this.physics.trackT : null);
+
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            leftRear.y = trackRef.getRoadSurfaceY(leftRear, tHint);
+            rightRear.y = trackRef.getRoadSurfaceY(rightRear, tHint);
+        } else {
+            // フォールバック：車体の傾き（ピッチ）を維持したままタイヤ半径0.31m分を接地面にオフセット
+            leftRear.y -= 0.31;
+            rightRear.y -= 0.31;
+        }
+
         return { left: leftRear, right: rightRear };
+    }
+
+    /**
+     * フロント前輪（操舵輪）の左右接地位置の算出（カウンターステア痕用）
+     */
+    getFrontWheelPositions(track = null, hintT = null) {
+        this.meshGroup.updateMatrixWorld(true);
+        let leftFront, rightFront;
+
+        if (this.frontWheelL && this.frontWheelR) {
+            leftFront = new THREE.Vector3();
+            rightFront = new THREE.Vector3();
+            this.frontWheelL.getWorldPosition(leftFront);
+            this.frontWheelR.getWorldPosition(rightFront);
+        } else {
+            leftFront = this.frontWheelLPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
+            rightFront = this.frontWheelRPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
+        }
+
+        const trackRef = track || (this.physics ? this.physics.track : null);
+        const tHint = (hintT !== null && hintT !== undefined) ? hintT : (this.physics ? this.physics.trackT : null);
+
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            leftFront.y = trackRef.getRoadSurfaceY(leftFront, tHint);
+            rightFront.y = trackRef.getRoadSurfaceY(rightFront, tHint);
+        } else {
+            leftFront.y -= 0.31;
+            rightFront.y -= 0.31;
+        }
+
+        return { left: leftFront, right: rightFront };
     }
 
     getTailLightPositions() {
