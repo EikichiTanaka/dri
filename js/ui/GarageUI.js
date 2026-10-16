@@ -79,7 +79,7 @@ class GarageUI {
 
         // 3Dドラッグ回転イベント
         window.addEventListener('mousedown', (e) => {
-            if (this.isOpen && (e.target.id === 'canvas-container' || (e.target.tagName === 'CANVAS' && !e.target.closest('#hud-container')))) {
+            if (this.isOpen && e.target.id === 'canvas-container' || (e.target.tagName === 'CANVAS' && !e.target.closest('#hud-container'))) {
                 this.isDragging = true;
                 this.prevMouseX = e.clientX;
                 this.prevMouseY = e.clientY;

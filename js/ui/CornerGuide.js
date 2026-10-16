@@ -299,8 +299,7 @@ class CornerGuide {
         // 自車がすでにこのコーナーの頂点（Apex）を通過して脱出中の場合は除外
         let c1 = corners[0];
         let cornerIdx = 0;
-        const pastApexDistance = (currentIdx >= c1.apexIdx) ? (currentIdx - c1.apexIdx) : (currentIdx + N - c1.apexIdx);
-        if (pastApexDistance > 0 && pastApexDistance < 40 && curSample && curSample.curvature < c1.maxCurvature * 0.95) {
+        if (curSample && curSample.curvature >= c1.maxCurvature) {
             // 第1コーナーは通過済み -> 第2コーナーがあればそれを繰り上げ
             if (corners.length >= 2) {
                 c1 = corners[1];

@@ -25,13 +25,11 @@ class TougeTrack {
         this.courseType = courseType;
         while (this.trackGroup.children.length > 0) {
             const obj = this.trackGroup.children[0];
-            obj.traverse((child) => {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) {
-                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-                    else child.material.dispose();
-                }
-            });
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+                if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+                else obj.material.dispose();
+            }
             this.trackGroup.remove(obj);
         }
 
@@ -1727,9 +1725,6 @@ if (courseType === 'myogi') {
         this.buildGuardrailDecorations();
         this.buildRockfallFences();
 
-        // ★コーナー事前配置リアルドリフト痕（アウト・イン・アウト、テールスライドブラックマーク）
-        this.buildPermanentDriftMarks();
-
         this.buildTerrain();
     }
 
@@ -1817,13 +1812,13 @@ if (courseType === 'myogi') {
         }
 
         // =========================================================================
-        // 2. 走行レーン（レコードライン）の自然な微細摩耗
+        // 2. 走行レーン（レコードライン）の摩耗 ＆ タイヤ摩擦黒ずみ
         // =========================================================================
         // 左レーン レコードライン (X=140〜420)
         const gradL = ctx.createLinearGradient(140, 0, 420, 0);
         gradL.addColorStop(0, 'rgba(12, 14, 16, 0)');
-        gradL.addColorStop(0.25, 'rgba(12, 14, 16, 0.14)');
-        gradL.addColorStop(0.75, 'rgba(12, 14, 16, 0.14)');
+        gradL.addColorStop(0.25, 'rgba(12, 14, 16, 0.55)');
+        gradL.addColorStop(0.75, 'rgba(12, 14, 16, 0.55)');
         gradL.addColorStop(1, 'rgba(12, 14, 16, 0)');
         ctx.fillStyle = gradL;
         ctx.fillRect(140, 0, 280, 1024);
@@ -1831,8 +1826,8 @@ if (courseType === 'myogi') {
         // 右レーン レコードライン (X=604〜884)
         const gradR = ctx.createLinearGradient(604, 0, 884, 0);
         gradR.addColorStop(0, 'rgba(12, 14, 16, 0)');
-        gradR.addColorStop(0.25, 'rgba(12, 14, 16, 0.14)');
-        gradR.addColorStop(0.75, 'rgba(12, 14, 16, 0.14)');
+        gradR.addColorStop(0.25, 'rgba(12, 14, 16, 0.55)');
+        gradR.addColorStop(0.75, 'rgba(12, 14, 16, 0.55)');
         gradR.addColorStop(1, 'rgba(12, 14, 16, 0)');
         ctx.fillStyle = gradR;
         ctx.fillRect(604, 0, 280, 1024);
@@ -1886,8 +1881,19 @@ if (courseType === 'myogi') {
         }
 
         // =========================================================================
-        // 4. アスファルトの黒タール補修ひび割れ筋（Tar Snake Cracks）
+        // 4. ドリフト＆ブレーキングによる漆黒のタイヤ痕（スキッドマーク）
         // =========================================================================
+        ctx.fillStyle = 'rgba(6, 7, 8, 0.68)';
+        for (let y = 0; y < 1024; y += 4) {
+            const wobble1 = Math.sin(y * 0.02) * 8;
+            ctx.fillRect(205 + wobble1, y, 16, 4);
+            ctx.fillRect(335 + wobble1, y, 16, 4);
+            const wobble2 = Math.cos(y * 0.018) * 10;
+            ctx.fillRect(685 + wobble2, y, 16, 4);
+            ctx.fillRect(815 + wobble2, y, 16, 4);
+        }
+
+        // アスファルトの黒タール補修ひび割れ筋（Tar Snake Cracks）
         ctx.fillStyle = 'rgba(10, 11, 13, 0.75)';
         for (let i = 0; i < 7; i++) {
             const py = (i * 155 + 40) % 1024;
@@ -2372,192 +2378,6 @@ if (courseType === 'myogi') {
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
         return tex;
-    }
-
-    /**
-     * ★頭文字D・峠道完全再現：主要コーナーに焼き付いたリアルな事前配置ドリフト痕（Permanent Drift Marks）
-     * 直線には一切存在せず、カーブ手前のアウト側ブレーキングゾーンからApexへ向けて斜めに切れ込み、
-     * カウンターを当てて立ち上がっていく走り屋たちのブラックマークを美しく描画
-     */
-    buildPermanentDriftMarks() {
-        if (!this.samples || this.samples.length < 20) return;
-
-        const N = this.samples.length;
-        const positions = [];
-        const colors = [];
-        const indices = [];
-        let vertCount = 0;
-
-        // 1. コーナー区間の検出 (曲率 0.0125 以上)
-        const corners = [];
-        let inCorner = false;
-        let curCorner = null;
-
-        for (let i = 0; i < N; i++) {
-            const s = this.samples[i];
-            if (s.curvature >= 0.0125) {
-                if (!inCorner) {
-                    inCorner = true;
-                    curCorner = {
-                        startIdx: i,
-                        endIdx: i,
-                        apexIdx: i,
-                        maxCurv: s.curvature,
-                        turnDir: s.turnDir
-                    };
-                } else {
-                    curCorner.endIdx = i;
-                    if (s.curvature > curCorner.maxCurv) {
-                        curCorner.maxCurv = s.curvature;
-                        curCorner.apexIdx = i;
-                        curCorner.turnDir = s.turnDir;
-                    }
-                }
-            } else {
-                if (inCorner) {
-                    inCorner = false;
-                    if (curCorner.endIdx - curCorner.startIdx >= 6) {
-                        corners.push(curCorner);
-                    }
-                    curCorner = null;
-                }
-            }
-        }
-        if (inCorner && curCorner && (curCorner.endIdx - curCorner.startIdx >= 6)) {
-            corners.push(curCorner);
-        }
-
-        // 2. 各コーナーにドリフト痕リボンを生成
-        const tireWidth = 0.23; // 実車タイヤ幅 (235〜255サイズ)
-        const halfTire = tireWidth * 0.5;
-        const treadWidth = 1.48; // 実車のリアトレッド幅
-
-        for (const corner of corners) {
-            const turnDir = corner.turnDir || 1; // +1: 右コーナー, -1: 左コーナー
-            const isHairpin = (corner.maxCurv >= 0.023);
-            const numLines = isHairpin ? 2 : 1; // ヘアピンは大外と鋭角イン切りの2組の走り屋ラインが重なる
-
-            // アプローチ区間 (Apex手前26サンプル〜Apex通過後18サンプル)
-            const approachSamples = Math.min(30, Math.max(16, corner.apexIdx - corner.startIdx + 8));
-            const exitSamples = Math.min(24, Math.max(12, corner.endIdx - corner.apexIdx + 6));
-            const startScan = Math.max(0, corner.apexIdx - approachSamples);
-            const endScan = Math.min(N - 1, corner.apexIdx + exitSamples);
-
-            for (let line = 0; line < numLines; line++) {
-                // ラインごとのわずかなバラつき
-                const lineOffsetBias = (line === 0) ? 0 : (turnDir * -0.32);
-                const driftAngleMultiplier = (line === 0) ? 1.0 : 0.82;
-
-                // 左右リアタイヤの軌跡生成
-                const generateWheelStrip = (wheelSideOffset) => {
-                    const stripPoints = [];
-                    const stripAlphas = [];
-
-                    for (let idx = startScan; idx <= endScan; idx++) {
-                        const s = this.samples[idx];
-                        const progress = (idx - startScan) / Math.max(1, (endScan - startScan));
-
-                        // ドリフトラインの横方向オフセット (アウト側からインのApex、そしてアウトへ)
-                        let targetOffset = 0;
-                        let alpha = 0;
-
-                        if (idx <= corner.apexIdx) {
-                            // 進入〜Apex: アウト側からイン側クリッピングポイントへ滑り込む
-                            const t = (idx - startScan) / Math.max(1, (corner.apexIdx - startScan));
-                            const entryOffset = -turnDir * 1.5; // アウト側車線寄り
-                            const apexOffset = turnDir * (this.roadWidth * 0.36); // イン側クリッピングポイント
-                            targetOffset = entryOffset + (apexOffset - entryOffset) * Math.sin(t * Math.PI * 0.5);
-                            alpha = Math.pow(t, 1.6) * (isHairpin ? 0.70 : 0.56);
-                        } else {
-                            // Apex〜脱出: カウンターを当ててアウト側へ流れる
-                            const t = (idx - corner.apexIdx) / Math.max(1, (endScan - corner.apexIdx));
-                            const apexOffset = turnDir * (this.roadWidth * 0.36);
-                            const exitOffset = -turnDir * 1.7; // アウト側へドリフトアウト
-                            targetOffset = apexOffset + (exitOffset - apexOffset) * (1.0 - Math.cos(t * Math.PI * 0.5));
-                            alpha = (1.0 - Math.pow(t, 1.4)) * (isHairpin ? 0.70 : 0.56);
-                        }
-
-                        // リアタイヤの横滑り（テールスライド）による偏位
-                        const tailSlide = -turnDir * (isHairpin ? 0.60 : 0.38) * driftAngleMultiplier * Math.sin(progress * Math.PI);
-                        const totalOffset = targetOffset + lineOffsetBias + wheelSideOffset + tailSlide;
-
-                        // 路面上の位置（左右法線ベクトル）
-                        const normal = s.normal.clone().normalize();
-                        const p = s.pos.clone().add(normal.clone().multiplyScalar(totalOffset));
-                        p.y += 0.016; // 路面からわずか1.6cm上に配置（Zファイト完全防止）
-
-                        stripPoints.push({ pos: p, tangent: s.tangent.clone().normalize() });
-                        stripAlphas.push(Math.max(0, Math.min(0.80, alpha)));
-                    }
-
-                    // 頂点配列とインデックスへの登録
-                    for (let k = 0; k < stripPoints.length - 1; k++) {
-                        const ptA = stripPoints[k];
-                        const ptB = stripPoints[k + 1];
-                        const aA = stripAlphas[k];
-                        const aB = stripAlphas[k + 1];
-
-                        if (aA <= 0.02 && aB <= 0.02) continue;
-
-                        const sideA = new THREE.Vector3(-ptA.tangent.z, 0, ptA.tangent.x).normalize();
-                        const sideB = new THREE.Vector3(-ptB.tangent.z, 0, ptB.tangent.x).normalize();
-
-                        const v0 = ptA.pos.clone().sub(sideA.clone().multiplyScalar(halfTire));
-                        const v1 = ptA.pos.clone().add(sideA.clone().multiplyScalar(halfTire));
-                        const v2 = ptB.pos.clone().sub(sideB.clone().multiplyScalar(halfTire));
-                        const v3 = ptB.pos.clone().add(sideB.clone().multiplyScalar(halfTire));
-
-                        const baseIdx = vertCount;
-                        positions.push(
-                            v0.x, v0.y, v0.z,
-                            v1.x, v1.y, v1.z,
-                            v2.x, v2.y, v2.z,
-                            v3.x, v3.y, v3.z
-                        );
-
-                        // 焼き付きタイヤゴムの漆黒 (R:0.04, G:0.04, B:0.05)
-                        const cR = 0.04, cG = 0.04, cB = 0.05;
-                        colors.push(
-                            cR, cG, cB, aA,
-                            cR, cG, cB, aA,
-                            cR, cG, cB, aB,
-                            cR, cG, cB, aB
-                        );
-
-                        indices.push(
-                            baseIdx, baseIdx + 1, baseIdx + 2,
-                            baseIdx + 2, baseIdx + 1, baseIdx + 3
-                        );
-                        vertCount += 4;
-                    }
-                };
-
-                // 左リアタイヤと右リアタイヤ
-                generateWheelStrip(-treadWidth * 0.5);
-                generateWheelStrip(treadWidth * 0.5);
-            }
-        }
-
-        if (positions.length === 0) return;
-
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
-        geom.setIndex(indices);
-
-        const mat = new THREE.MeshBasicMaterial({
-            vertexColors: true,
-            transparent: true,
-            depthWrite: false,
-            polygonOffset: true,
-            polygonOffsetFactor: -1.0,
-            polygonOffsetUnits: -4.0,
-            side: THREE.DoubleSide
-        });
-
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.renderOrder = 2; // 路面の直後に描画
-        this.trackGroup.add(mesh);
     }
 
     buildTerrain() {
@@ -5449,8 +5269,8 @@ if (courseType === 'myogi') {
         const ctx = canvas.getContext('2d');
 
         ctx.clearRect(0, 0, 256, 256);
-        ctx.strokeStyle = '#ffffff';
-        ctx.shadowColor = '#ffffff';
+        ctx.strokeStyle = '#00e1ff';
+        ctx.shadowColor = '#00aaff';
         ctx.shadowBlur = 18;
         ctx.lineWidth = 28;
         ctx.lineCap = 'round';
@@ -5617,40 +5437,6 @@ if (courseType === 'myogi') {
 
     getPointAt(t) {
         return this.curve.getPointAt(Math.max(0, Math.min(1, t)));
-    }
-
-    /**
-     * 任意の位置 (X, Z) 直下におけるアスファルト道路表面・縁石・U字側溝の真の標高 (Y) を高精度算出
-     * 下り坂・登り坂・縁石天面・U字側溝底面（溝落とし深さ22cm）をミリ単位で完全反映
-     */
-    getRoadSurfaceY(worldPos, hintT = null) {
-        const info = this.getSmoothTrackInfo(worldPos, hintT);
-        const bankOffsetY = Math.sin(info.bankAngle || 0) * info.offset;
-        const baseY = info.centerPos.y + bankOffsetY;
-
-        // コースごとの側溝・縁石ジオメトリとの連動（妙義以外は立体側溝構造をサポート）
-        const hasGutterCourse = (this.courseType !== 'myogi');
-        if (hasGutterCourse) {
-            const halfW = (this.roadWidth || 9.2) * 0.5;
-            const gutterW = 0.65;
-            const absOffset = Math.abs(info.offset || 0);
-
-            if (absOffset > halfW) {
-                // 溝落とし可能区間判定（info.hasGutterがtrue、または縁石・側溝部）
-                if (info.hasGutter && absOffset > halfW + 0.06 && absOffset < halfW + gutterW) {
-                    // ★U字側溝の底面（道路基準標高 -0.22m）：溝落としドリフト時にタイヤ痕が完璧に溝底に吸着！
-                    return info.centerPos.y - 0.22;
-                } else if (absOffset <= halfW + 0.06) {
-                    // ★道路境界・縁石（赤白ゼブラ/コンクリート天面：+0.015m）
-                    return info.centerPos.y + 0.015;
-                } else {
-                    // 溝外壁・ガードレール基礎天面（+0.02m）
-                    return info.centerPos.y + 0.02;
-                }
-            }
-        }
-
-        return baseY;
     }
 }
 
