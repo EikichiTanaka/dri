@@ -760,10 +760,10 @@ class ParticleSystem {
         uvAttr.setXY(vBase + 2, 0.0, v1);
         uvAttr.setXY(vBase + 3, 1.0, v1);
 
-        // 物理的摩擦エネルギーに基づく非線形濃度カーブ（抜け直前の極薄かすれ 0.06 〜 Apexフルカウンターの漆黒 0.94）
-        let baseAlpha = Math.pow(Math.min(1.0, intensity / 1.05), 1.30) * 0.90;
-        baseAlpha = Math.max(0.06, baseAlpha);
-        let alpha = Math.min(0.95, baseAlpha * fade);
+        // 物理的摩擦エネルギーに基づく非線形濃度カーブ（抜け直前の極薄かすれ 0.04 〜 Apexフルカウンターの自然な薄いラバー痕 0.55）
+        let baseAlpha = Math.pow(Math.min(1.0, intensity / 1.05), 1.30) * 0.52;
+        baseAlpha = Math.max(0.04, baseAlpha);
+        let alpha = Math.min(0.55, baseAlpha * fade);
         if (this.isRaining) alpha *= 0.35; // 雨天ウェット路面は薄いタイヤ痕
 
         // 【4】刻みたての「ダークグラファイトグレー」から「マットな冷えグレー」への経年変化トラッキング
@@ -771,9 +771,8 @@ class ParticleSystem {
         if (this.skidQuadAge) this.skidQuadAge[qIdx] = 0.0;
         if (this.skidQuadInitialAlpha) this.skidQuadInitialAlpha[qIdx] = alpha;
 
-        // ドリフトしたては真っ黒ではなく、上品なダークグラファイトグレー（道路にカモフラージュしない十分なコントラストを保持）
-        // アスファルト路面（0.18〜0.25）に対して明確な明度差（0.062）を持ち、くっきり視認可能
-        const cr = 0.062, cg = 0.062, cb = 0.070;
+        // ドリフトしたては主張しすぎない上品なグラファイトグレー（アスファルトになじむ自然な濃さ）
+        const cr = 0.075, cg = 0.075, cb = 0.082;
         colAttr.setXYZW(vBase,     cr, cg, cb, alpha);
         colAttr.setXYZW(vBase + 1, cr, cg, cb, alpha);
         colAttr.setXYZW(vBase + 2, cr, cg, cb, alpha);
@@ -985,17 +984,16 @@ class ParticleSystem {
                 if (this.skidQuadAge[q] < maxCoolingTime) {
                     this.skidQuadAge[q] += dt;
                     const age = this.skidQuadAge[q];
-                    // 0.0〜1.2秒: ドリフトしたてのダークグラファイトグレー (cr: 0.062, cg: 0.062, cb: 0.070)
-                    // 1.2〜10.0秒: 滑らかに外気冷却され、乾いたマットな冷えグレー (cr: 0.088, cg: 0.088, cb: 0.098) へ推移
-                    // ※アスファルト路面（0.18〜0.25）に対して明確な明度差を持ち、道路にカモフラージュ（同化）せず明瞭に視認可能
+                    // 0.0〜1.2秒: ドリフトしたての上品なグラファイトグレー (cr: 0.075, cg: 0.075, cb: 0.082)
+                    // 1.2〜10.0秒: 滑らかに外気冷却され、乾いたマットな冷えグレー (cr: 0.100, cg: 0.100, cb: 0.108) へ推移
                     const coolProgress = Math.min(1.0, Math.max(0.0, (age - 1.2) / 8.8));
-                    const cr = 0.062 + (0.088 - 0.062) * coolProgress;
-                    const cg = 0.062 + (0.088 - 0.062) * coolProgress;
-                    const cb = 0.070 + (0.098 - 0.070) * coolProgress;
+                    const cr = 0.075 + (0.100 - 0.075) * coolProgress;
+                    const cg = 0.075 + (0.100 - 0.075) * coolProgress;
+                    const cb = 0.082 + (0.108 - 0.082) * coolProgress;
 
-                    // アルファもゴム揮発油分が抜けてほんのり落ち着いたマット調に推移 (初期アルファの約88%)
-                    const initA = this.skidQuadInitialAlpha ? this.skidQuadInitialAlpha[q] : 0.8;
-                    const curA = initA * (1.0 - coolProgress * 0.12);
+                    // アルファもゴム揮発油分が抜けてほんのり落ち着いたマット調に推移 (初期アルファの約85%)
+                    const initA = this.skidQuadInitialAlpha ? this.skidQuadInitialAlpha[q] : 0.50;
+                    const curA = initA * (1.0 - coolProgress * 0.15);
 
                     const vBase = q * 4;
                     colAttr.setXYZW(vBase,     cr, cg, cb, curA);
