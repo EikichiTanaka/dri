@@ -1416,14 +1416,12 @@ class AudioManager {
         this.intakeGain.gain.setTargetAtTime(intakeVol, curTime, 0.03);
 
         // 7. レブリミッター・スタッターバウンス (点火カット・チョッピング変調)
-        const isAtRedline = isRevLimiter || (rpm >= redlineRpm * 0.985);
+        // 高回転パワーバンド維持中にフライング発動しないよう、実際のレブリミッター作動時(isRevLimiter)のみに厳密化
+        const isAtRedline = Boolean(isRevLimiter);
         if (isAtRedline && throttle > 0.45) {
-            this.revModGain.gain.setValueAtTime(0.88, curTime);
-            this.engineFilter.frequency.setValueAtTime(targetCutoff * 1.45, curTime);
-            this.engineRingFilter.gain.setValueAtTime(profile.ringGain * 1.65, curTime);
-            if (Math.random() < 0.26) {
-                this.playAfterfireSound(0.95);
-            }
+            this.revModGain.gain.setValueAtTime(0.65, curTime);
+            this.engineFilter.frequency.setValueAtTime(Math.min(16000, targetCutoff * 1.15), curTime);
+            this.engineRingFilter.gain.setValueAtTime(profile.ringGain * 1.20, curTime);
         } else {
             this.revModGain.gain.setTargetAtTime(0.0, curTime, 0.02);
         }

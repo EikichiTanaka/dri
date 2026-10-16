@@ -372,12 +372,18 @@ class CarPhysics {
         if (this.isAutomatic) {
             this.shiftBuffer = null;
             this.shiftBufferTimer = 0;
-            // 各車種のトルクバンドピーク (redline * 0.90) で気持ちよく高回転まで引っ張ってシフトアップ！
-            const upShiftRpm = redline * 0.90;
+            // 各車種のトルクバンドピーク (redline * 0.92) で気持ちよく高回転まで引っ張ってシフトアップ！
+            const upShiftRpm = redline * 0.92;
             // 速度とギア比に応じた適正シフトダウン回転数（不要なキックダウンのハンチングを防止）
             const downShiftRpm = Math.max(this.idleRpm + 400, redline * 0.35);
 
-            if (this.rpm > upShiftRpm && this.gear < 5 && this.shiftTimer <= 0) {
+            // ドリフト中のホイールスピン空転だけで車速がまだ低いのにシフトアップしてしまうのを防止
+            const curGearRatio = this.gearRatios[this.gear] || 1.0;
+            const curWheelCircum = this.wheelCircumference || 1.95;
+            const curDriveRpm = (this.speedMs / curWheelCircum) * curGearRatio * this.finalDrive * 60;
+            const canAutoShiftUp = this.isDrifting ? (curDriveRpm > redline * 0.86) : (this.rpm > upShiftRpm);
+
+            if (canAutoShiftUp && this.rpm > upShiftRpm && this.gear < 5 && this.shiftTimer <= 0) {
                 const prevGear = this.gear;
                 this.gear++;
                 this.shiftTimer = 0.20;
@@ -1330,20 +1336,26 @@ class CarPhysics {
             const driveRpm = wheelRps * gearRatio * this.finalDrive * 60;
 
             // スロットルオン時の駆動スリップ・トルクコンプライアンス（各車のレッドラインに応じた自然な針の跳ね上がり）
-            const throttleSlip = this.throttle * (redline * 0.045 / Math.sqrt(this.gear));
+            const throttleSlip = this.throttle * (redline * 0.030 / Math.sqrt(this.gear));
 
-            // ★リアルなドリフト・ホイールスピン物理：
-            // 車速・ギア比の駆動回転数 (driveRpm) をベースに、スリップアングルとアクセル開度に応じた自然な空転スリップを加算
-            // （車速やギアに関係なく勝手にレブリミット手前まで不自然に跳ね上がる現象を完全に撤廃！）
+            // ★実車に即したドリフト・ホイールスピン＆高回転パワーバンド維持物理：
+            // 実車の峠ドリフトでは、レブリミッターに当てて点火カット（失速・トラクション抜け）を起こすのではなく、
+            // レッドライン手前の最もトルクが出るパワーバンド（約75%〜96%）に回転数を乗せてタイヤのスリップ率を制御する。
             let driftSpinBoost = 0;
             if (this.isDrifting && this.throttle > 0.08) {
                 const driftIntensity = Math.min(1.0, Math.abs(this.driftAngle) * 2.2);
-                // 後輪空転スリップ率（車速回転数に対して約+12%〜28%の自然でリアルな吹き上がり）
-                const spinFactor = 0.12 + (driftIntensity * 0.08) + (this.throttle * 0.10);
+                // 駆動方式別の空転特性（FR/MRは適度なリア空転、4WDは4輪トラクションで控えめ、FFは前輪グリップ牽引のため極小）
+                const driveScale = (this.drivetrain === 'FF') ? 0.35 : ((this.drivetrain === '4WD') ? 0.65 : 1.0);
+                const spinFactor = (0.05 + (driftIntensity * 0.045) + (this.throttle * 0.05)) * driveScale;
                 driftSpinBoost = driveRpm * spinFactor;
             }
 
-            const directRpm = Math.max(this.idleRpm, driveRpm + throttleSlip + driftSpinBoost);
+            // 空転スリップによる回転数上昇は、レッドライン手前のパワーバンド上限（redline * 0.96）で自然に収束させる
+            // （そのギアで車速自体が完全に伸び切って driveRpm が redline に達した時のみ、本来のレブリミッターが作動する）
+            const powerbandCeiling = redline * 0.96;
+            const rawSlipRpm = driveRpm + throttleSlip + driftSpinBoost;
+            const cappedSlipRpm = (driveRpm >= powerbandCeiling) ? driveRpm : Math.min(powerbandCeiling, rawSlipRpm);
+            const directRpm = Math.max(this.idleRpm, cappedSlipRpm);
             let desiredRpm = directRpm;
 
             // ★発進時のクラッチスリップ＆高回転ロケットスタート物理
@@ -1372,14 +1384,13 @@ class CarPhysics {
                 this.clutchSlip = 0;
             }
 
-            // ★レブリミッター演出：各マシンのレッドゾーン以上で間欠カット＆火花バウンス
+            // ★レブリミッター演出：そのギアで車速自体がレッドゾーン上限まで伸び切った時に間欠カット＆火花バウンス
             const revThreshold = (this.redlineRpm || 9100);
 
             // ★重要：物理回転 (directRpm) がレブ閾値を下回っている、またはスロットルを緩めた場合は即座にレブカット解除！
-            // シフトアップ直後や車速変化時にレブカット状態がデッドロックして加速不能になる現象を完全に防止
-            if (directRpm < revThreshold - 150 || this.throttle <= 0.4) {
+            if (directRpm < revThreshold - 100 || this.throttle <= 0.4) {
                 this.isRevLimiterCut = false;
-            } else if (this.rpm >= revThreshold && this.throttle > 0.5) {
+            } else if (this.rpm >= revThreshold && directRpm >= revThreshold && this.throttle > 0.5) {
                 this.isRevLimiterCut = true;
             }
 
