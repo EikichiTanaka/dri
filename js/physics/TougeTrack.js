@@ -2467,14 +2467,14 @@ if (courseType === 'myogi') {
                             const entryOffset = -turnDir * 1.5; // アウト側車線寄り
                             const apexOffset = turnDir * (this.roadWidth * 0.36); // イン側クリッピングポイント
                             targetOffset = entryOffset + (apexOffset - entryOffset) * Math.sin(t * Math.PI * 0.5);
-                            alpha = Math.pow(t, 1.6) * (isHairpin ? 0.70 : 0.56);
+                            alpha = Math.pow(t, 1.6) * (isHairpin ? 0.38 : 0.28);
                         } else {
                             // Apex〜脱出: カウンターを当ててアウト側へ流れる
                             const t = (idx - corner.apexIdx) / Math.max(1, (endScan - corner.apexIdx));
                             const apexOffset = turnDir * (this.roadWidth * 0.36);
                             const exitOffset = -turnDir * 1.7; // アウト側へドリフトアウト
                             targetOffset = apexOffset + (exitOffset - apexOffset) * (1.0 - Math.cos(t * Math.PI * 0.5));
-                            alpha = (1.0 - Math.pow(t, 1.4)) * (isHairpin ? 0.70 : 0.56);
+                            alpha = (1.0 - Math.pow(t, 1.4)) * (isHairpin ? 0.38 : 0.28);
                         }
 
                         // リアタイヤの横滑り（テールスライド）による偏位
@@ -2487,7 +2487,7 @@ if (courseType === 'myogi') {
                         p.y += 0.016; // 路面からわずか1.6cm上に配置（Zファイト完全防止）
 
                         stripPoints.push({ pos: p, tangent: s.tangent.clone().normalize() });
-                        stripAlphas.push(Math.max(0, Math.min(0.80, alpha)));
+                        stripAlphas.push(Math.max(0, Math.min(0.42, alpha)));
                     }
 
                     // 頂点配列とインデックスへの登録
@@ -2515,8 +2515,8 @@ if (courseType === 'myogi') {
                             v3.x, v3.y, v3.z
                         );
 
-                        // 焼き付きタイヤゴムの漆黒 (R:0.04, G:0.04, B:0.05)
-                        const cR = 0.04, cG = 0.04, cB = 0.05;
+                        // 路面に自然になじむ上品なグラファイトゴム色
+                        const cR = 0.075, cG = 0.075, cB = 0.082;
                         colors.push(
                             cR, cG, cB, aA,
                             cR, cG, cB, aA,
