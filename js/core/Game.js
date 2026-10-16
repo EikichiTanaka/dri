@@ -458,7 +458,16 @@ class Game {
         }
 
         if (this.input.changeView) {
-            this.cameraMode = (this.cameraMode + 1) % 3;
+            this.cameraMode = (this.cameraMode + 1) % 4;
+            if (this.hud && this.hud.showPopup) {
+                const modeNames = [
+                    'VIEW: STANDARD CHASE (標準)',
+                    'VIEW: CLOSE CHASE (近接)',
+                    'VIEW: DRIFT ACTION (横斜め追従)',
+                    'VIEW: HOOD (ボンネット)'
+                ];
+                this.hud.showPopup(modeNames[this.cameraMode], '#00e5ff', 1.0);
+            }
         }
 
         if (this.input.toggleAssist) {
@@ -782,7 +791,11 @@ class Game {
             targetDist = 5.0 + speedPull * 0.5;
             targetHeight = 1.85 - speedPull * 0.15;
             lookAheadDist = 7.5 + speedPull * 3.0;
-        } else if (this.cameraMode === 2) { // ボンネット視点
+        } else if (this.cameraMode === 2) { // ドリフト・サイドアクション視点（斜め追従）
+            targetDist = 5.4 + speedPull * 0.5;
+            targetHeight = 1.65 - speedPull * 0.15;
+            lookAheadDist = 6.5 + speedPull * 2.5;
+        } else if (this.cameraMode === 3) { // ボンネット視点
             targetDist = -0.35;
             targetHeight = 1.15;
             lookAheadDist = 18.0 + speedPull * 5.0;
@@ -794,23 +807,38 @@ class Game {
         const roadCenterY = trackInfo.centerPos.y;
         const slopeDown = -trackInfo.tangent.y; // 下り勾配なら正の値
         // 勾配に応じたカメラ高度の持ち上げ（下り坂でも路面から常に一定の高さをキープ）
-        const slopeHeightOffset = (this.cameraMode === 2) ? 0 : Math.max(0, slopeDown * targetDist * 1.30);
+        const slopeHeightOffset = (this.cameraMode === 3) ? 0 : Math.max(0, slopeDown * targetDist * 1.30);
 
         // 3. ★絶対安全なカメラ目標位置（別段道路の誤検出テレポートを完全根絶！）
         // 車両が走行している現在の路面高さ (roadCenterY) を100%基準とし、地下や別段道路への誤引力を完全排除
         const baseHeight = targetHeight + slopeHeightOffset;
+        const carRight = new THREE.Vector3(forward.z, 0, -forward.x);
+        let lateralOffset = new THREE.Vector3();
+
+        if (this.cameraMode === 2) {
+            // ドリフト・サイドアクション視点：車体斜め外側からカウンター舵角とスライドを大胆に捉える
+            const sideSign = (this.playerPhysics.driftAngle !== 0) ? Math.sign(this.playerPhysics.driftAngle) : 1.0;
+            const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * 1.8;
+            lateralOffset = carRight.clone().multiplyScalar(sideSign * 1.1 + driftSwing);
+        } else if (this.cameraMode !== 3 && this.playerPhysics.isDrifting) {
+            // 通常チェイスでもドリフト中に旋回外側へ約1.2〜1.4mダイナミックスイングし、
+            // リアフェンダーの死角に隠れず前輪のフルカウンターがハッキリ視界に入る
+            const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * (this.cameraMode === 1 ? 1.45 : 1.25);
+            lateralOffset = carRight.clone().multiplyScalar(driftSwing);
+        }
+
         const idealCamPos = new THREE.Vector3(
-            carPos.x - camDir.x * targetDist,
+            carPos.x - camDir.x * targetDist + lateralOffset.x,
             roadCenterY + baseHeight,
-            carPos.z - camDir.z * targetDist
+            carPos.z - camDir.z * targetDist + lateralOffset.z
         );
 
         // 滑らかなカメラ位置補間
-        const lerpFactor = this.cameraMode === 2 ? 0.90 : Math.min(1.0, 9.0 * dt);
+        const lerpFactor = this.cameraMode === 3 ? 0.90 : Math.min(1.0, 9.0 * dt);
         this.camera.position.lerp(idealCamPos, lerpFactor);
 
         // カメラが車両路面より下（地下）に潜り込まないよう絶対保証クランプ
-        if (this.cameraMode !== 2) {
+        if (this.cameraMode !== 3) {
             const minSafeY = roadCenterY + 1.25;
             if (this.camera.position.y < minSafeY) {
                 this.camera.position.y = minSafeY;
@@ -833,6 +861,8 @@ class Game {
         // 自然な視野角（60° -> 最大72°）：魚眼歪みを抑え、コーナーの曲率と距離感を正確に視認可能に
         let targetFov = 60 + speedRatio * 12;
         if (this.cameraMode === 2) {
+            targetFov = 64 + speedRatio * 14; // ドリフト・サイドアクション視点 64° -> 最大78°
+        } else if (this.cameraMode === 3) {
             targetFov = 66 + speedRatio * 14; // ボンネット視点 66° -> 最大80°
         }
 
