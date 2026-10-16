@@ -1266,10 +1266,10 @@ class AudioManager {
         const baseMid = profile.midBaseRpm || 4200.0;
         const baseHigh = profile.highBaseRpm || 6800.0;
 
-        const rateIdle = Math.max(0.60, rpm / baseIdle);
-        const rateLow = Math.max(0.50, rpm / baseLow);
-        const rateMid = Math.max(0.50, rpm / baseMid);
-        const rateHigh = Math.max(0.45, rpm / baseHigh);
+        const rateIdle = Math.max(0.60, Math.min(1.8, rpm / baseIdle));
+        const rateLow = Math.max(0.40, rpm / baseLow);
+        const rateMid = Math.max(0.22, rpm / baseMid);
+        const rateHigh = Math.max(0.40, rpm / baseHigh);
 
         if (this.engineLoopIdle && this.engineLoopIdle.playbackRate) {
             this.engineLoopIdle.playbackRate.setTargetAtTime(rateIdle, curTime, 0.015);
@@ -1284,26 +1284,53 @@ class AudioManager {
             this.engineLoopHigh.playbackRate.setTargetAtTime(rateHigh, curTime, 0.015);
         }
 
-        // ★ゾーン単独駆動＋段階ゲイン補正（ゾーン切替時のローパス通過エネルギー差を完全補正し、切替ポイントでの微小な音量落ち込みもゼロ化！）
+        // ★単一連続ランニングループ方式（非VTEC車でのゾーン切替VTEC風段付き＆多重ループ位相うねりを完全根絶！）
         let gIdle = 0, gLow = 0, gMid = 0, gHigh = 0;
-        const idleToLowRpm = 1350;
-        const lowToMidRpm = (baseLow + baseMid) * 0.5;
-        const midToHighRpm = (this.soundType === 'b16b') ? 5800 : (baseMid + baseHigh) * 0.5;
+        const idleBase = profile.idleBaseRpm || profile.idleRpm || 850.0;
+        const idleFadeEnd = 1350.0;
 
-        if (rpm < idleToLowRpm) {
-            gIdle = 0.96;
-        } else if (rpm < lowToMidRpm) {
-            gLow = 1.00;
-        } else if (rpm < midToHighRpm) {
-            gMid = 1.07;
+        if (this.soundType === 'b16b') {
+            // ★EK9 シビック Type R 専用：本物のVTEC高回転ハイカム切り替え
+            const isVtec = (rpm >= 5800);
+            if (rpm <= idleBase) {
+                gIdle = 1.0;
+                gMid = 0.0;
+            } else if (rpm < idleFadeEnd) {
+                const t = (rpm - idleBase) / (idleFadeEnd - idleBase);
+                gIdle = Math.cos(t * Math.PI * 0.5);
+                gMid = Math.sin(t * Math.PI * 0.5);
+            } else if (!isVtec) {
+                gIdle = 0.0;
+                gMid = 1.0;
+                gHigh = 0.0;
+            } else {
+                gIdle = 0.0;
+                gMid = 0.0;
+                gHigh = 1.0;
+            }
         } else {
-            gHigh = 1.19;
+            // ★全ターボ車および通常NA車（FD3S, R32, S15, JZX100, JZA80, CE9A, AE86等）：
+            // アイドルから最高回転数まで単一のランニングループ（engineLoopMid）で途切れなくシームレスに吹け上がり！
+            // 3,000rpm付近のVTECのような急激な音色・音量段差を完全に根絶し、滑らかで力強い過給音を実現！
+            if (rpm <= idleBase) {
+                gIdle = 1.0;
+                gMid = 0.0;
+            } else if (rpm < idleFadeEnd) {
+                const t = (rpm - idleBase) / (idleFadeEnd - idleBase);
+                gIdle = Math.cos(t * Math.PI * 0.5);
+                gMid = Math.sin(t * Math.PI * 0.5);
+            } else {
+                gIdle = 0.0;
+                gMid = 1.0;
+            }
+            gLow = 0.0;
+            gHigh = 0.0;
         }
 
-        if (this.engineGainIdle) this.engineGainIdle.gain.setTargetAtTime(gIdle, curTime, 0.012);
-        if (this.engineGainLow) this.engineGainLow.gain.setTargetAtTime(gLow, curTime, 0.012);
-        if (this.engineGainMid) this.engineGainMid.gain.setTargetAtTime(gMid, curTime, 0.012);
-        if (this.engineGainHigh) this.engineGainHigh.gain.setTargetAtTime(gHigh, curTime, 0.012);
+        if (this.engineGainIdle) this.engineGainIdle.gain.setTargetAtTime(gIdle, curTime, 0.018);
+        if (this.engineGainLow) this.engineGainLow.gain.setTargetAtTime(gLow, curTime, 0.018);
+        if (this.engineGainMid) this.engineGainMid.gain.setTargetAtTime(gMid, curTime, 0.018);
+        if (this.engineGainHigh) this.engineGainHigh.gain.setTargetAtTime(gHigh, curTime, 0.018);
 
         // 2. 排気管ドライブゲイン（全ゾーン均一RMS 0.26 をそのまま後段へ伝達し、音量制御は最終段 engineGain に一元化）
         if (this.exhaustDriveGain) {
@@ -1317,11 +1344,11 @@ class AudioManager {
 
         const raspFreq = profile.raspFreq + rpmNorm * 180;
         this.engineRaspFilter.frequency.setTargetAtTime(raspFreq, curTime, 0.04);
-        this.engineRaspFilter.gain.setTargetAtTime(0.5, curTime, 0.04);
+        this.engineRaspFilter.gain.setTargetAtTime(0.5 + rpmNorm * 1.5, curTime, 0.04);
 
         const ringFreq = profile.ringFreq + rpmNorm * 220;
         this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
-        this.engineRingFilter.gain.setTargetAtTime(0.5 * throttle, curTime, 0.04);
+        this.engineRingFilter.gain.setTargetAtTime((0.5 + rpmNorm * 1.5) * throttle, curTime, 0.04);
 
         // 4. 動弁系メカニカル打音（アイドリング〜低回転で存在感、高回転ではマスク）
         if (this.mechGain) {
@@ -1385,14 +1412,15 @@ class AudioManager {
             this.revModGain.gain.setTargetAtTime(0.0, curTime, 0.02);
         }
 
-        // 8. ターボチャージャー過給エアラッシュ ＆ ブローオフバルブ
+        // 8. ターボチャージャー過給エアラッシュ ＆ ブローオフバルブ（唐突な段差のない滑らかなスプールアップ）
         const throttleDrop = (this.prevThrottle > 0.35 && throttle < 0.15);
-        if (profile.isTurbo && throttle > 0.12 && rpm > 2400) {
-            const spoolRamp = Math.min(1.0, (rpm - 2400) / 2000);
-            let turboScale = (this.soundType === '13b' || this.soundType === 'rb26') ? 0.12 : 0.25;
-            turboScale *= spoolRamp;
-            const turboVol = Math.min(0.08, (0.02 + (throttle * 0.06) + (rpmNorm * 0.05)) * turboScale);
-            const turboFreq = 2200 + (rpmNorm * 2200) + (throttle * 650);
+        if (profile.isTurbo && throttle > 0.08 && rpm > 2200) {
+            const spoolRamp = Math.max(0.0, Math.min(1.0, (rpm - 2200) / 2400));
+            const smoothSpool = spoolRamp * spoolRamp * (3.0 - 2.0 * spoolRamp);
+            const throttleBoost = Math.max(0.0, Math.min(1.0, (throttle - 0.08) / 0.82));
+            const turboScale = ((this.soundType === '13b' || this.soundType === 'rb26') ? 0.14 : 0.26) * smoothSpool;
+            const turboVol = Math.min(0.08, (throttleBoost * 0.07 + (rpmNorm * 0.03 * throttleBoost)) * turboScale);
+            const turboFreq = 2000 + (rpmNorm * 2400) + (throttle * 650);
             this.turboFilter.frequency.setTargetAtTime(turboFreq, curTime, 0.04);
             this.turboGain.gain.setTargetAtTime(turboVol, curTime, 0.04);
         } else {
@@ -1431,13 +1459,14 @@ class AudioManager {
             driftIntensity = Math.min(0.85, brakeFactor * speedRatio);
         }
 
-        // 過給開始（2,200〜4,800rpm）に伴う滑らかな単調増加ブーストエンベロープ
+        // 過給開始（2,200〜4,800rpm）に伴う滑らかな単調増加ブーストエンベロープ（急激なステップ変化を完全排除）
         let boostSwell = 0.0;
-        if (profile.isTurbo && throttle > 0.15 && rpm > 2200) {
+        if (profile.isTurbo && throttle > 0.08 && rpm > 2200) {
             const spoolProgress = Math.min(1.0, Math.max(0.0, (rpm - 2200) / 2600));
             const smoothSpool = spoolProgress * spoolProgress * (3.0 - 2.0 * spoolProgress);
+            const throttleProgress = Math.max(0.0, Math.min(1.0, (throttle - 0.08) / 0.82));
             const maxBoostSwell = (this.soundType === 'rb26' || this.soundType === '13b') ? 0.08 : 0.14;
-            boostSwell = smoothSpool * throttle * maxBoostSwell;
+            boostSwell = smoothSpool * throttleProgress * maxBoostSwell;
         }
 
         const carWeightScale = (profile.mainWeight || 0.75) / 0.75;
