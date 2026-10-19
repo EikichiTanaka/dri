@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INITIAL D ARCADE STAGE - 峠ドリフトレース</title>
-    <link rel="stylesheet" href="css/style.css?v=110_arcade_hud">
+    <link rel="stylesheet" href="css/style.css?v=111_idas_master_cluster">
 </head>
 <body>
     <!-- 3D WebGL レンダリングキャンバス -->
@@ -54,66 +54,43 @@
             <canvas id="minimap-canvas" width="170" height="250"></canvas>
         </div>
 
-        <!-- 画面右下：頭文字D ARCADE STAGE 統合レーシングメータークラスター（中央の自車視界を100%クリアに確保） -->
+        <!-- 画面右下：頭文字D ARCADE STAGE 完全再現マスターメータークラスター（中央の自車視界を100%クリアに確保） -->
         <div class="center-gauge-cluster">
-            <!-- 左カラム：コンパクトDefi 3連サブメーター ＆ アーケード統合デジタルスピード・ギアユニット -->
-            <div class="arcade-left-wing">
-                <!-- 上段：走り屋仕様 Defi-Link BF 3連追加メーターポッド (油圧 / 水温 / 油温) -->
-                <div class="triple-meter-pod">
-                    <div class="meter-item">
-                        <canvas id="meter-oilpress-canvas" width="76" height="76"></canvas>
-                        <div class="meter-label">OIL.P</div>
-                        <div id="val-oilpress" class="meter-digital-val">2.0 bar</div>
-                    </div>
-                    <div class="meter-item">
-                        <canvas id="meter-watertemp-canvas" width="76" height="76"></canvas>
-                        <div class="meter-label">WATER</div>
-                        <div id="val-watertemp" class="meter-digital-val">86 ℃</div>
-                    </div>
-                    <div class="meter-item">
-                        <canvas id="meter-oiltemp-canvas" width="76" height="76"></canvas>
-                        <div class="meter-label">OIL.T</div>
-                        <div id="val-oiltemp" class="meter-digital-val">90 ℃</div>
+            <!-- 左サイド：フレームレス独立3連 Defi-Link BF 追加メーター (油圧 / 水温 / 油温) -->
+            <div class="triple-meter-pod">
+                <div class="meter-item">
+                    <canvas id="meter-oilpress-canvas" width="92" height="92"></canvas>
+                    <div class="meter-tag">
+                        <span class="meter-label">OIL.P</span>
+                        <span id="val-oilpress" class="meter-digital-val">2.0 bar</span>
                     </div>
                 </div>
-
-                <!-- 下段：頭文字DAC仕様 スラントデジタルスピード ＆ シフトインジケーターボックス -->
-                <div class="digital-box">
-                    <div class="shift-rev-bar">
-                        <div class="rev-led rev-g"></div>
-                        <div class="rev-led rev-g"></div>
-                        <div class="rev-led rev-g"></div>
-                        <div class="rev-led rev-y"></div>
-                        <div class="rev-led rev-y"></div>
-                        <div class="rev-led rev-r"></div>
-                        <div class="rev-led rev-r"></div>
-                        <div id="shift-lamp" title="SHIFT UP LAMP"></div>
-                        <span class="shift-lamp-label">SHIFT</span>
+                <div class="meter-item">
+                    <canvas id="meter-watertemp-canvas" width="92" height="92"></canvas>
+                    <div class="meter-tag">
+                        <span class="meter-label">WATER</span>
+                        <span id="val-watertemp" class="meter-digital-val">86 ℃</span>
                     </div>
-                    <div class="digital-main-row">
-                        <div class="gear-wrapper">
-                            <div class="gear-header">
-                                <span class="gear-lbl">GEAR</span>
-                                <span id="trans-mode">AT</span>
-                            </div>
-                            <div class="gear-box-frame">
-                                <span id="gear-val">1</span>
-                            </div>
-                        </div>
-                        <div class="speed-wrapper">
-                            <div class="speed-digits-stack">
-                                <span class="speed-ghost" aria-hidden="true">888</span>
-                                <span id="speed-val">0</span>
-                            </div>
-                            <span class="speed-unit">km/h</span>
-                        </div>
+                </div>
+                <div class="meter-item">
+                    <canvas id="meter-oiltemp-canvas" width="92" height="92"></canvas>
+                    <div class="meter-tag">
+                        <span class="meter-label">OIL.T</span>
+                        <span id="val-oiltemp" class="meter-digital-val">90 ℃</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 右メイン：大型高精度レーシングタコメーター (11,000RPM / ペダルテレメトリー内蔵) -->
+            <!-- 右メイン：頭文字D ARCADE STAGE 一体型マスタークラスター (タコ / ブースト / デジタル速度 / 盤面内ギア / 外付けシフトランプ / ペダルバー) -->
             <div class="tacho-wrapper">
-                <canvas id="tacho-canvas" width="300" height="300"></canvas>
+                <canvas id="tacho-canvas" width="460" height="300"></canvas>
+                <!-- DOM互換用データ要素（Canvas内に超高精細一体描画） -->
+                <div class="sr-hud-data" aria-hidden="true">
+                    <span id="speed-val">0</span>
+                    <span id="gear-val">1</span>
+                    <span id="trans-mode">AT</span>
+                    <div id="shift-lamp"></div>
+                </div>
             </div>
         </div>
 
@@ -322,20 +299,20 @@
 
     <!-- スクリプト群 -->
     <script src="js/lib/three.min.js"></script>
-    <script src="js/data/CarDatabase.js?v=110_arcade_hud"></script>
-    <script src="js/physics/TougeTrack.js?v=110_arcade_hud"></script>
-    <script src="js/physics/CarPhysics.js?v=110_arcade_hud"></script>
-    <script src="js/entities/CarModelBuilder.js?v=110_arcade_hud"></script>
-    <script src="js/entities/PlayerCar.js?v=110_arcade_hud"></script>
-    <script src="js/entities/RivalCar.js?v=110_arcade_hud"></script>
-    <script src="js/entities/ParticleSystem.js?v=110_arcade_hud"></script>
-    <script src="js/core/Input.js?v=110_arcade_hud"></script>
-    <script src="js/data/TireAudioData.js?v=110_arcade_hud"></script>
-    <script src="js/core/AudioManager.js?v=110_arcade_hud"></script>
-    <script src="js/ui/CornerGuide.js?v=110_arcade_hud"></script>
-    <script src="js/ui/HUD.js?v=110_arcade_hud"></script>
-    <script src="js/ui/GarageUI.js?v=110_arcade_hud"></script>
-    <script src="js/core/Game.js?v=110_arcade_hud"></script>
+    <script src="js/data/CarDatabase.js?v=111_idas_master_cluster"></script>
+    <script src="js/physics/TougeTrack.js?v=111_idas_master_cluster"></script>
+    <script src="js/physics/CarPhysics.js?v=111_idas_master_cluster"></script>
+    <script src="js/entities/CarModelBuilder.js?v=111_idas_master_cluster"></script>
+    <script src="js/entities/PlayerCar.js?v=111_idas_master_cluster"></script>
+    <script src="js/entities/RivalCar.js?v=111_idas_master_cluster"></script>
+    <script src="js/entities/ParticleSystem.js?v=111_idas_master_cluster"></script>
+    <script src="js/core/Input.js?v=111_idas_master_cluster"></script>
+    <script src="js/data/TireAudioData.js?v=111_idas_master_cluster"></script>
+    <script src="js/core/AudioManager.js?v=111_idas_master_cluster"></script>
+    <script src="js/ui/CornerGuide.js?v=111_idas_master_cluster"></script>
+    <script src="js/ui/HUD.js?v=111_idas_master_cluster"></script>
+    <script src="js/ui/GarageUI.js?v=111_idas_master_cluster"></script>
+    <script src="js/core/Game.js?v=111_idas_master_cluster"></script>
 
     <script>
         function initApp() {

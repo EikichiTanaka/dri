@@ -302,265 +302,85 @@ body, html {
     border-radius: 0 0 8px 8px;
 }
 
-/* 画面右下：頭文字D ARCADE STAGE 統合レーシングメータークラスター（中央の自車視界を100%クリアに確保） */
+/* 画面右下：頭文字D ARCADE STAGE 完全再現マスターメータークラスター（中央の自車視界を100%クリアに確保） */
 .center-gauge-cluster {
     position: absolute;
-    bottom: 16px;
-    right: 22px;
+    bottom: 10px;
+    right: 14px;
     left: auto;
     transform: none;
     display: flex;
     align-items: flex-end;
-    gap: 0px;
+    gap: 2px;
     pointer-events: none;
     z-index: 10;
-    filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.85));
+    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.92));
 }
 
-.arcade-left-wing {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-    margin-right: -18px;
-    margin-bottom: 6px;
-    z-index: 2;
-}
-
-/* 本物の走り屋仕様：Defi-Link BF 3連追加メーターポッド（コンパクト・カーボンフード仕様） */
+/* フレームレス独立3連 Defi-Link BF 追加メーター（四角い枠を廃し本物の独立丸型3連メーターとして配置） */
 .triple-meter-pod {
     display: flex;
-    gap: 5px;
-    background:
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 4px),
-        linear-gradient(180deg, rgba(16, 22, 30, 0.94) 0%, rgba(7, 10, 15, 0.96) 100%);
-    border: 1.5px solid rgba(90, 120, 150, 0.55);
-    border-top: 2px solid rgba(0, 220, 255, 0.65);
-    border-radius: 10px 10px 6px 10px;
-    padding: 5px 10px 4px 10px;
-    margin-right: 12px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.85), inset 0 0 12px rgba(0, 180, 255, 0.08);
+    align-items: flex-end;
+    gap: 4px;
+    margin-right: -14px;
+    margin-bottom: 10px;
+    z-index: 2;
 }
 
 .meter-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 68px;
+    width: 72px;
+}
+
+.meter-item:nth-child(1) {
+    transform: translateY(6px);
+}
+.meter-item:nth-child(2) {
+    transform: translateY(3px);
 }
 
 .meter-item canvas {
-    width: 66px;
-    height: 66px;
+    width: 72px;
+    height: 72px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85));
+}
+
+.meter-tag {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    background: linear-gradient(180deg, rgba(14, 20, 28, 0.92) 0%, rgba(6, 9, 14, 0.96) 100%);
+    border: 1px solid rgba(90, 130, 170, 0.45);
+    border-bottom: 1.5px solid #00e5ff;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-top: -4px;
+    transform: skewX(-10deg);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 .meter-label {
-    font-size: 9px;
-    font-weight: 800;
+    font-size: 8.5px;
+    font-weight: 900;
     color: #00e5ff;
-    letter-spacing: 1px;
-    margin-top: -1px;
+    letter-spacing: 0.5px;
     line-height: 1;
-    text-shadow: 0 0 6px rgba(0, 229, 255, 0.6);
 }
 
 .meter-digital-val {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 800;
     color: #ffffff;
-    letter-spacing: 0.4px;
-    line-height: 1.1;
-    text-shadow: 0 0 6px rgba(255, 180, 0, 0.7);
-}
-
-/* 頭文字D ARCADE STAGE 統合スラント・デジタルスピード＆ギアボックス */
-.digital-box {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    min-width: 228px;
-    background:
-        repeating-linear-gradient(-45deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 2px, transparent 2px, transparent 5px),
-        linear-gradient(135deg, rgba(14, 19, 28, 0.96) 0%, rgba(6, 9, 14, 0.98) 100%);
-    border: 2px solid #556b82;
-    border-left: 4px solid #ffaa00;
-    border-bottom: 2px solid #00e5ff;
-    border-radius: 10px 4px 4px 10px;
-    padding: 7px 24px 8px 14px;
-    transform: skewX(-8deg);
-    box-shadow:
-        0 6px 22px rgba(0, 0, 0, 0.9),
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 0 18px rgba(0, 210, 255, 0.18);
-}
-
-/* シーケンシャルREVシフトインジケーターバー */
-.shift-rev-bar {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding-bottom: 5px;
-    margin-bottom: 5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    transform: skewX(8deg);
-}
-
-.rev-led {
-    flex: 1;
-    height: 6px;
-    border-radius: 2px;
-    background: #141a22;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    transition: background-color 0.05s ease, box-shadow 0.05s ease;
-}
-
-.rev-led.on.rev-g {
-    background: #00ff66;
-    box-shadow: 0 0 8px #00ff66;
-}
-
-.rev-led.on.rev-y {
-    background: #ffcc00;
-    box-shadow: 0 0 8px #ffcc00;
-}
-
-.rev-led.on.rev-r {
-    background: #ff1122;
-    box-shadow: 0 0 10px #ff1122;
-}
-
-#shift-lamp {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background-color: #240404;
-    border: 1.5px solid #661111;
-    margin-left: 4px;
-    flex-shrink: 0;
-}
-
-.shift-lamp-label {
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    color: #ff4444;
-    font-style: italic;
-}
-
-.digital-main-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    transform: skewX(8deg);
-}
-
-.gear-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-
-.gear-header {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.gear-lbl {
-    font-size: 10px;
-    color: #99aabb;
-    font-weight: 800;
-    letter-spacing: 1px;
-}
-
-#trans-mode {
-    font-size: 10px;
-    color: #001018;
-    background: linear-gradient(180deg, #33e0ff, #0099cc);
-    font-weight: 900;
-    padding: 0px 4px;
-    border-radius: 2px;
-    letter-spacing: 0.5px;
-}
-
-.gear-box-frame {
-    width: 44px;
-    height: 46px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(circle at center, rgba(255, 170, 0, 0.18) 0%, rgba(10, 12, 16, 0.95) 80%);
-    border: 1.5px solid #ffaa00;
-    border-radius: 5px;
-    box-shadow: inset 0 0 10px rgba(255, 170, 0, 0.28), 0 0 8px rgba(255, 170, 0, 0.22);
-}
-
-#gear-val {
-    font-family: 'Teko', 'Rajdhani', sans-serif;
-    font-size: 44px;
-    font-weight: 700;
-    color: #ffdd33;
+    letter-spacing: 0.3px;
     line-height: 1;
-    text-shadow: 0 0 12px rgba(255, 200, 0, 0.95);
-}
-
-.speed-wrapper {
-    display: flex;
-    align-items: baseline;
-    justify-content: flex-end;
-    gap: 5px;
-    flex: 1;
-}
-
-.speed-digits-stack {
-    position: relative;
-    display: inline-flex;
-    justify-content: flex-end;
-    align-items: baseline;
-    min-width: 96px;
-    text-align: right;
-}
-
-.speed-ghost {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    font-family: 'Teko', 'Rajdhani', sans-serif;
-    font-size: 68px;
-    font-weight: 700;
-    font-style: italic;
-    color: rgba(255, 255, 255, 0.06);
-    line-height: 0.82;
-    letter-spacing: 1.5px;
-    pointer-events: none;
-}
-
-#speed-val {
-    position: relative;
-    font-family: 'Teko', 'Rajdhani', sans-serif;
-    font-size: 68px;
-    font-weight: 700;
-    font-style: italic;
-    color: #ffffff;
-    line-height: 0.82;
-    letter-spacing: 1.5px;
-    text-shadow: 0 0 14px rgba(0, 225, 255, 0.75), 0 2px 4px rgba(0, 0, 0, 0.9);
-}
-
-.speed-unit {
-    font-size: 16px;
-    color: #00e5ff;
-    font-style: italic;
-    font-weight: 900;
-    letter-spacing: 0.5px;
-    text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+    text-shadow: 0 0 6px rgba(255, 190, 0, 0.75);
 }
 
 .tacho-wrapper {
-    width: 232px;
-    height: 232px;
+    width: 390px;
+    height: 254px;
     position: relative;
     z-index: 3;
     flex-shrink: 0;
@@ -569,6 +389,16 @@ body, html {
 #tacho-canvas {
     width: 100%;
     height: 100%;
+    display: block;
+}
+
+.sr-hud-data {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
 }
 
 #drift-popup {
