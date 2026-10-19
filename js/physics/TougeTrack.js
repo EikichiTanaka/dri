@@ -3257,14 +3257,13 @@ if (courseType === 'myogi') {
 
                 const isMountain = (sideMul < 0) ? (sideBias > 0) : (sideBias < 0);
 
-                // === レイヤー 0: ガードレール直後の低木ブッシュ（生け垣・密生） ===
-                // サンプル1個おき（約2m〜3m間隔）でガードレール足元の隙間を隙間なく埋め尽くす
+                // === レイヤー 0: ガードレール外側の低木ブッシュ（車道・カメラ領域へはみ出さないようガードレール後方に配置） ===
                 if (i % 2 === 0) {
-                    const dBush = halfW + 1.05 + ((i * 3) % 4) * 0.18;
+                    const dBush = halfW + 2.45 + ((i * 3) % 4) * 0.22;
                     const posBush = s.pos.clone().add(s.normal.clone().multiplyScalar(dBush * sideMul));
                     posBush.y = s.pos.y + (isMountain ? 0.15 : -0.15);
 
-                    const scaleBush = 0.95 + ((i * 5) % 5) * 0.08;
+                    const scaleBush = 0.85 + ((i * 5) % 5) * 0.06;
                     const rotY = (i * 1.63) % (Math.PI * 2);
 
                     bushInstances.push({
@@ -3275,15 +3274,15 @@ if (courseType === 'myogi') {
                     });
                 }
 
-                // === レイヤー 1: 最前列・巨大樹木トンネル（ガードレール直後、頭上キャノピー） ===
-                // サンプル2個おきに巨大スギ・広葉樹を配置。上空5m〜14mで道路頭上に枝葉が覆いかぶさる
+                // === レイヤー 1: 最前列・巨大樹木トンネル（ガードレール後方、頭上キャノピーを高く保ち壁際カメラの視界を100%確保） ===
                 if (i % 2 === 1) {
-                    const d1 = halfW + 1.35 + ((i * 5) % 4) * 0.22;
+                    const d1 = halfW + 2.25 + ((i * 5) % 4) * 0.25;
                     const pos1 = s.pos.clone().add(s.normal.clone().multiplyScalar(d1 * sideMul));
-                    pos1.y = s.pos.y + (isMountain ? 0.35 : -0.30);
+                    pos1.y = s.pos.y + (isMountain ? 0.45 : -0.20);
 
-                    // 枝葉を道路上空方向へせり出させ、頭上を覆うアーチ状グリーンキャノピーを形成
-                    const leavesPos1 = pos1.clone().add(s.normal.clone().multiplyScalar(-1.25 * sideMul));
+                    // 枝葉は上空でせり出させつつ、カメラ高さ(1.5〜2.5m)には干渉しないよう高さを+0.9m引き上げ
+                    const leavesPos1 = pos1.clone().add(s.normal.clone().multiplyScalar(-0.65 * sideMul));
+                    leavesPos1.y += 0.90;
 
                     const scale1 = 1.15 + ((i * 7) % 6) * 0.08;
                     const isBroad = (i % 5 === 1);

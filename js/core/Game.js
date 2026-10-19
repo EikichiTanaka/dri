@@ -33,6 +33,7 @@ class Game {
         this.fpLookYaw = 0;
         this.fpPitchDip = 0;
         this.fpTangentY = 0;
+        this.tpWallProximity = 0;
 
         this.track = null;
         this.playerPhysics = null;
@@ -911,10 +912,32 @@ class Game {
 
         // =========================================================================
         // ★三人称系チェイスカメラ（Mode 0: 標準, Mode 1: 近接, Mode 2: ドリフトアクション）
+        //   ＆ 壁衝突・壁沿い走行時のカメラめり込み・視界喪失100%防止システム
         // =========================================================================
-        // 1. 車体向き (forward) と進行方向 (velDir) の安全な連続ブレンド（大アングルドリフトでも急激なカットオフなし）
+        const halfRoad = (this.track.roadWidth || 9.2) * 0.5;
+        const carOffset = trackInfo.offset || 0;
+        const absCarOffset = Math.abs(carOffset);
+        const wallSide = Math.sign(carOffset) || 1;
+        const rawWallProx = Math.max(
+            this.playerPhysics.isCollidingWall ? 1.0 : 0.0,
+            Math.max(0.0, Math.min(1.0, (absCarOffset - (halfRoad - 1.65)) / 1.50))
+        );
+        this.tpWallProximity = (this.tpWallProximity || 0) + (rawWallProx - (this.tpWallProximity || 0)) * Math.min(1.0, 12.0 * dt);
+
+        // 道路接線方向ベクトル（壁沿い走行時のガイド方向）
+        const roadForward = new THREE.Vector3(trackInfo.tangent.x, 0, trackInfo.tangent.z);
+        if (roadForward.lengthSq() > 0.001) {
+            roadForward.normalize();
+            if (roadForward.dot(forward) < -0.25) {
+                roadForward.negate();
+            }
+        } else {
+            roadForward.copy(forward);
+        }
+
+        // 1. 車体向き (forward) と進行方向 (velDir) の連続ブレンド（壁接触時も途切れず滑らかに追従）
         let camDir = forward.clone();
-        if (this.playerPhysics.speedMs > 3.0 && !this.playerPhysics.isCollidingWall) {
+        if (this.playerPhysics.speedMs > 2.5) {
             const velDir = this.playerPhysics.velocity.clone();
             velDir.y = 0;
             if (velDir.lengthSq() > 0.04) {
@@ -922,12 +945,24 @@ class Game {
                 const dot = forward.dot(velDir);
                 const dotFade = Math.max(0.0, Math.min(1.0, (dot + 0.15) / 0.45));
                 if (dotFade > 0.001) {
-                    const blendWeight = (this.playerPhysics.isDrifting ? 0.45 : 0.25) * dotFade;
+                    const baseWeight = this.playerPhysics.isDrifting ? 0.45 : 0.25;
+                    const wallBoost = Math.max(baseWeight, this.tpWallProximity * 0.65);
+                    const blendWeight = wallBoost * dotFade;
                     const blended = forward.clone().lerp(velDir, blendWeight);
                     if (blended.lengthSq() > 0.01) {
                         camDir = blended.normalize();
                     }
                 }
+            }
+        }
+
+        // 壁際・壁衝突時はカメラ方向(camDir)を道路進行方向(roadForward)へ寄せ、カメラ後退ベクトル(-camDir)が壁側へ突き出るのを防止
+        if (this.tpWallProximity > 0.01) {
+            camDir.lerp(roadForward, this.tpWallProximity * 0.55).normalize();
+            const intoWall = -camDir.dot(trackInfo.normal) * wallSide;
+            if (intoWall > 0) {
+                camDir.add(trackInfo.normal.clone().multiplyScalar(wallSide * intoWall * this.tpWallProximity));
+                if (camDir.lengthSq() > 0.01) camDir.normalize();
             }
         }
 
@@ -949,6 +984,10 @@ class Game {
             lookAheadDist = 6.8 + speedPull * 2.5;
         }
 
+        // 壁沿い密着時はカメラ距離をわずかに引き締め、高さを少し上げて壁との干渉を回避し車体視認性を確保
+        targetDist *= (1.0 - 0.16 * this.tpWallProximity);
+        targetHeight += 0.22 * this.tpWallProximity;
+
         // 2. 下り坂・勾配適応補正
         const slopeDown = -trackInfo.tangent.y;
         const slopeHeightOffset = Math.max(0, slopeDown * targetDist * 1.30);
@@ -968,29 +1007,84 @@ class Game {
             lateralOffset = carRight.clone().multiplyScalar(driftSwing);
         }
 
+        // 壁際では壁方向への横スウィングを抑え、逆に道路中央側（オープンスペース側）へカメラをオフセットして車体をクリアに映す
+        if (this.tpWallProximity > 0.01) {
+            const latIntoWall = lateralOffset.dot(trackInfo.normal) * wallSide;
+            if (latIntoWall > 0) {
+                lateralOffset.sub(trackInfo.normal.clone().multiplyScalar(wallSide * latIntoWall * this.tpWallProximity));
+            }
+            // 壁から道路内側へ最大0.85m逃がすことで、壁沿い走行時もガードレールや擁壁に一切被らないクリアなアングルを確保
+            lateralOffset.add(trackInfo.normal.clone().multiplyScalar(-wallSide * 0.85 * this.tpWallProximity));
+        }
+
         const idealCamPos = new THREE.Vector3(
             carPos.x - camDir.x * targetDist + lateralOffset.x,
             roadCenterY + baseHeight,
             carPos.z - camDir.z * targetDist + lateralOffset.z
         );
 
+        // 3. ★カメラ直下のコース法線判定（getSmoothTrackInfoはY軸に5倍の重みがあるため、路面高さcarPos.yでプローブして直下の道路を正確に取得！）
+        const idealGroundProbe = new THREE.Vector3(idealCamPos.x, carPos.y, idealCamPos.z);
+        const idealCamTrack = this.track.getSmoothTrackInfo(idealGroundProbe, this.playerPhysics.trackT);
+        const maxSafeCamOffset = Math.max(1.4, halfRoad - 1.05);
+        if (Math.abs(idealCamTrack.offset) > maxSafeCamOffset) {
+            const excess = Math.abs(idealCamTrack.offset) - maxSafeCamOffset;
+            const pushSign = Math.sign(idealCamTrack.offset) || 1;
+            idealCamPos.x -= idealCamTrack.normal.x * pushSign * excess;
+            idealCamPos.z -= idealCamTrack.normal.z * pushSign * excess;
+        }
+        idealCamPos.y = Math.max(roadCenterY, idealCamTrack.centerPos.y) + baseHeight;
+
         // 滑らかなカメラ位置補間
-        const lerpFactor = Math.min(1.0, 9.5 * dt);
+        const lerpFactor = Math.min(1.0, (9.5 + 4.5 * this.tpWallProximity) * dt);
         this.camera.position.lerp(idealCamPos, lerpFactor);
 
+        // 補間後の実カメラ座標に対しても直下路面プローブで道路境界＆路面高さを絶対保証クランプ（壁・擁壁の裏側へ1ミリも入らない）
+        const curGroundProbe = new THREE.Vector3(this.camera.position.x, carPos.y, this.camera.position.z);
+        const curCamTrack = this.track.getSmoothTrackInfo(curGroundProbe, this.playerPhysics.trackT);
+        const hardSafeCamOffset = Math.max(1.4, halfRoad - 0.90);
+        if (Math.abs(curCamTrack.offset) > hardSafeCamOffset) {
+            const excess = Math.abs(curCamTrack.offset) - hardSafeCamOffset;
+            const pushSign = Math.sign(curCamTrack.offset) || 1;
+            this.camera.position.x -= curCamTrack.normal.x * pushSign * excess;
+            this.camera.position.z -= curCamTrack.normal.z * pushSign * excess;
+        }
+
         // カメラが車両路面より下（地下）に潜り込まないよう絶対保証クランプ
-        const minSafeY = roadCenterY + 1.15;
+        const minSafeY = Math.max(roadCenterY, curCamTrack.centerPos.y) + 1.18;
         if (this.camera.position.y < minSafeY) {
             this.camera.position.y = minSafeY;
         }
 
-        // 4. 注視点（LookTarget）の勾配アライメント
-        const tangentPitchOffset = trackInfo.tangent.y * lookAheadDist;
+        // 4. 注視点（LookTarget）の勾配アライメント＆壁際フレーミング維持（車が画面外へ消える現象を100%防止）
+        const effectiveLookAhead = lookAheadDist * (1.0 - 0.35 * this.tpWallProximity);
+        const lookDir = forward.clone().lerp(camDir, 0.35 + 0.50 * this.tpWallProximity).normalize();
+        const tangentPitchOffset = trackInfo.tangent.y * effectiveLookAhead;
         const idealLookTarget = carPos.clone()
-            .add(forward.clone().multiplyScalar(lookAheadDist))
+            .add(lookDir.multiplyScalar(effectiveLookAhead))
             .add(new THREE.Vector3(0, 0.88 + tangentPitchOffset, 0));
 
         this.cameraLookTarget.lerp(idealLookTarget, Math.min(1.0, 12.0 * dt));
+
+        // カメラから見た自車(carPos)と注視点(cameraLookTarget)の水平角度差を最大13.5°(0.235 rad)以内に拘束し、
+        // 壁に斜めにぶつかったり壁沿いをスライドした際も自車が常に画面中央付近に100%映り続けるよう保証
+        const camToCarX = carPos.x - this.camera.position.x;
+        const camToCarZ = carPos.z - this.camera.position.z;
+        const camToTargetX = this.cameraLookTarget.x - this.camera.position.x;
+        const camToTargetZ = this.cameraLookTarget.z - this.camera.position.z;
+        const targetDistHoriz = Math.hypot(camToTargetX, camToTargetZ);
+        if (targetDistHoriz > 0.5 && Math.hypot(camToCarX, camToCarZ) > 0.5) {
+            const carAngle = Math.atan2(camToCarX, camToCarZ);
+            const targetAngle = Math.atan2(camToTargetX, camToTargetZ);
+            const angleDiff = this.wrapAngle(targetAngle - carAngle);
+            const maxFramingRad = 0.235;
+            if (Math.abs(angleDiff) > maxFramingRad) {
+                const clampedAngle = carAngle + Math.sign(angleDiff) * maxFramingRad;
+                this.cameraLookTarget.x = this.camera.position.x + Math.sin(clampedAngle) * targetDistHoriz;
+                this.cameraLookTarget.z = this.camera.position.z + Math.cos(clampedAngle) * targetDistHoriz;
+            }
+        }
+
         this.camera.lookAt(this.cameraLookTarget);
 
         // 5. 速度に応じたダイナミックFOV＆スピード演出
