@@ -23,6 +23,17 @@ class Game {
         this.cameraShakeTimer = 0;
         this.cameraShakeIntensity = 0;
 
+        // ★一人称視点（cameraMode === 3）ドリフト限界角での「カクッ」完全解消用C2連続スムージング状態変数
+        this.fpInitialized = false;
+        this.fpSlipMid = 0;
+        this.fpSlipSmooth = 0;
+        this.fpLookWeight = 0.22;
+        this.fpBodyYawMid = 0;
+        this.fpBodyYaw = 0;
+        this.fpLookYaw = 0;
+        this.fpPitchDip = 0;
+        this.fpTangentY = 0;
+
         this.track = null;
         this.playerPhysics = null;
         this.playerCar = null;
@@ -34,6 +45,12 @@ class Game {
         this.playerTireBurnTimer = 0;
 
         this.init();
+    }
+
+    wrapAngle(angle) {
+        while (angle > Math.PI) angle -= Math.PI * 2;
+        while (angle < -Math.PI) angle += Math.PI * 2;
+        return angle;
     }
 
     init() {
@@ -417,6 +434,7 @@ class Game {
         this.applyEnvironment();
         this.playerPhysics.resetToTrack(0.003, -1.8);
         this.playerPhysics.isLocked = true; // ★カウントダウン中は完全ロック！
+        this.fpInitialized = false;
         this.rivalCar.resetPosition();
         if (this.particles && this.particles.clearSkidMarks) {
             this.particles.clearSkidMarks();
@@ -783,55 +801,96 @@ class Game {
         const speedPull = Math.min(1.0, speedKmh / 150);
 
         // =========================================================================
+        // ★ドリフト限界角クランプ時の「カクッ」を完全吸収するC2連続スリップ角＆ヨースムージング
+        // （CarPhysics側のドリフト角度制限には一切触れず、カメラ側で角速度のステップ変化・
+        //   壁接触時の速度ベクトル跳ね返り・大アングル内積カットオフによる視線ワープを100%平滑化）
+        // =========================================================================
+        const vx = this.playerPhysics.velocity.x;
+        const vz = this.playerPhysics.velocity.z;
+        const horizSpeed = Math.hypot(vx, vz);
+        const speedFade = Math.max(0.0, Math.min(1.0, (horizSpeed - 1.2) / 3.0));
+
+        let rawSlipAngle = 0;
+        if (horizSpeed > 1.2) {
+            const velYaw = Math.atan2(vx, vz);
+            rawSlipAngle = this.wrapAngle(velYaw - this.playerPhysics.yaw);
+        }
+
+        // 105°超の完全逆向きスピン時のみ滑らかにフェード（通常のドリフト限界角0°〜92°では常に1.0で途切れゼロ！）
+        const backFade = 1.0 - Math.max(0.0, Math.min(1.0, (Math.abs(rawSlipAngle) - 1.85) / 0.65));
+        const targetLookWeight = (this.playerPhysics.isDrifting ? 0.44 : 0.22) * speedFade * backFade;
+
+        const rawPitchDip = (this.playerPhysics.brake > 0.05 ? -0.030 * Math.min(1.0, this.playerPhysics.brake * 1.2) : 0) +
+                            (this.playerPhysics.throttle > 0.4 ? 0.015 * Math.min(1.0, this.playerPhysics.throttle) : 0);
+
+        if (!this.fpInitialized) {
+            this.fpLookWeight = targetLookWeight;
+            this.fpSlipMid = Math.max(-0.65, Math.min(0.65, rawSlipAngle * targetLookWeight));
+            this.fpSlipSmooth = this.fpSlipMid;
+            this.fpBodyYawMid = this.playerPhysics.yaw;
+            this.fpBodyYaw = this.playerPhysics.yaw;
+            this.fpLookYaw = this.wrapAngle(this.fpBodyYaw + this.fpSlipSmooth);
+            this.fpPitchDip = rawPitchDip;
+            this.fpTangentY = trackInfo.tangent.y;
+            this.fpInitialized = true;
+        } else {
+            // 1. 車体ヨー角の2段カスケードC2フィルタ（maxDriftRad到達時のyawRate=0クランプ衝撃を完全吸収しつつダイレクト追従）
+            const bodyAlpha = 1.0 - Math.exp(-15.0 * dt);
+            this.fpBodyYawMid = this.wrapAngle(this.fpBodyYawMid + this.wrapAngle(this.playerPhysics.yaw - this.fpBodyYawMid) * bodyAlpha);
+            this.fpBodyYaw = this.wrapAngle(this.fpBodyYaw + this.wrapAngle(this.fpBodyYawMid - this.fpBodyYaw) * bodyAlpha);
+
+            // 2. ドリフト視線先行オフセット角のスルーレート制限付き2段カスケードC2フィルタ（壁接触時の速度ベクトル急変も完全遮断）
+            const weightAlpha = 1.0 - Math.exp(-8.0 * dt);
+            this.fpLookWeight += (targetLookWeight - this.fpLookWeight) * weightAlpha;
+
+            const desiredOffset = Math.max(-0.65, Math.min(0.65, rawSlipAngle * this.fpLookWeight));
+            const maxOffsetStep = 1.6 * dt;
+            const clampedDelta = Math.max(-maxOffsetStep, Math.min(maxOffsetStep, desiredOffset - this.fpSlipMid));
+            const slipAlpha = 1.0 - Math.exp(-10.0 * dt);
+            this.fpSlipMid += clampedDelta * slipAlpha;
+            this.fpSlipSmooth += (this.fpSlipMid - this.fpSlipSmooth) * slipAlpha;
+
+            this.fpLookYaw = this.wrapAngle(this.fpBodyYaw + this.fpSlipSmooth);
+
+            this.fpPitchDip += (rawPitchDip - this.fpPitchDip) * Math.min(1.0, 12.0 * dt);
+            this.fpTangentY += (trackInfo.tangent.y - this.fpTangentY) * Math.min(1.0, 14.0 * dt);
+        }
+
+        // =========================================================================
         // ★【頭文字D ARCADE STAGE 完全再現：一人称主観ビュー】(cameraMode === 3)
         // =========================================================================
         if (this.cameraMode === 3) {
+            // 一人称視点時はヘッドライト照射角も滑らかなカメラ車体角(fpBodyYaw)に同期し、限界角でのライト揺れも防止
+            if (this.playerCar && this.playerCar.meshGroup) {
+                this.playerCar.meshGroup.rotation.y = this.fpBodyYaw;
+            }
+
             // ドライバー目線〜フロントノーズ上部（車体中心より+0.85m、高さ+0.96m）
             // カメラのすぐ前方(約1.0m先)からツインスポットライトが照射されるため、目の前の路面が2灯のヘッドライトで煌々と明るく照らされる！
             const camOffset = 0.85;
-            const pitchDip = (this.playerPhysics.brake > 0.05 ? -0.030 * Math.min(1.0, this.playerPhysics.brake * 1.2) : 0) +
-                             (this.playerPhysics.throttle > 0.4 ? 0.015 * Math.min(1.0, this.playerPhysics.throttle) : 0);
-            const camHeight = 0.96 + pitchDip;
+            const camHeight = 0.96 + this.fpPitchDip;
 
             const idealCamPos = new THREE.Vector3(
-                carPos.x + forward.x * camOffset,
+                carPos.x + Math.sin(this.fpBodyYaw) * camOffset,
                 carPos.y + camHeight,
-                carPos.z + forward.z * camOffset
+                carPos.z + Math.cos(this.fpBodyYaw) * camOffset
             );
 
-            // 一人称視点は車体にダイレクト追従
+            // 一人称視点は平滑化済みノーズ位置に追従
             this.camera.position.copy(idealCamPos);
 
-            // ドリフト時は車体向き(forward)と進行方向(velDir)を45%ブレンドし、
-            // 頭文字Dアーケードの主観視点と同様にコーナーの先（クリッピングポイント〜出口）を自然に捉える
-            let lookDir = forward.clone();
-            if (this.playerPhysics.speedMs > 3.0 && !this.playerPhysics.isCollidingWall) {
-                const velDir = this.playerPhysics.velocity.clone();
-                velDir.y = 0;
-                if (velDir.lengthSq() > 0.04) {
-                    velDir.normalize();
-                    if (forward.dot(velDir) > 0.35) {
-                        const driftLookWeight = this.playerPhysics.isDrifting ? 0.45 : 0.20;
-                        lookDir = forward.clone().lerp(velDir, driftLookWeight).normalize();
-                    }
-                }
-            }
-
-            // 注視点：前方18m先、路面勾配に正確に合致
+            // 注視点：前方18m〜23m先、C2連続スムージング済みの視線ヨー角(fpLookYaw)と勾配ピッチに完全合致
             const lookAheadDist = 18.0 + speedPull * 5.0;
-            const tangentPitchOffset = trackInfo.tangent.y * lookAheadDist;
-            const idealLookTarget = idealCamPos.clone()
-                .add(lookDir.multiplyScalar(lookAheadDist))
-                .add(new THREE.Vector3(0, -0.28 + tangentPitchOffset, 0));
-
-            this.cameraLookTarget.copy(idealLookTarget);
+            const tangentPitchOffset = this.fpTangentY * lookAheadDist;
+            this.cameraLookTarget.set(
+                idealCamPos.x + Math.sin(this.fpLookYaw) * lookAheadDist,
+                idealCamPos.y - 0.28 + tangentPitchOffset,
+                idealCamPos.z + Math.cos(this.fpLookYaw) * lookAheadDist
+            );
             this.camera.lookAt(this.cameraLookTarget);
 
             // 視野角（IDAS一人称基準：60° -> 最大70°の歪みのない自然な遠近感とスピード感）
-            let targetFov = 60 + speedRatio * 10;
-            if (this.playerPhysics.isDrifting) {
-                targetFov += Math.min(2.5, Math.abs(this.playerPhysics.driftAngle) * 4.0);
-            }
+            const targetFov = 60 + speedRatio * 10 + Math.min(2.5, Math.abs(this.fpSlipSmooth) * 4.0);
             this.camera.fov += (targetFov - this.camera.fov) * Math.min(1.0, 10.0 * dt);
             this.camera.updateProjectionMatrix();
 
@@ -853,7 +912,7 @@ class Game {
         // =========================================================================
         // ★三人称系チェイスカメラ（Mode 0: 標準, Mode 1: 近接, Mode 2: ドリフトアクション）
         // =========================================================================
-        // 1. 車体向き (forward) と進行方向 (velDir) の安全なブレンド
+        // 1. 車体向き (forward) と進行方向 (velDir) の安全な連続ブレンド（大アングルドリフトでも急激なカットオフなし）
         let camDir = forward.clone();
         if (this.playerPhysics.speedMs > 3.0 && !this.playerPhysics.isCollidingWall) {
             const velDir = this.playerPhysics.velocity.clone();
@@ -861,8 +920,9 @@ class Game {
             if (velDir.lengthSq() > 0.04) {
                 velDir.normalize();
                 const dot = forward.dot(velDir);
-                if (dot > 0.4) {
-                    const blendWeight = this.playerPhysics.isDrifting ? 0.45 : 0.25;
+                const dotFade = Math.max(0.0, Math.min(1.0, (dot + 0.15) / 0.45));
+                if (dotFade > 0.001) {
+                    const blendWeight = (this.playerPhysics.isDrifting ? 0.45 : 0.25) * dotFade;
                     const blended = forward.clone().lerp(velDir, blendWeight);
                     if (blended.lengthSq() > 0.01) {
                         camDir = blended.normalize();
