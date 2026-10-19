@@ -42,7 +42,7 @@ class Game {
         this.scene.fog = new THREE.FogExp2(0x05070a, 0.005);
 
         const aspect = window.innerWidth / window.innerHeight;
-        this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1800);
+        this.camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 1800);
         this.camera.position.set(0, 5, -10);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -783,14 +783,14 @@ class Game {
         const speedKmh = this.playerPhysics.speed;
         const speedPull = Math.min(1.0, speedKmh / 150);
 
-        if (this.cameraMode === 0) { // 標準チェイス
-            targetDist = 6.4 + speedPull * 0.7;
-            targetHeight = 2.4 - speedPull * 0.22;
-            lookAheadDist = 9.5 + speedPull * 3.5;
+        if (this.cameraMode === 0) { // ★頭文字D ARCADE STAGE 完全再現：標準チェイス（黄金比テールビュー）
+            targetDist = 4.95 + speedPull * 0.45;
+            targetHeight = 1.72 - speedPull * 0.12;
+            lookAheadDist = 8.4 + speedPull * 2.8;
         } else if (this.cameraMode === 1) { // 近接チェイス
-            targetDist = 5.0 + speedPull * 0.5;
-            targetHeight = 1.85 - speedPull * 0.15;
-            lookAheadDist = 7.5 + speedPull * 3.0;
+            targetDist = 4.35 + speedPull * 0.40;
+            targetHeight = 1.55 - speedPull * 0.12;
+            lookAheadDist = 7.2 + speedPull * 2.5;
         } else if (this.cameraMode === 2) { // ドリフト・サイドアクション視点（斜め追従）
             targetDist = 5.4 + speedPull * 0.5;
             targetHeight = 1.65 - speedPull * 0.15;
@@ -821,9 +821,10 @@ class Game {
             const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * 1.8;
             lateralOffset = carRight.clone().multiplyScalar(sideSign * 1.1 + driftSwing);
         } else if (this.cameraMode !== 3 && this.playerPhysics.isDrifting) {
-            // 通常チェイスでもドリフト中に旋回外側へ約1.2〜1.4mダイナミックスイングし、
-            // リアフェンダーの死角に隠れず前輪のフルカウンターがハッキリ視界に入る
-            const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * (this.cameraMode === 1 ? 1.45 : 1.25);
+            // 通常チェイスでもドリフト中に旋回外側へダイナミックスイングし、
+            // 車体のスライドと前輪のフルカウンターステアがハッキリ視界に入る
+            const swingScale = (this.cameraMode === 1 ? 1.45 : 1.38);
+            const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * swingScale;
             lateralOffset = carRight.clone().multiplyScalar(driftSwing);
         }
 
@@ -833,13 +834,13 @@ class Game {
             carPos.z - camDir.z * targetDist + lateralOffset.z
         );
 
-        // 滑らかなカメラ位置補間
-        const lerpFactor = this.cameraMode === 3 ? 0.90 : Math.min(1.0, 9.0 * dt);
+        // 滑らかなカメラ位置補間（IDASの程よいしなりと吸い付き）
+        const lerpFactor = this.cameraMode === 3 ? 0.90 : Math.min(1.0, 9.5 * dt);
         this.camera.position.lerp(idealCamPos, lerpFactor);
 
         // カメラが車両路面より下（地下）に潜り込まないよう絶対保証クランプ
         if (this.cameraMode !== 3) {
-            const minSafeY = roadCenterY + 1.25;
+            const minSafeY = roadCenterY + 1.15;
             if (this.camera.position.y < minSafeY) {
                 this.camera.position.y = minSafeY;
             }
@@ -849,7 +850,7 @@ class Game {
         const tangentPitchOffset = trackInfo.tangent.y * lookAheadDist;
         const idealLookTarget = carPos.clone()
             .add(forward.clone().multiplyScalar(lookAheadDist))
-            .add(new THREE.Vector3(0, 0.9 + tangentPitchOffset, 0));
+            .add(new THREE.Vector3(0, 0.88 + tangentPitchOffset, 0));
 
         this.cameraLookTarget.lerp(idealLookTarget, Math.min(1.0, 12.0 * dt));
         this.camera.lookAt(this.cameraLookTarget);
@@ -858,9 +859,11 @@ class Game {
         const speed = this.playerPhysics.speed;
         const speedRatio = Math.min(1.0, speed / 160);
 
-        // 自然な視野角（60° -> 最大72°）：魚眼歪みを抑え、コーナーの曲率と距離感を正確に視認可能に
-        let targetFov = 60 + speedRatio * 12;
-        if (this.cameraMode === 2) {
+        // 自然な視野角（IDAS基準: 55° -> 最大64°）：魚眼歪みを抑え、コーナーの曲率と距離感を正確に視認可能に
+        let targetFov = 55 + speedRatio * 9;
+        if (this.cameraMode === 1) {
+            targetFov = 58 + speedRatio * 10;
+        } else if (this.cameraMode === 2) {
             targetFov = 64 + speedRatio * 14; // ドリフト・サイドアクション視点 64° -> 最大78°
         } else if (this.cameraMode === 3) {
             targetFov = 66 + speedRatio * 14; // ボンネット視点 66° -> 最大80°
