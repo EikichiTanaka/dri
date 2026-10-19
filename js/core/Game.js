@@ -115,6 +115,9 @@ class Game {
     enterGarageMode() {
         this.prevState = this.state;
         this.state = 'GARAGE';
+        if (this.playerCar && this.playerCar.meshGroup) {
+            this.playerCar.meshGroup.visible = true;
+        }
         this.playerPhysics.velocity.set(0, 0, 0);
         this.playerPhysics.speed = 0;
         this.playerPhysics.speedMs = 0;
@@ -461,10 +464,10 @@ class Game {
             this.cameraMode = (this.cameraMode + 1) % 4;
             if (this.hud && this.hud.showPopup) {
                 const modeNames = [
-                    'VIEW: STANDARD CHASE (標準)',
-                    'VIEW: CLOSE CHASE (近接)',
+                    'VIEW: STANDARD CHASE (標準三人称)',
+                    'VIEW: CLOSE CHASE (近接三人称)',
                     'VIEW: DRIFT ACTION (横斜め追従)',
-                    'VIEW: HOOD (ボンネット)'
+                    'VIEW: IDAS NOSE / 1ST-PERSON (頭文字D 一人称ノーズ)'
                 ];
                 this.hud.showPopup(modeNames[this.cameraMode], '#00e5ff', 1.0);
             }
@@ -746,6 +749,11 @@ class Game {
     }
 
     updateCamera(dt) {
+        // 自車メッシュの表示・非表示（一人称視点では視界を100%クリアに保つため非表示化）
+        if (this.playerCar && this.playerCar.meshGroup) {
+            this.playerCar.meshGroup.visible = (this.cameraMode !== 3);
+        }
+
         const carPos = this.playerPhysics.position;
         const forward = new THREE.Vector3(
             Math.sin(this.playerPhysics.yaw),
@@ -753,18 +761,80 @@ class Game {
             Math.cos(this.playerPhysics.yaw)
         );
 
+        const trackInfo = this.track.getSmoothTrackInfo(carPos, this.playerPhysics.trackT);
+        const roadCenterY = trackInfo.centerPos.y;
+        const speedKmh = this.playerPhysics.speed;
+        const speedRatio = Math.min(1.0, speedKmh / 160);
+        const speedPull = Math.min(1.0, speedKmh / 150);
+
+        // =========================================================================
+        // ★【頭文字D ARCADE STAGE 公式完全再現：一人称ノーズ／バンパービュー】(cameraMode === 3)
+        // =========================================================================
+        if (this.cameraMode === 3) {
+            // フロントバンパー最先端（車体中心より+2.05m）、路面高+0.78m
+            const noseOffset = 2.05;
+            // フルブレーキング時のノーズダイブ（-0.035m）＆急加速時のリフト（+0.018m）
+            const pitchDip = (this.playerPhysics.brake > 0.05 ? -0.035 * Math.min(1.0, this.playerPhysics.brake * 1.2) : 0) +
+                             (this.playerPhysics.throttle > 0.4 ? 0.018 * Math.min(1.0, this.playerPhysics.throttle) : 0);
+            const noseHeight = 0.78 + pitchDip;
+
+            const idealCamPos = new THREE.Vector3(
+                carPos.x + forward.x * noseOffset,
+                roadCenterY + noseHeight,
+                carPos.z + forward.z * noseOffset
+            );
+
+            // 一人称視点はノーズに直結吸い付き追従
+            this.camera.position.copy(idealCamPos);
+
+            // 注視点：前方22m先、路面と勾配に正確に合致
+            const lookAheadDist = 22.0 + speedPull * 6.0;
+            const tangentPitchOffset = trackInfo.tangent.y * lookAheadDist;
+            const idealLookTarget = carPos.clone()
+                .add(forward.clone().multiplyScalar(lookAheadDist))
+                .add(new THREE.Vector3(0, 0.35 + tangentPitchOffset, 0));
+
+            this.cameraLookTarget.copy(idealLookTarget);
+            this.camera.lookAt(this.cameraLookTarget);
+
+            // 遠心力ロール＆溝落としバンク傾斜のリアル反映（頭文字D一人称の真骨頂！）
+            const totalRoll = (this.playerPhysics.roll || 0) + (this.playerPhysics.gutterRoll || 0);
+            this.camera.rotation.z = -totalRoll * 0.70;
+
+            // 視野角（IDAS一人称基準：66° -> 最大77°の超高速スピード感）
+            let targetFov = 66 + speedRatio * 11;
+            if (this.playerPhysics.isDrifting) {
+                targetFov += Math.min(3.5, Math.abs(this.playerPhysics.driftAngle) * 5.5);
+            }
+            this.camera.fov += (targetFov - this.camera.fov) * Math.min(1.0, 10.0 * dt);
+            this.camera.updateProjectionMatrix();
+
+            // 高速走行時の微振動＆溝落とし衝撃
+            if (speedKmh > 140) {
+                const shakeIntensity = Math.min(0.018, (speedKmh - 140) * 0.0003);
+                this.camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+                this.camera.position.y += (Math.random() - 0.5) * shakeIntensity;
+            }
+            if (this.cameraShakeTimer > 0) {
+                this.cameraShakeTimer -= dt;
+                const shakeAmt = this.cameraShakeIntensity * Math.min(1.0, this.cameraShakeTimer / 0.14) * 0.8;
+                this.camera.position.x += (Math.random() - 0.5) * shakeAmt;
+                this.camera.position.y += (Math.random() - 0.5) * shakeAmt;
+            }
+            return;
+        }
+
+        // =========================================================================
+        // ★三人称系チェイスカメラ（Mode 0: 標準, Mode 1: 近接, Mode 2: ドリフトアクション）
+        // =========================================================================
         // 1. 車体向き (forward) と進行方向 (velDir) の安全なブレンド
-        // 壁衝突時や極端なスピンでカメラが急反転（ぐわん）しないよう安全制限
         let camDir = forward.clone();
         if (this.playerPhysics.speedMs > 3.0 && !this.playerPhysics.isCollidingWall) {
             const velDir = this.playerPhysics.velocity.clone();
             velDir.y = 0;
             if (velDir.lengthSq() > 0.04) {
                 velDir.normalize();
-
-                // forward と velDir のなす角度 (dot積)
                 const dot = forward.dot(velDir);
-                // 前進方向（dot > 0.4: 角度約66度以内）の場合のみ進行方向へ適度ブレンド
                 if (dot > 0.4) {
                     const blendWeight = this.playerPhysics.isDrifting ? 0.45 : 0.25;
                     const blended = forward.clone().lerp(velDir, blendWeight);
@@ -775,54 +845,38 @@ class Game {
             }
         }
 
-        let targetDist = 6.4;
-        let targetHeight = 2.4;
-        let lookAheadDist = 9.5;
-
-        // 高速走行時のカメラ引き＆ローアングル（ダイナミックな体感スピード向上）
-        const speedKmh = this.playerPhysics.speed;
-        const speedPull = Math.min(1.0, speedKmh / 150);
+        let targetDist = 4.95;
+        let targetHeight = 1.72;
+        let lookAheadDist = 8.4;
 
         if (this.cameraMode === 0) { // ★頭文字D ARCADE STAGE 完全再現：標準チェイス（黄金比テールビュー）
             targetDist = 4.95 + speedPull * 0.45;
             targetHeight = 1.72 - speedPull * 0.12;
             lookAheadDist = 8.4 + speedPull * 2.8;
-        } else if (this.cameraMode === 1) { // 近接チェイス
-            targetDist = 4.35 + speedPull * 0.40;
-            targetHeight = 1.55 - speedPull * 0.12;
-            lookAheadDist = 7.2 + speedPull * 2.5;
-        } else if (this.cameraMode === 2) { // ドリフト・サイドアクション視点（斜め追従）
-            targetDist = 5.4 + speedPull * 0.5;
-            targetHeight = 1.65 - speedPull * 0.15;
-            lookAheadDist = 6.5 + speedPull * 2.5;
-        } else if (this.cameraMode === 3) { // ボンネット視点
-            targetDist = -0.35;
-            targetHeight = 1.15;
-            lookAheadDist = 18.0 + speedPull * 5.0;
-            camDir = forward;
+        } else if (this.cameraMode === 1) { // ★近接三人称チェイス（タイトテールビュー）
+            targetDist = 4.25 + speedPull * 0.35;
+            targetHeight = 1.54 - speedPull * 0.10;
+            lookAheadDist = 7.4 + speedPull * 2.5;
+        } else if (this.cameraMode === 2) { // ★ドリフト・サイドアクション視点（斜め追従）
+            targetDist = 5.20 + speedPull * 0.45;
+            targetHeight = 1.62 - speedPull * 0.12;
+            lookAheadDist = 6.8 + speedPull * 2.5;
         }
 
-        // 2. 下り坂・勾配適応補正（下り坂では後方路面が高いためカメラを自動リフト）
-        const trackInfo = this.track.getSmoothTrackInfo(carPos, this.playerPhysics.trackT);
-        const roadCenterY = trackInfo.centerPos.y;
-        const slopeDown = -trackInfo.tangent.y; // 下り勾配なら正の値
-        // 勾配に応じたカメラ高度の持ち上げ（下り坂でも路面から常に一定の高さをキープ）
-        const slopeHeightOffset = (this.cameraMode === 3) ? 0 : Math.max(0, slopeDown * targetDist * 1.30);
-
-        // 3. ★絶対安全なカメラ目標位置（別段道路の誤検出テレポートを完全根絶！）
-        // 車両が走行している現在の路面高さ (roadCenterY) を100%基準とし、地下や別段道路への誤引力を完全排除
+        // 2. 下り坂・勾配適応補正
+        const slopeDown = -trackInfo.tangent.y;
+        const slopeHeightOffset = Math.max(0, slopeDown * targetDist * 1.30);
         const baseHeight = targetHeight + slopeHeightOffset;
+
         const carRight = new THREE.Vector3(forward.z, 0, -forward.x);
         let lateralOffset = new THREE.Vector3();
 
         if (this.cameraMode === 2) {
             // ドリフト・サイドアクション視点：車体斜め外側からカウンター舵角とスライドを大胆に捉える
             const sideSign = (this.playerPhysics.driftAngle !== 0) ? Math.sign(this.playerPhysics.driftAngle) : 1.0;
-            const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * 1.8;
-            lateralOffset = carRight.clone().multiplyScalar(sideSign * 1.1 + driftSwing);
-        } else if (this.cameraMode !== 3 && this.playerPhysics.isDrifting) {
-            // 通常チェイスでもドリフト中に旋回外側へダイナミックスイングし、
-            // 車体のスライドと前輪のフルカウンターステアがハッキリ視界に入る
+            const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * 1.6;
+            lateralOffset = carRight.clone().multiplyScalar(sideSign * 1.25 + driftSwing);
+        } else if (this.playerPhysics.isDrifting) {
             const swingScale = (this.cameraMode === 1 ? 1.45 : 1.38);
             const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * swingScale;
             lateralOffset = carRight.clone().multiplyScalar(driftSwing);
@@ -834,16 +888,14 @@ class Game {
             carPos.z - camDir.z * targetDist + lateralOffset.z
         );
 
-        // 滑らかなカメラ位置補間（IDASの程よいしなりと吸い付き）
-        const lerpFactor = this.cameraMode === 3 ? 0.90 : Math.min(1.0, 9.5 * dt);
+        // 滑らかなカメラ位置補間
+        const lerpFactor = Math.min(1.0, 9.5 * dt);
         this.camera.position.lerp(idealCamPos, lerpFactor);
 
         // カメラが車両路面より下（地下）に潜り込まないよう絶対保証クランプ
-        if (this.cameraMode !== 3) {
-            const minSafeY = roadCenterY + 1.15;
-            if (this.camera.position.y < minSafeY) {
-                this.camera.position.y = minSafeY;
-            }
+        const minSafeY = roadCenterY + 1.15;
+        if (this.camera.position.y < minSafeY) {
+            this.camera.position.y = minSafeY;
         }
 
         // 4. 注視点（LookTarget）の勾配アライメント
@@ -855,21 +907,14 @@ class Game {
         this.cameraLookTarget.lerp(idealLookTarget, Math.min(1.0, 12.0 * dt));
         this.camera.lookAt(this.cameraLookTarget);
 
-        // 5. 速度に応じたダイナミックFOV＆スピード演出（頭文字D ARCADE STAGE風 自然な遠近感）
-        const speed = this.playerPhysics.speed;
-        const speedRatio = Math.min(1.0, speed / 160);
-
-        // 自然な視野角（IDAS基準: 55° -> 最大64°）：魚眼歪みを抑え、コーナーの曲率と距離感を正確に視認可能に
+        // 5. 速度に応じたダイナミックFOV＆スピード演出
         let targetFov = 55 + speedRatio * 9;
         if (this.cameraMode === 1) {
-            targetFov = 58 + speedRatio * 10;
+            targetFov = 58 + speedRatio * 9;
         } else if (this.cameraMode === 2) {
-            targetFov = 64 + speedRatio * 14; // ドリフト・サイドアクション視点 64° -> 最大78°
-        } else if (this.cameraMode === 3) {
-            targetFov = 66 + speedRatio * 14; // ボンネット視点 66° -> 最大80°
+            targetFov = 62 + speedRatio * 12;
         }
 
-        // ドリフト時も爽快感アップのため少しワイド化
         if (this.playerPhysics.isDrifting) {
             targetFov += Math.min(3, Math.abs(this.playerPhysics.driftAngle) * 5);
         }
@@ -878,8 +923,8 @@ class Game {
         this.camera.updateProjectionMatrix();
 
         // 6. 高速時（140km/h以上）のリアルな風圧・路面トレモロ（カメラ微振動）
-        if (speed > 140) {
-            const shakeIntensity = Math.min(0.025, (speed - 140) * 0.00035);
+        if (speedKmh > 140) {
+            const shakeIntensity = Math.min(0.025, (speedKmh - 140) * 0.00035);
             this.camera.position.x += (Math.random() - 0.5) * shakeIntensity;
             this.camera.position.y += (Math.random() - 0.5) * shakeIntensity * 0.6;
         }
