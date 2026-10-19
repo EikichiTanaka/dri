@@ -117,6 +117,9 @@ class Game {
         this.state = 'GARAGE';
         if (this.playerCar && this.playerCar.meshGroup) {
             this.playerCar.meshGroup.visible = true;
+            this.playerCar.meshGroup.traverse((child) => {
+                if (child.isMesh) child.visible = true;
+            });
         }
         this.playerPhysics.velocity.set(0, 0, 0);
         this.playerPhysics.speed = 0;
@@ -749,11 +752,18 @@ class Game {
     }
 
     updateCamera(dt) {
-        // ★重要：自車メッシュは常に表示（meshGroup内にヘッドライトのSpotLight/PointLightが含まれるため、
-        // falseにするとライトまで消灯してしまう。trueを維持することでヘッドライトが前方を煌々と照らし、
-        // かつ画面下端に愛車のボンネット先端＆リトラクタブルライトがリアルに視認できる！）
+        // ★頭文字D ARCADE STAGE 仕様：
+        // 親グループ(meshGroup)は常に visible = true に保ち、内蔵されたヘッドライト(SpotLight/PointLight)を100%点灯維持！
+        // 一人称視点(cameraMode === 3)の時のみ、ポリゴンメッシュ(child.isMesh)だけを非表示にすることで、
+        // 自車のボンネットやボディは一切画面に映らない100%クリアなアーケード主観視界と、煌々と路面を照らすヘッドライトを完全両立！
         if (this.playerCar && this.playerCar.meshGroup) {
             this.playerCar.meshGroup.visible = true;
+            const showBodyMesh = (this.cameraMode !== 3);
+            this.playerCar.meshGroup.traverse((child) => {
+                if (child.isMesh) {
+                    child.visible = showBodyMesh;
+                }
+            });
         }
 
         // カメラの上方向ベクトルを常にワールドY軸(0, 1, 0)に固定（360度どの向き・ドリフト時でも上下反転・転倒を100%防止！）
@@ -773,25 +783,27 @@ class Game {
         const speedPull = Math.min(1.0, speedKmh / 150);
 
         // =========================================================================
-        // ★【頭文字D ARCADE STAGE 再現：一人称ボンネット／フロントビュー】(cameraMode === 3)
+        // ★【頭文字D ARCADE STAGE 完全再現：一人称主観ビュー】(cameraMode === 3)
         // =========================================================================
         if (this.cameraMode === 3) {
-            // 全車種のフロントガラス上端より前方・上部のボンネット視点（車体中心より+0.65m、高さ+1.08m）
-            // 画面下端に愛車のボンネットとリトラクタブルライトが程よく見え、そこから強力なヘッドライト光が前方の路面を照らす！
-            const hoodOffset = 0.65;
-            const hoodHeight = 1.08;
+            // ドライバー目線〜フロントノーズ上部（車体中心より+0.85m、高さ+0.96m）
+            // カメラのすぐ前方(約1.0m先)からツインスポットライトが照射されるため、目の前の路面が2灯のヘッドライトで煌々と明るく照らされる！
+            const camOffset = 0.85;
+            const pitchDip = (this.playerPhysics.brake > 0.05 ? -0.030 * Math.min(1.0, this.playerPhysics.brake * 1.2) : 0) +
+                             (this.playerPhysics.throttle > 0.4 ? 0.015 * Math.min(1.0, this.playerPhysics.throttle) : 0);
+            const camHeight = 0.96 + pitchDip;
 
             const idealCamPos = new THREE.Vector3(
-                carPos.x + forward.x * hoodOffset,
-                carPos.y + hoodHeight,
-                carPos.z + forward.z * hoodOffset
+                carPos.x + forward.x * camOffset,
+                carPos.y + camHeight,
+                carPos.z + forward.z * camOffset
             );
 
-            // 一人称視点は車体フロントに直結追従
+            // 一人称視点は車体にダイレクト追従
             this.camera.position.copy(idealCamPos);
 
-            // ドリフト時は車体向き(forward)を基本としつつ、進行方向(velDir)へ最大18%だけ自然に視線を向けることで
-            // 目の前のボンネットを画面下に維持したままコーナー出口を見やすくする
+            // ドリフト時は車体向き(forward)と進行方向(velDir)を45%ブレンドし、
+            // 頭文字Dアーケードの主観視点と同様にコーナーの先（クリッピングポイント〜出口）を自然に捉える
             let lookDir = forward.clone();
             if (this.playerPhysics.speedMs > 3.0 && !this.playerPhysics.isCollidingWall) {
                 const velDir = this.playerPhysics.velocity.clone();
@@ -799,26 +811,24 @@ class Game {
                 if (velDir.lengthSq() > 0.04) {
                     velDir.normalize();
                     if (forward.dot(velDir) > 0.35) {
-                        const driftLookWeight = this.playerPhysics.isDrifting ? 0.18 : 0.05;
+                        const driftLookWeight = this.playerPhysics.isDrifting ? 0.45 : 0.20;
                         lookDir = forward.clone().lerp(velDir, driftLookWeight).normalize();
                     }
                 }
             }
 
-            // 注視点：前方20m先、路面勾配に正確に合致
-            const lookAheadDist = 20.0 + speedPull * 5.0;
+            // 注視点：前方18m先、路面勾配に正確に合致
+            const lookAheadDist = 18.0 + speedPull * 5.0;
             const tangentPitchOffset = trackInfo.tangent.y * lookAheadDist;
             const idealLookTarget = idealCamPos.clone()
                 .add(lookDir.multiplyScalar(lookAheadDist))
-                .add(new THREE.Vector3(0, -0.32 + tangentPitchOffset, 0));
+                .add(new THREE.Vector3(0, -0.28 + tangentPitchOffset, 0));
 
             this.cameraLookTarget.copy(idealLookTarget);
             this.camera.lookAt(this.cameraLookTarget);
-            // ※lookAt後にcamera.rotation.zを直接書き換えると南向き走行時にEuler角仕様で180度上下反転するため絶対に行わない。
-            // コーナリングや溝落とし時のロール・ピッチ傾斜は、画面下端に見えるボンネット自身の傾きとしてリアルに表現される！
 
-            // 視野角（IDAS一人称基準：62° -> 最大72°の自然な遠近感とスピード感）
-            let targetFov = 62 + speedRatio * 10;
+            // 視野角（IDAS一人称基準：60° -> 最大70°の歪みのない自然な遠近感とスピード感）
+            let targetFov = 60 + speedRatio * 10;
             if (this.playerPhysics.isDrifting) {
                 targetFov += Math.min(2.5, Math.abs(this.playerPhysics.driftAngle) * 4.0);
             }
