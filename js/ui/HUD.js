@@ -45,6 +45,7 @@ class HUD {
         this.gearValElem = document.getElementById('gear-val');
         this.transModeElem = document.getElementById('trans-mode');
         this.shiftLampElem = document.getElementById('shift-lamp');
+        this.revLeds = Array.from(document.querySelectorAll('.rev-led'));
         this.timeValElem = document.getElementById('time-val');
         this.leadValElem = document.getElementById('lead-val');
         this.leadBarElem = document.getElementById('lead-bar');
@@ -151,17 +152,36 @@ class HUD {
             this.transModeElem.textContent = this.player.isAutomatic ? 'AT' : 'MT';
         }
 
-        // シフトアップ警告ランプ (各マシンのレッドゾーン手前で点滅)
+        // シフトアップ警告ランプ ＆ シーケンシャルREVインジケーター (各マシンのレッドゾーン手前で点灯・点滅)
+        const redline = this.player.redlineRpm || 8500;
+        const maxGear = (this.player && this.player.maxGear) ? this.player.maxGear : 5;
+        const shiftThreshold = redline * 0.95;
+        const isShiftBlink = (this.player.rpm > shiftThreshold);
+        const blinkOn = Math.floor(Date.now() / 65) % 2 === 0;
+
+        if (this.revLeds && this.revLeds.length > 0) {
+            const startRev = redline * 0.52;
+            const spanRev = Math.max(500, shiftThreshold - startRev);
+            const revProgress = Math.max(0, Math.min(1, (this.player.rpm - startRev) / spanRev));
+            const activeCount = Math.floor(revProgress * this.revLeds.length + 0.05);
+            this.revLeds.forEach((led, idx) => {
+                if (isShiftBlink) {
+                    led.classList.toggle('on', blinkOn);
+                } else {
+                    led.classList.toggle('on', idx < activeCount);
+                }
+            });
+        }
+
         if (this.shiftLampElem) {
-            const maxGear = (this.player && this.player.maxGear) ? this.player.maxGear : 5;
-            const shiftThreshold = (this.player.redlineRpm || 8500) * 0.96;
-            if (this.player.rpm > shiftThreshold && this.player.gear < maxGear) {
-                const blink = Math.floor(Date.now() / 80) % 2 === 0;
-                this.shiftLampElem.style.backgroundColor = blink ? '#ff1111' : '#330000';
-                this.shiftLampElem.style.boxShadow = blink ? '0 0 18px #ff1111' : 'none';
+            if (isShiftBlink && this.player.gear <= maxGear) {
+                this.shiftLampElem.style.backgroundColor = blinkOn ? '#ff1111' : '#3a0000';
+                this.shiftLampElem.style.boxShadow = blinkOn ? '0 0 18px #ff1111, 0 0 6px #ffffff' : 'none';
+                this.shiftLampElem.style.borderColor = blinkOn ? '#ffaaaa' : '#661111';
             } else {
-                this.shiftLampElem.style.backgroundColor = '#1a0000';
+                this.shiftLampElem.style.backgroundColor = '#200303';
                 this.shiftLampElem.style.boxShadow = 'none';
+                this.shiftLampElem.style.borderColor = '#551111';
             }
         }
 
@@ -308,149 +328,350 @@ class HUD {
         const h = this.tachoCanvas.height;
         const cx = w / 2;
         const cy = h / 2;
-        const radius = w * 0.43;
+        const radius = w * 0.44;
 
         const maxRpm = this.player.maxRpm || 11000;
         const redlineRpm = this.player.redlineRpm || 8500;
         const maxDisplay = Math.ceil(maxRpm / 1000);
         const maxScaleRpm = maxDisplay * 1000;
+        const curRpm = Math.max(0, this.player.rpm || 0);
+        const rpmRatio = Math.min(1.0, Math.max(0, curRpm / maxScaleRpm));
+        const redRatio = Math.max(0, Math.min(1, redlineRpm / maxScaleRpm));
+        const inRedzone = curRpm >= redlineRpm * 0.96;
 
         ctx.clearRect(0, 0, w, h);
 
-        // 外枠ベゼル（深みのあるマットブラック＆チタンリング）
+        // =====================================================================
+        // 1. 3D 削り出しチタン＆ガンメタル・ステップドベゼル（外枠＋6角キャップボルト）
+        // =====================================================================
+        const outerGrad = ctx.createLinearGradient(0, 0, w, h);
+        outerGrad.addColorStop(0, '#5a6878');
+        outerGrad.addColorStop(0.35, '#252d38');
+        outerGrad.addColorStop(0.7, '#11161d');
+        outerGrad.addColorStop(1, '#3d4856');
+
         ctx.beginPath();
-        ctx.arc(cx, cy, radius + 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#10141a';
+        ctx.arc(cx, cy, radius + 11, 0, Math.PI * 2);
+        ctx.fillStyle = outerGrad;
         ctx.fill();
-        ctx.strokeStyle = '#ffaa00';
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#0a0d12';
+        ctx.lineWidth = 2;
         ctx.stroke();
 
-        // 文字盤ブラックフェイス
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.fillStyle = '#0a0c10';
-        ctx.fill();
-
-        // アーク目盛りトラック
-        const startAngle = Math.PI * 0.75;
-        const totalAngle = Math.PI * 1.5;
-        const endAngle = startAngle + totalAngle;
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius - 4, startAngle, endAngle);
-        ctx.strokeStyle = '#1e2832';
-        ctx.lineWidth = 12;
-        ctx.stroke();
-
-        // レッドゾーン (redlineRpm 〜 maxScaleRpm)
-        const redRatio = Math.max(0, Math.min(1, redlineRpm / maxScaleRpm));
-        const redStart = startAngle + redRatio * totalAngle;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius - 4, redStart, endAngle);
-        ctx.strokeStyle = '#ee1111';
-        ctx.lineWidth = 12;
-        ctx.stroke();
-
-        ctx.fillStyle = '#eee';
-        ctx.font = 'bold 13px "Impact", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        for (let r = 0; r <= maxDisplay; r++) {
-            const angle = startAngle + (r / maxDisplay) * totalAngle;
-            const x1 = cx + Math.cos(angle) * (radius - 10);
-            const y1 = cy + Math.sin(angle) * (radius - 10);
-            const isMajor = (maxDisplay <= 9) ? true : (r % 2 === 0 || r === maxDisplay);
-            const tickLen = isMajor ? 22 : 15;
-            const x2 = cx + Math.cos(angle) * (radius - tickLen);
-            const y2 = cy + Math.sin(angle) * (radius - tickLen);
-
-            const isRed = (r * 1000) >= redlineRpm;
+        // ベゼル外周の6角ボルトリベット
+        for (let b = 0; b < 6; b++) {
+            const bAngle = (b / 6) * Math.PI * 2 + Math.PI / 6;
+            const bx = cx + Math.cos(bAngle) * (radius + 6);
+            const by = cy + Math.sin(bAngle) * (radius + 6);
             ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.strokeStyle = isRed ? '#ff2222' : '#ffffff';
-            ctx.lineWidth = isMajor ? 2.5 : 1.5;
+            ctx.arc(bx, by, 2.6, 0, Math.PI * 2);
+            ctx.fillStyle = '#182028';
+            ctx.fill();
+            ctx.strokeStyle = '#778899';
+            ctx.lineWidth = 1;
             ctx.stroke();
-
-            // 小目盛り (0.5刻み)
-            if (r < maxDisplay) {
-                const midAngle = angle + (totalAngle / maxDisplay) * 0.5;
-                const mx1 = cx + Math.cos(midAngle) * (radius - 10);
-                const my1 = cy + Math.sin(midAngle) * (radius - 10);
-                const mx2 = cx + Math.cos(midAngle) * (radius - 14);
-                const my2 = cy + Math.sin(midAngle) * (radius - 14);
-                ctx.beginPath();
-                ctx.moveTo(mx1, my1);
-                ctx.lineTo(mx2, my2);
-                ctx.strokeStyle = '#667788';
-                ctx.lineWidth = 1.0;
-                ctx.stroke();
-            }
-
-            if (isMajor) {
-                const tx = cx + Math.cos(angle) * (radius - 34);
-                const ty = cy + Math.sin(angle) * (radius - 34);
-                ctx.fillStyle = isRed ? '#ff3333' : '#ffffff';
-                ctx.fillText(r, tx, ty);
-            }
         }
 
-        ctx.fillStyle = '#8899aa';
-        ctx.font = '10px sans-serif';
-        ctx.fillText('x1000r/min', cx, cy + 34);
-        ctx.fillStyle = '#ffaa00';
-        ctx.font = 'bold 12px sans-serif';
-        const badgeText = this.player.carModelCode || 'PROJECT.D';
-        ctx.fillText(badgeText, cx, cy - 28);
+        // 内側ブラッシュドリング（レッドゾーン突入時はクリムゾン発光）
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius + 1.5, 0, Math.PI * 2);
+        ctx.strokeStyle = inRedzone ? '#ff2233' : '#00d8ff';
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = inRedzone ? '#ff1122' : '#00d8ff';
+        ctx.shadowBlur = inRedzone ? 12 : 6;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
 
-        // 赤色ネオンニードル（指針）
-        const rpmRatio = Math.min(1.0, Math.max(0, this.player.rpm / maxScaleRpm));
+        // =====================================================================
+        // 2. カーボン調ディープブラック文字盤フェイス
+        // =====================================================================
+        const faceGrad = ctx.createRadialGradient(cx, cy - radius * 0.25, radius * 0.05, cx, cy, radius);
+        faceGrad.addColorStop(0, '#18202c');
+        faceGrad.addColorStop(0.55, '#0b0f16');
+        faceGrad.addColorStop(1, '#05070b');
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = faceGrad;
+        ctx.fill();
+
+        // 繊細なコンセントリック・ヘアラインリング
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * 0.72, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(120, 160, 200, 0.10)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // =====================================================================
+        // 3. 頭文字D ARCADE STAGE 象徴：外周LEDセグメントRPMバー ＆ レッドゾーン
+        // =====================================================================
+        const startAngle = Math.PI * 0.72;
+        const totalAngle = Math.PI * 1.48;
+        const endAngle = startAngle + totalAngle;
+        const redStart = startAngle + redRatio * totalAngle;
+
+        // 背景トラック帯
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 9, startAngle, endAngle);
+        ctx.strokeStyle = 'rgba(26, 36, 48, 0.95)';
+        ctx.lineWidth = 13;
+        ctx.stroke();
+
+        // レッドゾーンベース帯 (redlineRpm 〜 maxScaleRpm)
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 9, redStart, endAngle);
+        ctx.strokeStyle = inRedzone ? 'rgba(255, 20, 40, 0.92)' : 'rgba(190, 18, 32, 0.65)';
+        ctx.lineWidth = 13;
+        ctx.stroke();
+
+        // 動的発光LEDセグメント (44セグメント)
+        const segCount = 44;
+        const segGap = 0.008;
+        const segArc = (totalAngle / segCount) - segGap;
+        for (let s = 0; s < segCount; s++) {
+            const segPos = (s + 0.5) / segCount;
+            if (segPos > rpmRatio) break;
+
+            const a0 = startAngle + s * (totalAngle / segCount);
+            const a1 = a0 + segArc;
+            let segColor = '#00e5ff';
+            if (segPos >= redRatio) {
+                segColor = '#ff1122';
+            } else if (segPos >= redRatio * 0.82) {
+                segColor = '#ffaa00';
+            } else if (segPos >= redRatio * 0.55) {
+                segColor = '#00ff88';
+            }
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius - 9, a0, a1);
+            ctx.strokeStyle = segColor;
+            ctx.lineWidth = 11;
+            ctx.shadowColor = segColor;
+            ctx.shadowBlur = (segPos >= redRatio * 0.85) ? 8 : 3;
+            ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+
+        // =====================================================================
+        // 4. 精密目盛り（1000rpm主目盛り / 500rpm中目盛り / 200rpm細目盛り）＆ イタリック数字
+        // =====================================================================
+        const subTicksPerUnit = 5; // 200rpm刻み
+        const totalSubTicks = maxDisplay * subTicksPerUnit;
+        for (let t = 0; t <= totalSubTicks; t++) {
+            const ratio = t / totalSubTicks;
+            const angle = startAngle + ratio * totalAngle;
+            const rpmVal = ratio * maxScaleRpm;
+            const isThousand = (t % subTicksPerUnit === 0);
+            const isRed = rpmVal >= redlineRpm - 10;
+
+            const outerR = radius - 16;
+            const innerR = isThousand ? (radius - 29) : (radius - 22);
+
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(angle) * outerR, cy + Math.sin(angle) * outerR);
+            ctx.lineTo(cx + Math.cos(angle) * innerR, cy + Math.sin(angle) * innerR);
+            if (isThousand) {
+                ctx.strokeStyle = isRed ? '#ff3344' : '#ffffff';
+                ctx.lineWidth = 3.0;
+            } else {
+                ctx.strokeStyle = isRed ? 'rgba(255, 70, 80, 0.85)' : 'rgba(150, 175, 200, 0.65)';
+                ctx.lineWidth = 1.3;
+            }
+            ctx.stroke();
+        }
+
+        // 1000rpm毎のレーシングイタリック数字
+        ctx.font = 'italic 900 19px "Teko", "Rajdhani", "Impact", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (let r = 0; r <= maxDisplay; r++) {
+            const angle = startAngle + (r / maxDisplay) * totalAngle;
+            const isRed = (r * 1000) >= redlineRpm;
+            const numR = radius - 43;
+            const tx = cx + Math.cos(angle) * numR;
+            const ty = cy + Math.sin(angle) * numR;
+
+            ctx.fillStyle = isRed ? '#ff3344' : '#f4f8ff';
+            if (isRed) {
+                ctx.shadowColor = '#ff1122';
+                ctx.shadowBlur = 8;
+            }
+            ctx.fillText(String(r), tx, ty);
+            ctx.shadowBlur = 0;
+        }
+
+        // =====================================================================
+        // 5. ★頭文字DAC仕様：下部リム内蔵 ツインペダル・テレメトリーアーク (ACCEL / BRAKE)
+        // =====================================================================
+        const pedStart = Math.PI * 0.65;
+        const pedEnd = Math.PI * 0.27;
+        const pedSpan = pedStart - pedEnd;
+        const throttle = Math.max(0, Math.min(1, this.player.throttle || 0));
+        const brake = Math.max(0, Math.min(1, this.player.brake || 0));
+
+        // ACCEL トラック (外周側)
+        const accR = radius - 14;
+        ctx.beginPath();
+        ctx.arc(cx, cy, accR, pedEnd, pedStart);
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.16)';
+        ctx.lineWidth = 4.5;
+        ctx.stroke();
+        if (throttle > 0.01) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, accR, pedStart - throttle * pedSpan, pedStart);
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 4.5;
+            ctx.shadowColor = '#00f0ff';
+            ctx.shadowBlur = 6;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // BRAKE トラック (内周側)
+        const brkR = radius - 21;
+        ctx.beginPath();
+        ctx.arc(cx, cy, brkR, pedEnd, pedStart);
+        ctx.strokeStyle = 'rgba(255, 50, 50, 0.16)';
+        ctx.lineWidth = 4.5;
+        ctx.stroke();
+        if (brake > 0.01) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, brkR, pedStart - brake * pedSpan, pedStart);
+            ctx.strokeStyle = '#ff3322';
+            ctx.lineWidth = 4.5;
+            ctx.shadowColor = '#ff3322';
+            ctx.shadowBlur = 6;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        ctx.fillStyle = '#00e5ff';
+        ctx.font = 'bold 8px "Rajdhani", sans-serif';
+        ctx.fillText('ACC', cx - 22, cy + radius - 28);
+        ctx.fillStyle = '#ff4444';
+        ctx.fillText('BRK', cx + 22, cy + radius - 28);
+
+        // =====================================================================
+        // 6. 文字盤ロゴ・マシン型式エンブレム・デジタルRPMサブウィンドウ
+        // =====================================================================
+        const badgeText = this.player.carModelCode || 'PROJECT.D';
+        ctx.fillStyle = '#ffbb00';
+        ctx.font = 'italic 900 15px "Rajdhani", sans-serif';
+        ctx.fillText(badgeText, cx, cy - 36);
+
+        ctx.fillStyle = '#7f94ab';
+        ctx.font = 'bold 10px "Rajdhani", sans-serif';
+        ctx.fillText('x1000 r/min', cx, cy - 22);
+
+        // 下部デジタルRPMミニウィンドウ
+        ctx.fillStyle = 'rgba(5, 10, 16, 0.85)';
+        ctx.strokeStyle = inRedzone ? '#ff3344' : 'rgba(0, 220, 255, 0.45)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(cx - 38, cy + 28, 76, 21, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = inRedzone ? '#ff4455' : '#00f0ff';
+        ctx.font = 'italic 800 14px "Rajdhani", monospace';
+        ctx.fillText(`${Math.round(curRpm)} RPM`, cx, cy + 39);
+
+        // =====================================================================
+        // 7. 3D 発光テーパード・ポインターニードル（ドロップシャドウ＋ホワイトコア）
+        // =====================================================================
         const needleAngle = startAngle + rpmRatio * totalAngle;
 
+        // 指針のドロップシャドウ
+        ctx.save();
+        ctx.translate(cx + 3, cy + 4);
+        ctx.rotate(needleAngle);
+        ctx.beginPath();
+        ctx.moveTo(-22, -3.5);
+        ctx.lineTo(radius - 14, 0);
+        ctx.lineTo(-22, 3.5);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+        ctx.fill();
+        ctx.restore();
+
+        // 指針本体
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(needleAngle);
 
+        // カウンターウェイト（根元側）
         ctx.beginPath();
-        ctx.moveTo(-5, 0);
-        ctx.lineTo(radius - 8, 0);
-        ctx.lineTo(-5, 2.5);
+        ctx.moveTo(-24, -4.5);
+        ctx.lineTo(-4, -3.5);
+        ctx.lineTo(-4, 3.5);
+        ctx.lineTo(-24, 4.5);
         ctx.closePath();
-        ctx.fillStyle = '#ff1111';
-        ctx.shadowColor = '#ff3333';
-        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#252c36';
+        ctx.fill();
+
+        // 発光レッドブレード
+        ctx.beginPath();
+        ctx.moveTo(-8, -4.0);
+        ctx.lineTo(radius - 12, 0);
+        ctx.lineTo(-8, 4.0);
+        ctx.closePath();
+        ctx.fillStyle = '#ff1a1a';
+        ctx.shadowColor = '#ff2222';
+        ctx.shadowBlur = 14;
+        ctx.fill();
+
+        // ホワイトホット・コアライン（本物の透過照明指針の輝き）
+        ctx.beginPath();
+        ctx.moveTo(-4, -1.1);
+        ctx.lineTo(radius - 18, 0);
+        ctx.lineTo(-4, 1.1);
+        ctx.closePath();
+        ctx.fillStyle = '#fff5f5';
+        ctx.shadowBlur = 0;
         ctx.fill();
         ctx.restore();
 
-        // センターキャップ
+        // 削り出しアルミ・センタースピンドルキャップ
+        const capGrad = ctx.createRadialGradient(cx - 3, cy - 3, 2, cx, cy, 15);
+        capGrad.addColorStop(0, '#4a5666');
+        capGrad.addColorStop(0.6, '#1a2028');
+        capGrad.addColorStop(1, '#0c1016');
+
         ctx.beginPath();
-        ctx.arc(cx, cy, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#141820';
-        ctx.strokeStyle = '#8899aa';
-        ctx.lineWidth = 2.5;
+        ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+        ctx.fillStyle = capGrad;
         ctx.fill();
+        ctx.strokeStyle = '#99aabb';
+        ctx.lineWidth = 2;
         ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = inRedzone ? '#ff2222' : '#ffaa00';
+        ctx.fill();
     }
 
     /**
-     * 本物の走り屋仕様：Defi風 3連追加メーター描画
+     * 本物の走り屋仕様：Defi-Link BF 3連追加メーター描画
      */
     renderSubMeters() {
+        const w = this.oilPressCanvas ? this.oilPressCanvas.width : 76;
+        const h = this.oilPressCanvas ? this.oilPressCanvas.height : 76;
+
         // 1. 油圧計 (OIL PRESS: 0〜8 bar, 1.8以下ワーニング)
         const barVal = this.player.oilPressure / 100;
-        this.drawSubGauge(this.oilPressCtx, 95, 95, barVal, 0, 8, 'bar', 1.8, 'OIL.P', true);
+        this.drawSubGauge(this.oilPressCtx, w, h, barVal, 0, 8, 'bar', 1.8, 'OIL.P', true);
 
         // 2. 水温計 (WATER TEMP: 40〜120 ℃, 102℃以上ワーニング)
-        this.drawSubGauge(this.waterTempCtx, 95, 95, this.player.waterTemp, 40, 120, '℃', 102, 'WATER', false);
+        this.drawSubGauge(this.waterTempCtx, w, h, this.player.waterTemp, 40, 120, '℃', 102, 'WATER', false);
 
         // 3. 油温計 (OIL TEMP: 50〜150 ℃, 118℃以上ワーニング)
-        this.drawSubGauge(this.oilTempCtx, 95, 95, this.player.oilTemp, 50, 150, '℃', 118, 'OIL.T', false);
+        this.drawSubGauge(this.oilTempCtx, w, h, this.player.oilTemp, 50, 150, '℃', 118, 'OIL.T', false);
     }
 
     /**
-     * アナログサブメーター（Defi風）描画ヘルパー
+     * アナログサブメーター（Defi-Link Meter BF風）描画ヘルパー
      */
     drawSubGauge(ctx, w, h, val, minVal, maxVal, unit, redZoneVal, label, isLowerRed = false) {
         if (!ctx) return;
@@ -458,46 +679,44 @@ class HUD {
 
         const cx = w / 2;
         const cy = h / 2;
-        const radius = w * 0.41;
+        const radius = w * 0.43;
 
-        // 1. メーターケース・ベゼル（外枠）
+        // 1. メーターケース・アルミベゼル（外枠）
         ctx.beginPath();
-        ctx.arc(cx, cy, radius + 2, 0, Math.PI * 2);
-        ctx.fillStyle = '#141820';
+        ctx.arc(cx, cy, radius + 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#18202a';
         ctx.fill();
-        ctx.strokeStyle = '#445566';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#607890';
+        ctx.lineWidth = 1.8;
         ctx.stroke();
 
         // 2. 文字盤ブラックフェイス
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.fillStyle = '#090c10';
+        ctx.fillStyle = '#070a0f';
         ctx.fill();
 
         // 3. アーク目盛り（270度円弧：PI * 0.75 〜 PI * 2.25）
         const startAngle = Math.PI * 0.75;
         const totalAngle = Math.PI * 1.5;
 
-        // 背景トラック
+        // BFシアン・背景トラック
         ctx.beginPath();
-        ctx.arc(cx, cy, radius - 4, startAngle, startAngle + totalAngle);
-        ctx.strokeStyle = '#1e2632';
-        ctx.lineWidth = 4;
+        ctx.arc(cx, cy, radius - 3.5, startAngle, startAngle + totalAngle);
+        ctx.strokeStyle = 'rgba(0, 210, 255, 0.22)';
+        ctx.lineWidth = 3.5;
         ctx.stroke();
 
         // レッドゾーン
         const redRatio = Math.max(0, Math.min(1, (redZoneVal - minVal) / (maxVal - minVal)));
         ctx.beginPath();
         if (isLowerRed) {
-            // 規定値以下がレッドゾーン（油圧など）
-            ctx.arc(cx, cy, radius - 4, startAngle, startAngle + redRatio * totalAngle);
+            ctx.arc(cx, cy, radius - 3.5, startAngle, startAngle + redRatio * totalAngle);
         } else {
-            // 規定値以上がレッドゾーン（水温・油温など）
-            ctx.arc(cx, cy, radius - 4, startAngle + redRatio * totalAngle, startAngle + totalAngle);
+            ctx.arc(cx, cy, radius - 3.5, startAngle + redRatio * totalAngle, startAngle + totalAngle);
         }
-        ctx.strokeStyle = '#ee2222';
-        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#ff2233';
+        ctx.lineWidth = 4;
         ctx.stroke();
 
         // 4. 目盛り＆数値
@@ -507,52 +726,33 @@ class HUD {
             const angle = startAngle + ratio * totalAngle;
             const tickVal = minVal + ratio * (maxVal - minVal);
 
-            const x1 = cx + Math.cos(angle) * (radius - 4);
-            const y1 = cy + Math.sin(angle) * (radius - 4);
-            const x2 = cx + Math.cos(angle) * (radius - 9);
-            const y2 = cy + Math.sin(angle) * (radius - 9);
+            const x1 = cx + Math.cos(angle) * (radius - 2);
+            const y1 = cy + Math.sin(angle) * (radius - 2);
+            const x2 = cx + Math.cos(angle) * (radius - 7.5);
+            const y2 = cy + Math.sin(angle) * (radius - 7.5);
 
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
-            ctx.strokeStyle = (isLowerRed ? tickVal <= redZoneVal : tickVal >= redZoneVal) ? '#ff3333' : '#ffffff';
+            ctx.strokeStyle = (isLowerRed ? tickVal <= redZoneVal : tickVal >= redZoneVal) ? '#ff3333' : '#e8f8ff';
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            // 小目盛り
-            if (i < steps) {
-                const midAngle = angle + (totalAngle / steps) * 0.5;
-                const mx1 = cx + Math.cos(midAngle) * (radius - 4);
-                const my1 = cy + Math.sin(midAngle) * (radius - 4);
-                const mx2 = cx + Math.cos(midAngle) * (radius - 7);
-                const my2 = cy + Math.sin(midAngle) * (radius - 7);
-                ctx.beginPath();
-                ctx.moveTo(mx1, my1);
-                ctx.lineTo(mx2, my2);
-                ctx.strokeStyle = '#778899';
-                ctx.lineWidth = 1.0;
-                ctx.stroke();
-            }
-
             // 数字
-            const tx = cx + Math.cos(angle) * (radius - 17);
-            const ty = cy + Math.sin(angle) * (radius - 17);
-            ctx.fillStyle = '#ccddee';
-            ctx.font = 'bold 9px sans-serif';
+            const tx = cx + Math.cos(angle) * (radius - 14.5);
+            const ty = cy + Math.sin(angle) * (radius - 14.5);
+            ctx.fillStyle = '#d8f0ff';
+            ctx.font = 'bold 8px "Rajdhani", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(Math.round(tickVal), tx, ty);
         }
 
-        // ラベル・単位
-        ctx.fillStyle = '#ffaa00';
-        ctx.font = 'bold 8px sans-serif';
+        // 単位のみ中央下部にスッキリ表示（ラベルは直下のHTML側で表示し文字被りをゼロに）
+        ctx.fillStyle = '#7799bb';
+        ctx.font = 'bold 7.5px "Rajdhani", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(label, cx, cy - 13);
-
-        ctx.fillStyle = '#778899';
-        ctx.font = '8px sans-serif';
-        ctx.fillText(unit, cx, cy + 15);
+        ctx.fillText(unit, cx, cy + 14);
 
         // 5. 赤色ネオンニードル（指針）
         const valRatio = Math.max(0, Math.min(1.0, (val - minVal) / (maxVal - minVal)));
@@ -563,36 +763,37 @@ class HUD {
         ctx.rotate(needleAngle);
 
         ctx.beginPath();
-        ctx.moveTo(-3, 0);
-        ctx.lineTo(radius - 5, 0);
-        ctx.lineTo(-3, 1.5);
+        ctx.moveTo(-4, -1.5);
+        ctx.lineTo(radius - 4, 0);
+        ctx.lineTo(-4, 1.5);
         ctx.closePath();
         ctx.fillStyle = '#ff2222';
-        ctx.shadowColor = '#ff4444';
+        ctx.shadowColor = '#ff3333';
         ctx.shadowBlur = 6;
         ctx.fill();
         ctx.restore();
 
         // センターキャップ
         ctx.beginPath();
-        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-        ctx.fillStyle = '#111820';
-        ctx.strokeStyle = '#667788';
-        ctx.lineWidth = 1.5;
+        ctx.arc(cx, cy, 4.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#18222c';
+        ctx.strokeStyle = '#8899aa';
+        ctx.lineWidth = 1.2;
         ctx.fill();
         ctx.stroke();
 
-        // ワーニングLEDランプ（レッドゾーン突入時に赤く点滅発光！）
+        // PEAKワーニングLEDランプ（レッドゾーン突入時に赤く点滅発光！）
         const isWarning = isLowerRed ? (val <= redZoneVal) : (val >= redZoneVal);
         if (isWarning) {
-            const blink = Math.floor(Date.now() / 100) % 2 === 0;
+            const blink = Math.floor(Date.now() / 90) % 2 === 0;
             if (blink) {
                 ctx.beginPath();
-                ctx.arc(cx, cy + 7, 3, 0, Math.PI * 2);
+                ctx.arc(cx, cy - 8, 2.5, 0, Math.PI * 2);
                 ctx.fillStyle = '#ff0000';
                 ctx.shadowColor = '#ff0000';
                 ctx.shadowBlur = 8;
                 ctx.fill();
+                ctx.shadowBlur = 0;
             }
         }
     }
