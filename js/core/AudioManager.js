@@ -172,33 +172,33 @@ const ENGINE_PROFILES = {
     '1jz': {
         name: '1JZ-GTE (JZX100 チェイサー)',
         numCyl: 6,
-        orderMult: 3.0,            // 直6シングルターボ
+        orderMult: 3.0,            // 直6シングルターボ (完全等間隔120°点火・6-1集合)
         cycleFreqRatio: 1 / 120,
         idleRpm: 800,
         idleBaseRpm: 800,
         lowBaseRpm: 2000,
         midBaseRpm: 4200,
         highBaseRpm: 6500,
-        redlineRpm: 7500,
+        redlineRpm: 7200,
         maxRpm: 8000,
-        mainWeight: 0.76,
-        exhaustDrive: 3.6,         // 直管マフラー高回転で激しく割れる強烈な破裂音（ワンジェイ節！）
+        mainWeight: 0.85,          // 直6シングルターボの豊かで芯のある音圧
+        exhaustDrive: 2.2,         // 過剰歪みを排し、6-1集合特有の澄み切った管楽器倍音をクリアに響かせる
         // 音響管ウェーブガイド・マフラー物理パラメータ
-        pipeLen: 3.25,             // ロングセダン管長 3.25m
-        primLen: 0.65,
-        tailRef: -0.84,            // 直管砲弾マフラー（高反射率で激しく炸裂）
-        bodyFreq: 94, bodyGain: 11.5, bodyQ: 2.0,  // 2.5L直6の太い低音 (94Hz)
-        raspFreq: 650, raspGain: 14.5,            // 高回転で激しく弾ける1JZ特有の甲高い直管抜け (650Hz)
-        ringFreq: 2650, ringGain: 12.0,           // 直管の共鳴金属鳴き (2650Hz)
-        raspRatioBase: 0.26,
-        raspRatioMax: 0.90,        // 高回転でバリバリ割れる強烈な直管破裂音
-        intakePeak: 340, intakeQ: 2.6, intakeGain: 0.48,
-        mechWeight: 0.12, mechFreq: 3200,
-        headerDelays: [0.0, 0.0001, -0.0001, 0.0, 0.0001, -0.0001],
-        cylAmps: [1.04, 0.96, 1.02, 0.98, 1.03, 0.97],
-        shockSharpness: 2.8,       // 鋭い排気打撃波
-        gasAmp: 0.95,
-        revBounceHz: 10.5,
+        pipeLen: 2.95,             // JZX100 ストレート砲弾マフラー管長
+        primLen: 0.58,             // 6-1シングルターボ等長エキマニ
+        tailRef: -0.58,            // 大口径ストレート砲弾マフラー出口
+        bodyFreq: 96, bodyGain: 8.0, bodyQ: 1.5,   // 低域のボワつきを抑えたタイトで重厚な2.5L直6ベース (96Hz)
+        raspFreq: 840, raspGain: 16.5,             // ★1JZの真骨頂：高回転で「フォーーーン！→パァーーーン！」と突き抜ける6-1集合ホーン共鳴 (840Hz)
+        ringFreq: 2850, ringGain: 13.5,            // ステン/チタン直管砲弾マフラーの乾いた甲高い金属鳴き (2850Hz)
+        raspRatioBase: 0.36,
+        raspRatioMax: 0.88,        // 籠もり音を排し、直管の澄んだ高次倍音共鳴を主役に
+        intakePeak: 420, intakeQ: 2.4, intakeGain: 0.45,
+        mechWeight: 0.07, mechFreq: 3400,          // ヤマハ設計24バルブヘッドの精密で滑らかな動弁音
+        headerDelays: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], // 完全等長6-1シングルターボ集合（サブハーモニクス濁りを完全排除）
+        cylAmps: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],      // 完全均等6気筒バランス（シルキーで澄み切った直6倍音）
+        shockSharpness: 3.1,       // ショートストローク(86×71.5mm)特有のキレのある燃焼立ち上がり
+        gasAmp: 0.14,              // ホワイトノイズ混入を極小化し、楽器のように澄んだ1JZトーンを実現
+        revBounceHz: 14.5,         // 1JZ特有のキレが良く小刻みな直6レブリミッター
         isTurbo: true,
         isTwinTurbo: false,
         isRotary: false
@@ -756,6 +756,43 @@ class AudioManager {
                         const turb = (Math.random() * 2 - 1) * shock * 0.25;
                         p = shock + turb * 0.28;
                     }
+                } else if (soundType === '1jz') {
+                    // ★1JZ-GTE VVT-i (JZX100 ツアラーV) 専用：ヤマハ設計ヘッド＋6-1シングルターボ集合物理モデル
+                    if (speedMode === 'idle') {
+                        // アイドリング：大口径砲弾マフラーの低く落ち着いた重厚な直6脈動「ボォォォ…ルルル…」
+                        const tauRiseIdle = 0.00018;
+                        const tauDecayIdle = Math.max(0.0026, interval * 0.30);
+                        const rise = 1.0 - Math.exp(-t / tauRiseIdle);
+                        const decay = Math.exp(-t / tauDecayIdle);
+                        const phi = (t / interval) * Math.PI * 2.0;
+                        const warmHarm = 0.28 * Math.sin(phi) + 0.14 * Math.sin(phi * 2.0 + 0.35);
+                        const shock = rise * decay * (0.76 + warmHarm);
+                        const turb = (Math.random() * 2 - 1) * shock * 0.14;
+                        p = shock + turb * 0.16;
+                    } else {
+                        // 走行域：ショートストローク2.5L直6の6気筒が1つのCT15Bタービンスクロールへ等間隔6-1集合！
+                        // 非同期ノイズを極小化し、点火周期に100%位相ロックした管楽器（ホルン/ブラス）のような
+                        // 第2・第3・第4・第5・第6倍音が澄み切って共鳴する本物の「ワンジェイ直管サウンド」を物理合成！
+                        const tauRise1jz = 0.000072;
+                        const tauDecay1jz = Math.max(0.0015, interval * 0.33);
+                        const rise = 1.0 - Math.exp(-t / tauRise1jz);
+                        const decay = Math.exp(-t / tauDecay1jz);
+                        const shock = rise * decay;
+
+                        const phi = (t / interval) * Math.PI * 2.0;
+                        const envH = rise * Math.exp(-t / (interval * 0.64));
+                        const jzBrassHarmonics = (
+                            0.36 * Math.sin(phi) +
+                            0.48 * Math.sin(phi * 2.0 + 0.32) +
+                            0.40 * Math.sin(phi * 3.0 + 0.68) +
+                            0.28 * Math.sin(phi * 4.0 + 1.02) +
+                            0.16 * Math.sin(phi * 5.0 + 1.38) +
+                            0.10 * Math.sin(phi * 6.0 + 1.72)
+                        ) * envH;
+
+                        const turb = (Math.random() * 2 - 1) * shock * (profile.gasAmp || 0.14);
+                        p = shock * 0.62 + jzBrassHarmonics * 0.58 + turb * 0.14;
+                    }
                 } else {
                     const rise = 1.0 - Math.exp(-t / tauRise);
                     const decay = Math.exp(-t / tauDecay);
@@ -771,13 +808,16 @@ class AudioManager {
         // 2. 排気管内往復反射ウェーブガイド（ループ境界の位相連続性を保証するプリロール付き）
         const cGas = 520.0;
         const L_pipe = profile.pipeLen || 2.80;
-        const delayPipe = Math.max(16, Math.floor(sampleRate * (2.0 * L_pipe / cGas)));
+        // ★1JZ走行域では6-1集合の点火半周期に完全同調させ、非同期エコーによる第3倍音キャンセリング・ガラガラ感を完全根絶！
+        const delayPipe = (soundType === '1jz' && speedMode !== 'idle')
+            ? Math.max(16, Math.round(sampleRate * interval * 0.50))
+            : Math.max(16, Math.floor(sampleRate * (2.0 * L_pipe / cGas)));
         const delayBuf = new Float32Array(delayPipe);
         let delayIdx = 0;
 
         const pipeOut = new Float32Array(N);
-        const rOpen = profile.tailRef || -0.68;
-        const rCol = 0.42;
+        const rOpen = (soundType === '1jz' && speedMode !== 'idle') ? -0.50 : (profile.tailRef || -0.68);
+        const rCol = (soundType === '1jz' && speedMode !== 'idle') ? 0.34 : 0.42;
         let lastDamped = 0.0;
         const warmup = Math.min(N, Math.floor(sampleRate * 0.15));
 
@@ -836,7 +876,7 @@ class AudioManager {
         let raspRatio = rBase;
         if (speedMode === 'idle') raspRatio = rBase * 0.75;
         else if (speedMode === 'low') raspRatio = rBase * 1.15;
-        else if (speedMode === 'mid') raspRatio = rBase + (rMax - rBase) * 0.50;
+        else if (speedMode === 'mid') raspRatio = (soundType === '1jz') ? 0.80 : (rBase + (rMax - rBase) * 0.50);
         else if (speedMode === 'high') raspRatio = rMax;
 
         const driveK = (profile.exhaustDrive || 2.4) * 0.85;
@@ -881,7 +921,7 @@ class AudioManager {
         applyOfflinePeaking(bufData, profile.ringFreq || 2600, (profile.ringGain || 10) * 0.65, 1.2);
 
         // 5b. 排気出口の空間放射ローパス（超高域の非可聴スパイク成分をRMS正規化前に整え、low/mid/high間の実効音圧差を解消）
-        const radCutoff = (soundType === 'b16b' && speedMode === 'high') ? 6200.0 : 4600.0;
+        const radCutoff = (soundType === 'b16b' && speedMode === 'high') ? 6200.0 : (soundType === '1jz' ? 5800.0 : 4600.0);
         const radAlpha = Math.min(0.65, (2.0 * Math.PI * radCutoff) / sampleRate);
         let radLp = 0.0;
         const radPre = Math.min(N, Math.floor(sampleRate * 0.04));
@@ -1338,17 +1378,37 @@ class AudioManager {
         }
 
         // 3. マフラー・エキゾースト管共鳴フォルマントの微小トーン追従（強共鳴はバッファ内焼き込み＆RMS正規化済み）
-        const bodyFreq = profile.bodyFreq + rpmNorm * 15;
-        this.engineBodyFilter.frequency.setTargetAtTime(bodyFreq, curTime, 0.04);
-        this.engineBodyFilter.gain.setTargetAtTime(0.5, curTime, 0.04);
+        if (this.soundType === '1jz') {
+            // ★1JZ-GTE (JZX100 ツアラーV) 専用ダイナミック直管共鳴：
+            // 低回転では2.5L直6砲弾マフラーの太い低音、中〜高回転では低域のボワつきがスッと引き締まり、
+            // 6-1シングルターボ特有の澄み切った「フォーーーーン！→パァーーーーーン！！」という高音直管鳴きが開花！
+            const bodyFreq1jz = profile.bodyFreq + rpmNorm * 18;
+            const bodyGain1jz = 1.6 - rpmNorm * 3.6;
+            this.engineBodyFilter.frequency.setTargetAtTime(bodyFreq1jz, curTime, 0.04);
+            this.engineBodyFilter.gain.setTargetAtTime(bodyGain1jz, curTime, 0.04);
 
-        const raspFreq = profile.raspFreq + rpmNorm * 180;
-        this.engineRaspFilter.frequency.setTargetAtTime(raspFreq, curTime, 0.04);
-        this.engineRaspFilter.gain.setTargetAtTime(0.5 + rpmNorm * 1.5, curTime, 0.04);
+            const raspFreq1jz = profile.raspFreq + rpmNorm * 320;
+            const raspGain1jz = 1.0 + rpmNorm * 2.4 + throttle * 1.1;
+            this.engineRaspFilter.frequency.setTargetAtTime(raspFreq1jz, curTime, 0.04);
+            this.engineRaspFilter.gain.setTargetAtTime(raspGain1jz, curTime, 0.04);
 
-        const ringFreq = profile.ringFreq + rpmNorm * 220;
-        this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
-        this.engineRingFilter.gain.setTargetAtTime((0.5 + rpmNorm * 1.5) * throttle, curTime, 0.04);
+            const ringFreq1jz = profile.ringFreq + rpmNorm * 550;
+            const ringGain1jz = (0.8 + rpmNorm * 2.5) * (0.35 + 0.65 * throttle);
+            this.engineRingFilter.frequency.setTargetAtTime(ringFreq1jz, curTime, 0.04);
+            this.engineRingFilter.gain.setTargetAtTime(ringGain1jz, curTime, 0.04);
+        } else {
+            const bodyFreq = profile.bodyFreq + rpmNorm * 15;
+            this.engineBodyFilter.frequency.setTargetAtTime(bodyFreq, curTime, 0.04);
+            this.engineBodyFilter.gain.setTargetAtTime(0.5, curTime, 0.04);
+
+            const raspFreq = profile.raspFreq + rpmNorm * 180;
+            this.engineRaspFilter.frequency.setTargetAtTime(raspFreq, curTime, 0.04);
+            this.engineRaspFilter.gain.setTargetAtTime(0.5 + rpmNorm * 1.5, curTime, 0.04);
+
+            const ringFreq = profile.ringFreq + rpmNorm * 220;
+            this.engineRingFilter.frequency.setTargetAtTime(ringFreq, curTime, 0.04);
+            this.engineRingFilter.gain.setTargetAtTime((0.5 + rpmNorm * 1.5) * throttle, curTime, 0.04);
+        }
 
         // 4. 動弁系メカニカル打音（アイドリング〜低回転で存在感、高回転ではマスク）
         if (this.mechGain) {
@@ -1379,6 +1439,11 @@ class AudioManager {
                 throttleCutoff = 3800;
                 vtecVolumeBoost = 0.96;
             }
+        } else if (this.soundType === '1jz') {
+            // 1JZ-GTE：低回転から澄んだ倍音を通し、高回転・全開で直管の乾いた高音鳴きをフル開放
+            baseCutoff = 3200;
+            rangeCutoff = 10500;
+            throttleCutoff = 6800;
         }
 
         const targetCutoff = baseCutoff + (rpmNorm * rangeCutoff) + (throttle * throttleCutoff);
@@ -1414,21 +1479,28 @@ class AudioManager {
 
         // 8. ターボチャージャー過給エアラッシュ ＆ ブローオフバルブ（唐突な段差のない滑らかなスプールアップ）
         const throttleDrop = (this.prevThrottle > 0.35 && throttle < 0.15);
-        if (profile.isTurbo && throttle > 0.08 && rpm > 2200) {
-            const spoolRamp = Math.max(0.0, Math.min(1.0, (rpm - 2200) / 2400));
+        const turboStartRpm = (this.soundType === '1jz') ? 2000 : 2200;
+        if (profile.isTurbo && throttle > 0.08 && rpm > turboStartRpm) {
+            const spoolRamp = Math.max(0.0, Math.min(1.0, (rpm - turboStartRpm) / 2400));
             const smoothSpool = spoolRamp * spoolRamp * (3.0 - 2.0 * spoolRamp);
             const throttleBoost = Math.max(0.0, Math.min(1.0, (throttle - 0.08) / 0.82));
-            const turboScale = ((this.soundType === '13b' || this.soundType === 'rb26') ? 0.14 : 0.26) * smoothSpool;
-            const turboVol = Math.min(0.08, (throttleBoost * 0.07 + (rpmNorm * 0.03 * throttleBoost)) * turboScale);
-            const turboFreq = 2000 + (rpmNorm * 2400) + (throttle * 650);
+            const turboScale = ((this.soundType === '13b' || this.soundType === 'rb26') ? 0.14 : (this.soundType === '1jz' ? 0.30 : 0.26)) * smoothSpool;
+            const turboVol = Math.min(0.09, (throttleBoost * 0.075 + (rpmNorm * 0.035 * throttleBoost)) * turboScale);
+            const turboFreq = (this.soundType === '1jz')
+                ? (2300 + (rpmNorm * 2700) + (throttle * 750))
+                : (2000 + (rpmNorm * 2400) + (throttle * 650));
             this.turboFilter.frequency.setTargetAtTime(turboFreq, curTime, 0.04);
             this.turboGain.gain.setTargetAtTime(turboVol, curTime, 0.04);
         } else {
             this.turboGain.gain.setTargetAtTime(0.0, curTime, 0.06);
         }
 
-        if (profile.isTurbo && throttleDrop && rpm > 2800) {
+        if (profile.isTurbo && throttleDrop && rpm > 2600) {
             this.playBlowOffSound(rpmNorm, profile.isTwinTurbo);
+            // JZX100直管マフラー特有のアクセルオフ時の乾いたアフターファイヤ・バブリング連動
+            if (this.soundType === '1jz' && rpm > 4500 && Math.random() < 0.65) {
+                this.playAfterfireSound(0.68 * rpmNorm);
+            }
         }
 
         // 9. 減速時デセル・クラックル ＆ CE9Aミスファイアリングシステム（アンチラグ）
@@ -1869,12 +1941,15 @@ class AudioManager {
         if (this._lastBlowOffTime && (now - this._lastBlowOffTime < 0.35)) return;
         this._lastBlowOffTime = now;
 
-        // 1. 高圧エアー瞬間開放シューッ音（0.22秒）
-        const bufLen = Math.floor(this.ctx.sampleRate * 0.25);
-        const buf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+        const sampleRate = this.ctx.sampleRate;
+        const is1jz = (this.soundType === '1jz');
+
+        // 1. 高圧エアー初期開放アタック「カシュッ！」（0.18秒）
+        const bufLen = Math.floor(sampleRate * 0.20);
+        const buf = this.ctx.createBuffer(1, bufLen, sampleRate);
         const data = buf.getChannelData(0);
         for (let i = 0; i < bufLen; i++) {
-            const decay = Math.exp(-i / (this.ctx.sampleRate * 0.040));
+            const decay = Math.exp(-i / (sampleRate * 0.032));
             data[i] = (Math.random() * 2 - 1) * decay;
         }
         const src = this.ctx.createBufferSource();
@@ -1882,35 +1957,74 @@ class AudioManager {
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(isTwinTurbo ? 3200 : 2500, now);
-        filter.Q.setValueAtTime(2.0, now);
+        filter.frequency.setValueAtTime(isTwinTurbo ? 3000 : (is1jz ? 2350 : 2500), now);
+        filter.Q.setValueAtTime(2.2, now);
 
         const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.35 * Math.min(1.2, 0.7 + intensity * 0.4), now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
+        gain.gain.setValueAtTime(0.32 * Math.min(1.2, 0.7 + intensity * 0.4), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
 
         src.connect(filter);
         filter.connect(gain);
         gain.connect(this.sfxGain);
         src.start(now);
 
-        // 2. バックタービン・サージフラッター「ピロロロロ！」
-        const surgeLen = Math.floor(this.ctx.sampleRate * 0.30);
-        const surgeBuf = this.ctx.createBuffer(1, surgeLen, this.ctx.sampleRate);
+        // 2. 本物のバックタービン（コンプレッサーサージ・チャタリング）「カシュルルルルッ！」
+        // 電子サイン波を排除し、アルミ吸気管＆むき出しエアクリーナー内を逆流空気がブレード周期で断続共鳴する空力物理合成
+        const dur = is1jz ? 0.42 : 0.34;
+        const surgeLen = Math.floor(sampleRate * dur);
+        const surgeBuf = this.ctx.createBuffer(1, surgeLen, sampleRate);
         const sData = surgeBuf.getChannelData(0);
-        const flutterHz = isTwinTurbo ? 26.0 : 20.0;
-        const baseFreq = isTwinTurbo ? 1650 : 1400;
+
+        let flutterPhase = 0;
+        let bp1_y1 = 0, bp1_y2 = 0, bp1_x1 = 0, bp1_x2 = 0;
+        let bp2_y1 = 0, bp2_y2 = 0, bp2_x1 = 0, bp2_x2 = 0;
+
         for (let i = 0; i < surgeLen; i++) {
-            const t = i / this.ctx.sampleRate;
-            const decay = Math.exp(-t * 7.0);
-            const flutter = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * flutterHz);
-            const carrier = Math.sin(t * Math.PI * 2 * (baseFreq - t * 900));
-            sData[i] = carrier * flutter * decay * 0.40;
+            const t = i / sampleRate;
+            const progress = t / dur;
+
+            // タービンシャフト減速に伴うチャタリング周期の低下（22.5Hz -> 10.8Hz）
+            const fFlutter = (isTwinTurbo ? 25.0 : 22.5) * (1.0 - 0.52 * Math.pow(progress, 0.85));
+            flutterPhase += (2.0 * Math.PI * fFlutter) / sampleRate;
+
+            // 逆流空気がインデューサーブレードを叩く非対称チョッピング包絡線
+            const rawWave = Math.sin(flutterPhase);
+            const chopPulse = Math.pow(Math.max(0.0, rawWave), 1.65);
+            const overallDecay = Math.exp(-t * (is1jz ? 5.0 : 6.2));
+            const env = (0.10 + 0.90 * chopPulse) * overallDecay;
+
+            // 1回のチョップ内で「シュッ→ルッ」と共鳴周波数がスウィープする空力特性
+            const intraChop = 0.5 + 0.5 * Math.cos(flutterPhase);
+            const fRes1 = (isTwinTurbo ? 1150 : 960) * (1.0 - 0.30 * progress) + intraChop * 380;
+            const fRes2 = (isTwinTurbo ? 2550 : 2200) * (1.0 - 0.26 * progress) + intraChop * 600;
+
+            const wn = Math.random() * 2 - 1;
+
+            // フォルマント1：インテークパイプ気柱共鳴
+            const w1 = 2.0 * Math.PI * fRes1 / sampleRate;
+            const a1 = Math.sin(w1) / (2.0 * 3.2);
+            const c1 = Math.cos(w1);
+            const y1 = (a1 * (wn - bp1_x2) + 2.0 * c1 * bp1_y1 - (1.0 - a1) * bp1_y2) / (1.0 + a1);
+            bp1_x2 = bp1_x1; bp1_x1 = wn;
+            bp1_y2 = bp1_y1; bp1_y1 = y1;
+
+            // フォルマント2：コンプレッサーハウジング＆エアクリ高圧気流エッジ
+            const w2 = 2.0 * Math.PI * fRes2 / sampleRate;
+            const a2 = Math.sin(w2) / (2.0 * 4.0);
+            const c2 = Math.cos(w2);
+            const y2 = (a2 * (wn - bp2_x2) + 2.0 * c2 * bp2_y1 - (1.0 - a2) * bp2_y2) / (1.0 + a2);
+            bp2_x2 = bp2_x1; bp2_x1 = wn;
+            bp2_y2 = bp2_y1; bp2_y1 = y2;
+
+            sData[i] = Math.tanh((y1 * 1.55 + y2 * 1.25) * 1.4) * env * 0.72;
         }
+
         const sSrc = this.ctx.createBufferSource();
         sSrc.buffer = surgeBuf;
         const sGain = this.ctx.createGain();
-        sGain.gain.setValueAtTime(0.28 * Math.min(1.2, intensity), now);
+        const surgeVol = (is1jz ? 0.38 : 0.30) * Math.min(1.25, 0.75 + intensity * 0.45);
+        sGain.gain.setValueAtTime(surgeVol, now);
         sSrc.connect(sGain);
         sGain.connect(this.sfxGain);
         sSrc.start(now);

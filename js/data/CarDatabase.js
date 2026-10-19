@@ -245,9 +245,9 @@ const CAR_DATABASE = {
             finalDrive: 3.727,
             wheelCircumference: 1.99,
             gearAccelMap: [0, 6.0, 4.5, 3.2, 2.2, 1.5],
-            maxRpm: 7800,
+            maxRpm: 8000,
             idleRpm: 800,
-            redlineRpm: 6800,
+            redlineRpm: 7200,
             maxSpeed: 260,
             engineSoundType: '1jz',
             engineResponse: 16.5
