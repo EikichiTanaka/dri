@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INITIAL D ARCADE STAGE - 峠ドリフトレース</title>
-    <link rel="stylesheet" href="css/style.css?v=111_idas_master_cluster">
+    <link rel="stylesheet" href="css/style.css?v=112_idas_3d_master_cluster">
 </head>
 <body>
     <!-- 3D WebGL レンダリングキャンバス -->
@@ -56,36 +56,16 @@
 
         <!-- 画面右下：頭文字D ARCADE STAGE 完全再現マスターメータークラスター（中央の自車視界を100%クリアに確保） -->
         <div class="center-gauge-cluster">
-            <!-- 左サイド：フレームレス独立3連 Defi-Link BF 追加メーター (油圧 / 水温 / 油温) -->
-            <div class="triple-meter-pod">
-                <div class="meter-item">
-                    <canvas id="meter-oilpress-canvas" width="92" height="92"></canvas>
-                    <div class="meter-tag">
-                        <span class="meter-label">OIL.P</span>
-                        <span id="val-oilpress" class="meter-digital-val">2.0 bar</span>
-                    </div>
-                </div>
-                <div class="meter-item">
-                    <canvas id="meter-watertemp-canvas" width="92" height="92"></canvas>
-                    <div class="meter-tag">
-                        <span class="meter-label">WATER</span>
-                        <span id="val-watertemp" class="meter-digital-val">86 ℃</span>
-                    </div>
-                </div>
-                <div class="meter-item">
-                    <canvas id="meter-oiltemp-canvas" width="92" height="92"></canvas>
-                    <div class="meter-tag">
-                        <span class="meter-label">OIL.T</span>
-                        <span id="val-oiltemp" class="meter-digital-val">90 ℃</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 右メイン：頭文字D ARCADE STAGE 一体型マスタークラスター (タコ / ブースト / デジタル速度 / 盤面内ギア / 外付けシフトランプ / ペダルバー) -->
             <div class="tacho-wrapper">
-                <canvas id="tacho-canvas" width="460" height="300"></canvas>
-                <!-- DOM互換用データ要素（Canvas内に超高精細一体描画） -->
+                <canvas id="tacho-canvas" width="540" height="340"></canvas>
+                <!-- DOM互換用データ要素（すべてCanvas内の3D一体成形クラスターに超高精細描画） -->
                 <div class="sr-hud-data" aria-hidden="true">
+                    <canvas id="meter-oilpress-canvas" width="92" height="92"></canvas>
+                    <span id="val-oilpress">2.0 bar</span>
+                    <canvas id="meter-watertemp-canvas" width="92" height="92"></canvas>
+                    <span id="val-watertemp">86 ℃</span>
+                    <canvas id="meter-oiltemp-canvas" width="92" height="92"></canvas>
+                    <span id="val-oiltemp">90 ℃</span>
                     <span id="speed-val">0</span>
                     <span id="gear-val">1</span>
                     <span id="trans-mode">AT</span>
@@ -299,20 +279,20 @@
 
     <!-- スクリプト群 -->
     <script src="js/lib/three.min.js"></script>
-    <script src="js/data/CarDatabase.js?v=111_idas_master_cluster"></script>
-    <script src="js/physics/TougeTrack.js?v=111_idas_master_cluster"></script>
-    <script src="js/physics/CarPhysics.js?v=111_idas_master_cluster"></script>
-    <script src="js/entities/CarModelBuilder.js?v=111_idas_master_cluster"></script>
-    <script src="js/entities/PlayerCar.js?v=111_idas_master_cluster"></script>
-    <script src="js/entities/RivalCar.js?v=111_idas_master_cluster"></script>
-    <script src="js/entities/ParticleSystem.js?v=111_idas_master_cluster"></script>
-    <script src="js/core/Input.js?v=111_idas_master_cluster"></script>
-    <script src="js/data/TireAudioData.js?v=111_idas_master_cluster"></script>
-    <script src="js/core/AudioManager.js?v=111_idas_master_cluster"></script>
-    <script src="js/ui/CornerGuide.js?v=111_idas_master_cluster"></script>
-    <script src="js/ui/HUD.js?v=111_idas_master_cluster"></script>
-    <script src="js/ui/GarageUI.js?v=111_idas_master_cluster"></script>
-    <script src="js/core/Game.js?v=111_idas_master_cluster"></script>
+    <script src="js/data/CarDatabase.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/physics/TougeTrack.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/physics/CarPhysics.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/entities/CarModelBuilder.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/entities/PlayerCar.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/entities/RivalCar.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/entities/ParticleSystem.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/core/Input.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/data/TireAudioData.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/core/AudioManager.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/ui/CornerGuide.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/ui/HUD.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/ui/GarageUI.js?v=112_idas_3d_master_cluster"></script>
+    <script src="js/core/Game.js?v=112_idas_3d_master_cluster"></script>
 
     <script>
         function initApp() {
