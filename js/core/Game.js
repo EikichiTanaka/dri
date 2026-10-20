@@ -819,12 +819,13 @@ class Game {
             }
         }
 
-        // タイトル画面アトラクトデモ走行でも鮮烈なテールランプ残像（Light Trails）を描画！
+        // タイトル画面アトラクトデモ走行でもブレーキ減速時のみ控えめなテールランプ残像を描画！
         if (this.playerCar) {
             const pTails = this.playerCar.getTailLightPositions();
+            const titleIsBraking = (this.playerPhysics.brake > 0.05 || this.playerPhysics.handbrake);
             this.particles.updateTailTrails(
                 pTails,
-                this.playerPhysics.isDrifting,
+                titleIsBraking && this.playerPhysics.speed > 10,
                 null,
                 false,
                 this.camera
@@ -1137,13 +1138,18 @@ class Game {
             this.particles.endRivalDrift();
         }
 
-        // ★頭文字D名物：ドリフト・旋回・ブレーキング時のテールランプ残像（Light Trails）更新
+        // ★頭文字D名物：ブレーキング時の控えめなテールランプ残像（Light Trails）更新
         const pTails = this.playerCar.getTailLightPositions();
         const rTails = this.rivalCar.getTailLightPositions();
 
-        // プレイヤーの光跡発生条件：本格ドリフト中、パワースライド中、スリップ角旋回中、切り返しホールド中、または急制動時
-        const pShouldTrail = (pIsDrifting || pIsPowerSliding || (pAbsAngle > 0.08 && pSpeed > 18) || (this.playerTireBurnTimer > 0) || (this.playerPhysics.brake > 0.30 && pSpeed > 20) || (this.playerPhysics.handbrake && pSpeed > 15));
-        const rShouldTrail = (this.rivalCar.isDrifting || (Math.abs(this.rivalCar.driftAngle || 0) > 0.08 && this.rivalCar.speed > 20));
+        // ★【ユーザー厳格指定】ブレーキを踏んでいる時（フットブレーキまたはサイドブレーキ）のみ光跡を表示！
+        // ブレーキを踏んでいない時は、いかなる場合でも絶対に表示させない
+        const pIsBrakingActive = (this.playerPhysics.brake > 0.05 || this.playerPhysics.handbrake);
+        const pShouldTrail = pIsBrakingActive && (pSpeed > 12);
+
+        // ライバル車も減速・ブレーキ時のみ光跡を表示
+        const rIsBrakingActive = (this.rivalCar.accel < 0 || this.rivalCar.isBraking || (this.rivalCar.speed && this.rivalCar.speed < (this.rivalCar.targetSpeed || 100) - 4));
+        const rShouldTrail = rIsBrakingActive && (this.rivalCar.speed > 12);
 
         this.particles.updateTailTrails(
             pTails,

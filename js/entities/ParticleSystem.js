@@ -1233,7 +1233,7 @@ class ParticleSystem {
      * ★頭文字D名物：テールランプ残像（Light Trails）初期化
      */
     initLightTrails() {
-        this.maxTrailPoints = 48; // トレイルの履歴フレーム数（長大でドラマチックなネオン光条）
+        this.maxTrailPoints = 20; // トレイルの履歴フレーム数（控えめで上品な残像長）
 
         // 左右のトレイル用データ
         this.playerTrailL = [];
@@ -1272,15 +1272,14 @@ class ParticleSystem {
         const mat = new THREE.MeshBasicMaterial({
             vertexColors: true,
             transparent: true,
-            opacity: 0.96,
+            opacity: 0.70, // 控えめで上品な半透明感
             blending: THREE.AdditiveBlending,
             side: THREE.DoubleSide,
             depthWrite: false
         });
 
         const mesh = new THREE.Mesh(geom, mat);
-        // ★【超重要】Three.jsの視体積カリング（Frustum Culling）による動的リボン消失を100%防止！
-        mesh.frustumCulled = false;
+        mesh.frustumCulled = false; // 視体積カリングによる消失を完全防止
         mesh.renderOrder = 998;
         return mesh;
     }
@@ -1289,8 +1288,8 @@ class ParticleSystem {
         if (!newPos) return;
 
         if (isEmitting) {
-            // 前のポイントと近すぎる（微小振動や静止時）重複記録を防ぎ、滑らかな補間を保証
-            if (trailArray.length === 0 || trailArray[0].distanceToSquared(newPos) > 0.02) {
+            // 前のポイントと近すぎる重複記録を防ぎ、滑らかな光条を形成
+            if (trailArray.length === 0 || trailArray[0].distanceToSquared(newPos) > 0.03) {
                 trailArray.unshift(newPos.clone());
                 if (trailArray.length > this.maxTrailPoints) {
                     trailArray.pop();
@@ -1299,9 +1298,10 @@ class ParticleSystem {
                 trailArray[0].copy(newPos);
             }
         } else {
-            // ドリフト終了時：一瞬で消えず、自然に尾を引いてフワッと消滅
+            // ブレーキ解除時：素早く後方へスッと抜けて消滅
             if (trailArray.length > 0) {
                 trailArray.pop();
+                if (trailArray.length > 0) trailArray.pop();
             }
         }
     }
@@ -1310,7 +1310,7 @@ class ParticleSystem {
         const posAttr = mesh.geometry.attributes.position;
         const colAttr = mesh.geometry.attributes.color;
         const len = trailArray.length;
-        const halfWidth = 0.075; // 光条の半幅 (m)
+        const halfWidth = 0.040; // スリムで洗練された光条幅（半幅0.04m＝全幅0.08m）
 
         const camPos = camera ? camera.position : null;
 
@@ -1320,7 +1320,7 @@ class ParticleSystem {
                 const p = trailArray[i];
                 let normX = 0, normY = halfWidth, normZ = 0;
 
-                // ★カメラ視線直交ビルボーディング（俯瞰・追従・横アングル問わず常に均一な幅でクッキリ描画）
+                // カメラ視線直交ビルボーディング（アングルを問わず常に均一な太さで美しく描画）
                 if (camPos && i < len - 1) {
                     const nextP = trailArray[i + 1];
                     const dirX = p.x - nextP.x;
@@ -1343,10 +1343,10 @@ class ParticleSystem {
                 posAttr.setXYZ(base, p.x + normX, p.y + normY, p.z + normZ);
                 posAttr.setXYZ(base + 1, p.x - normX, p.y - normY, p.z - normZ);
 
-                // 先頭は鮮烈なネオンレッド、末尾に向かって自然に減衰
-                const alpha = Math.pow(1.0 - (i / this.maxTrailPoints), 1.35);
-                colAttr.setXYZ(base, 1.0 * alpha, 0.06 * alpha, 0.12 * alpha);
-                colAttr.setXYZ(base + 1, 1.0 * alpha, 0.06 * alpha, 0.12 * alpha);
+                // 先頭は深みのある実車テールランプ赤、末尾に向かって自然にフェード
+                const alpha = Math.pow(1.0 - (i / this.maxTrailPoints), 1.6);
+                colAttr.setXYZ(base, 0.85 * alpha, 0.04 * alpha, 0.06 * alpha);
+                colAttr.setXYZ(base + 1, 0.85 * alpha, 0.04 * alpha, 0.06 * alpha);
             } else {
                 const lastP = (len > 0) ? trailArray[len - 1] : new THREE.Vector3(0, 0, 0);
                 posAttr.setXYZ(base, lastP.x, lastP.y, lastP.z);
