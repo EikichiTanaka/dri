@@ -1831,7 +1831,7 @@ body, html {
     color: #e0d0b0;
 }
 /* ==========================================================================
-   ガレージ＆3Dショールーム スタイル
+   ガレージ＆3Dショールーム スタイル (SEGA Initial D 本格仕様)
    ========================================================================== */
 #garage-overlay {
     position: absolute;
@@ -1843,201 +1843,322 @@ body, html {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 24px 34px;
+    padding: 14px 24px;
     box-sizing: border-box;
-    background: radial-gradient(circle at center, rgba(10, 16, 26, 0.2) 0%, rgba(5, 8, 14, 0.85) 100%);
+    background: radial-gradient(circle at center, rgba(14, 20, 30, 0.20) 0%, rgba(6, 10, 16, 0.90) 100%);
     pointer-events: none;
     user-select: none;
 }
 
+/* 1. ガレージヘッダー */
 .garage-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     pointer-events: auto;
+    background: rgba(14, 18, 26, 0.92);
+    border: 1px solid #283344;
+    border-top: 3px solid #e60012;
+    border-radius: 4px;
+    padding: 6px 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+}
+
+.garage-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.garage-logo-tag {
+    background: #e60012;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 2px;
+}
+
+.garage-header-text {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
 }
 
 .garage-title {
-    font-size: 34px;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    font-size: 16px;
+    font-weight: 950;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.garage-en-tag {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 11px;
     font-weight: 900;
-    font-style: italic;
-    letter-spacing: 3px;
-    color: #00ddff;
-    text-shadow: 0 0 20px rgba(0, 221, 255, 0.6);
+    color: #ffaa00;
+    letter-spacing: 1px;
 }
 
 .garage-subtitle {
-    font-size: 13px;
-    letter-spacing: 4px;
-    color: #88bbdd;
-    font-weight: bold;
+    font-size: 11px;
+    color: #8899aa;
+    font-weight: 700;
 }
 
 .garage-close-btn {
-    background: rgba(20, 30, 45, 0.8);
-    border: 2px solid #ff4444;
-    color: #ff6666;
-    font-size: 28px;
-    line-height: 28px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    background: #242c38;
+    border: 1px solid #485870;
+    color: #ccd5e0;
+    padding: 5px 16px;
+    border-radius: 3px;
+    font-weight: 900;
+    font-size: 11px;
     cursor: pointer;
-    transition: all 0.2s;
+    letter-spacing: 1px;
+    transition: all 0.1s ease-out;
 }
 
 .garage-close-btn:hover {
-    background: #ff4444;
-    color: #fff;
-    box-shadow: 0 0 16px rgba(255, 50, 50, 0.8);
+    background: #cc1111;
+    border-color: #ff3333;
+    color: #ffffff;
 }
 
-/* 車両セレクターカード */
+/* 2. 車両セレクターカード横スクロール (水平カルーセル) */
 .garage-car-bar {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 14px;
+    gap: 8px;
     pointer-events: auto;
-    margin-top: 6px;
+    width: 100%;
+    max-width: 1220px;
+    margin: 0 auto;
 }
 
 .garage-nav-btn {
-    background: rgba(10, 25, 45, 0.85);
-    border: 2px solid #00aaff;
-    color: #00ddff;
-    font-size: 26px;
+    background: linear-gradient(180deg, #222b3a 0%, #141b24 100%);
+    border: 1.5px solid #3c4c62;
+    color: #ffcc00;
+    font-size: 16px;
     font-weight: 900;
-    width: 44px;
-    height: 60px;
-    border-radius: 8px;
+    width: 38px;
+    height: 62px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.1s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+    flex-shrink: 0;
 }
 
 .garage-nav-btn:hover {
-    background: #0088dd;
-    color: #fff;
-    box-shadow: 0 0 16px rgba(0, 180, 255, 0.8);
+    background: #2d384c;
+    border-color: #ffaa00;
+    color: #ffffff;
 }
 
 .garage-cards-row {
     display: flex;
-    gap: 12px;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 6px;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
+.garage-cards-row::-webkit-scrollbar {
+    display: none;
+}
+
+/* 車両カード (本物のアーケードマシーンセレクター調) */
 .garage-car-card {
-    background: rgba(12, 18, 28, 0.85);
-    border: 2px solid #2a3d54;
-    border-radius: 8px;
-    padding: 8px 16px;
-    min-width: 130px;
+    background: #141923;
+    border: 1.5px solid #283446;
+    border-radius: 4px;
+    padding: 6px 10px;
+    min-width: 122px;
     cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
+    transition: all 0.12s ease-out;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .garage-car-card:hover {
-    border-color: #00bbff;
+    border-color: #ffaa00;
+    background: #1c2332;
     transform: translateY(-2px);
 }
 
 .garage-car-card.active {
-    background: rgba(0, 45, 80, 0.85);
-    border-color: #ffaa00;
-    box-shadow: 0 0 18px rgba(255, 170, 0, 0.6);
+    background: #20293a;
+    border: 1.5px solid #ffcc00;
+    border-top: 3px solid #e60012;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
+    transform: translateY(-3px);
 }
 
-.card-model {
-    font-size: 11px;
-    font-weight: bold;
-    color: #88aacc;
-    letter-spacing: 1px;
+.card-mfg-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.card-name {
-    font-size: 15px;
+.card-mfg-tag {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 8.5px;
     font-weight: 900;
-    color: #fff;
-    margin: 2px 0;
+    color: #70859e;
+    letter-spacing: 0.5px;
 }
 
-.card-drive {
-    font-size: 11px;
-    font-weight: bold;
+.garage-car-card.active .card-mfg-tag {
     color: #ffcc00;
-    background: rgba(255, 200, 0, 0.15);
-    padding: 1px 6px;
-    border-radius: 3px;
-    display: inline-block;
 }
 
-/* 下部パネル */
+.card-drive-pill {
+    font-size: 8.5px;
+    font-weight: 900;
+    padding: 1px 4px;
+    border-radius: 2px;
+    color: #ffffff;
+}
+
+.card-drive-pill.fr { background: #d97706; }
+.card-drive-pill['4wd'], .card-drive-pill.4wd { background: #0284c7; }
+.card-drive-pill.ff { background: #059669; }
+
+.card-model-code {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 14.5px;
+    font-weight: 900;
+    font-style: italic;
+    color: #ffffff;
+    line-height: 1.1;
+    letter-spacing: 0.5px;
+}
+
+.garage-car-card.active .card-model-code {
+    color: #ffffff;
+}
+
+.card-car-name {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.garage-car-card.active .card-car-name {
+    color: #e2e8f0;
+}
+
+/* 3. 下部パネル (スペックシート ＆ 性能 ＆ アクション) */
 .garage-bottom-panel {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     pointer-events: auto;
-    max-height: 250px;
+    width: 100%;
+    max-width: 1220px;
+    margin: 0 auto;
+    max-height: 245px;
 }
 
 .garage-card {
-    background: rgba(10, 16, 26, 0.90);
-    border: 1px solid #335577;
-    border-radius: 10px;
-    padding: 16px 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-}
-
-.spec-card {
-    flex: 1.4;
+    background: rgba(16, 21, 29, 0.94);
+    border: 1px solid #283548;
+    border-radius: 4px;
+    padding: 10px 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
+}
+
+/* パネル1: 車両情報＆スペックシート */
+.spec-card {
+    flex: 1.45;
     justify-content: space-between;
 }
 
-.car-cat-tag {
-    display: inline-block;
-    font-size: 11px;
+.car-identity-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.car-mfg-badge {
+    background: #e60012;
+    color: #ffffff;
+    font-size: 9.5px;
     font-weight: 900;
+    padding: 1px 6px;
+    border-radius: 2px;
     letter-spacing: 1px;
-    color: #00ddff;
-    background: rgba(0, 180, 255, 0.15);
-    padding: 2px 8px;
-    border-radius: 4px;
-    margin-bottom: 4px;
+}
+
+.car-cat-tag {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 9.5px;
+    font-weight: 900;
+    color: #ffaa00;
+    letter-spacing: 0.5px;
 }
 
 .car-main-name {
-    font-size: 20px;
-    font-weight: 900;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    font-size: 17px;
+    font-weight: 950;
     font-style: italic;
-    color: #fff;
-    margin: 0 0 2px 0;
-    letter-spacing: 1px;
+    color: #ffffff;
+    margin: 2px 0 1px 0;
+    letter-spacing: 0.5px;
 }
 
 .car-driver-name {
-    font-size: 12px;
-    color: #ffaa00;
-    font-weight: bold;
-    margin-bottom: 6px;
+    font-size: 11px;
+    color: #ffcc00;
+    font-weight: 800;
+    margin-bottom: 4px;
 }
 
 .car-description {
-    font-size: 12px;
+    font-size: 10.5px;
     line-height: 1.45;
-    color: #b0c4de;
-    margin-bottom: 10px;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .car-spec-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 8px 10px;
-    border-radius: 6px;
-    border: 1px solid #223344;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 10px;
+    background: #0e1218;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #202938;
+}
+
+.spec-grid-item.span-2 {
+    grid-column: span 2;
 }
 
 .spec-grid-item {
@@ -2046,141 +2167,228 @@ body, html {
 }
 
 .spec-lbl {
-    font-size: 9.5px;
-    font-weight: bold;
-    color: #7799bb;
-    letter-spacing: 0.5px;
+    font-size: 9px;
+    font-weight: 800;
+    color: #70859e;
 }
 
 .spec-val {
-    font-size: 12.5px;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Arial Black', sans-serif;
+    font-size: 11px;
     font-weight: 900;
-    color: #fff;
-    margin-top: 2px;
+    color: #ffffff;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* パラメータカード */
+/* パネル2: 性能パラメータカード */
 .stat-card {
-    flex: 1.1;
-    display: flex;
-    flex-direction: column;
+    flex: 1.15;
     justify-content: space-between;
 }
 
+.panel-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #202938;
+    padding-bottom: 3px;
+    margin-bottom: 4px;
+}
+
 .stat-title, .action-title {
-    font-size: 13px;
+    font-family: 'Arial Black', sans-serif;
+    font-size: 10px;
     font-weight: 900;
-    color: #00ddff;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
+    color: #8899aa;
+    letter-spacing: 0.5px;
+}
+
+.stat-subtitle {
+    font-size: 9.5px;
+    font-weight: 800;
+    color: #ffaa00;
+}
+
+.stat-rows-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .stat-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 5px;
+    gap: 8px;
 }
 
 .stat-label {
-    font-size: 11px;
-    font-weight: bold;
-    color: #aaccee;
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
     width: 95px;
+    flex-shrink: 0;
 }
 
 .stat-bar-bg {
     flex: 1;
-    height: 10px;
-    background: rgba(20, 30, 45, 0.8);
-    border-radius: 5px;
+    height: 8px;
+    background: #0c1017;
+    border-radius: 2px;
     overflow: hidden;
-    border: 1px solid #334466;
+    border: 1px solid #222d3d;
 }
 
 .stat-bar-fill {
     height: 100%;
     width: 70%;
-    background: linear-gradient(90deg, #0088ee 0%, #00ffcc 100%);
-    box-shadow: 0 0 8px rgba(0, 255, 204, 0.6);
-    transition: width 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+    background: linear-gradient(90deg, #ff8800 0%, #ffcc00 100%);
+    box-shadow: 0 0 6px rgba(255, 170, 0, 0.4);
+    transition: width 0.25s ease-out;
 }
 
-/* アクションカード */
+.stat-bar-fill.max {
+    background: linear-gradient(90deg, #ffaa00 0%, #ff2222 100%);
+}
+
+.stat-num-val {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 11px;
+    font-weight: 900;
+    color: #ffffff;
+    width: 26px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* パネル3: アクションカード (カラー・試聴・決定) */
 .action-card {
-    flex: 1.0;
-    display: flex;
-    flex-direction: column;
+    flex: 1.1;
     justify-content: space-between;
+}
+
+.color-name-text {
+    font-size: 9.5px;
+    font-weight: 900;
+    color: #ffcc00;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
 }
 
 .garage-colors-row {
     display: flex;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 8px;
+    margin: 4px 0 6px 0;
 }
 
 .garage-color-btn {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
-    border: 2px solid #556677;
+    border: 2px solid #3c4c62;
     cursor: pointer;
-    transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    transition: all 0.1s ease-out;
+    outline: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
 }
 
 .garage-color-btn:hover {
     transform: scale(1.15);
+    border-color: #ffaa00;
 }
 
 .garage-color-btn.active {
-    border-color: #ffaa00;
-    box-shadow: 0 0 12px #ffaa00;
-    transform: scale(1.15);
+    border-color: #ffcc00;
+    box-shadow: 0 0 8px #ffcc00;
+    transform: scale(1.18);
 }
 
 .action-buttons-col {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .garage-rev-btn {
-    background: linear-gradient(90deg, #ff6600 0%, #ff3300 100%);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 14px;
+    background: linear-gradient(180deg, #2a3446 0%, #171f2b 100%);
+    border: 1.5px solid #ffaa00;
+    border-radius: 4px;
+    color: #ffffff;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    font-size: 11px;
     font-weight: 900;
-    font-style: italic;
-    padding: 9px;
+    padding: 7px 10px;
     cursor: pointer;
-    box-shadow: 0 0 14px rgba(255, 80, 0, 0.4);
-    transition: transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.08s ease-out;
+    outline: none;
 }
 
 .garage-rev-btn:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 20px rgba(255, 80, 0, 0.8);
+    background: #334056;
+    filter: brightness(1.1);
+}
+
+.garage-rev-btn:active {
+    transform: translateY(2px);
+}
+
+.btn-rev-icon {
+    font-size: 12px;
 }
 
 .garage-confirm-btn {
-    background: linear-gradient(90deg, #00aa55 0%, #00dd88 100%);
-    border: none;
-    border-radius: 6px;
-    color: #000;
-    font-size: 15px;
-    font-weight: 900;
-    font-style: italic;
-    padding: 11px;
+    background: linear-gradient(180deg, #e60012 0%, #aa000d 100%);
+    border: 2px solid #ff4444;
+    border-radius: 4px;
     cursor: pointer;
-    box-shadow: 0 0 16px rgba(0, 220, 130, 0.5);
-    transition: transform 0.1s, box-shadow 0.2s;
+    padding: 6px 12px;
+    box-shadow: 
+        0 3px 0 #600008,
+        0 6px 14px rgba(230, 0, 18, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.08s ease-out, filter 0.1s ease-out;
+    outline: none;
 }
 
 .garage-confirm-btn:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 24px rgba(0, 255, 150, 0.8);
+    filter: brightness(1.15);
+}
+
+.garage-confirm-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #600008, 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.btn-confirm-lead {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    font-size: 14px;
+    font-weight: 950;
+    color: #ffffff;
+    letter-spacing: 1px;
+    line-height: 1.1;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.btn-confirm-sub {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 8.5px;
+    font-weight: 900;
+    color: #ffdd66;
+    letter-spacing: 1px;
+    line-height: 1;
 }
 
 #result-overlay {

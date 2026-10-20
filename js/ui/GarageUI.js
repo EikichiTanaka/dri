@@ -1,7 +1,21 @@
 /**
- * GarageUI.js - ガレージ＆マシン選択UIコントローラー
- * 3Dターンテーブル・ショールーム演出、スペックシート表示、カラー選択、エンジン空ぶかし試聴
+ * GarageUI.js - ガレージ＆マシン選択UIコントローラー (SEGA Initial D 本格仕様)
+ * 3Dショールーム・フロントクォーター美角カメラ演出、スペックシート表示、カラー選択、エンジン空ぶかし試聴
  */
+
+const GARAGE_MFG_MAP = {
+    'ae86': 'TOYOTA',
+    'fd3s': 'MAZDA',
+    'r32': 'NISSAN',
+    's13': 'NISSAN',
+    'rps13': 'NISSAN',
+    'jzx100': 'TOYOTA',
+    'ce9a': 'MITSUBISHI',
+    'ek9': 'HONDA',
+    'cc72v': 'SUZUKI',
+    'jza80': 'TOYOTA',
+    's15': 'NISSAN'
+};
 
 class GarageUI {
     constructor(game) {
@@ -11,10 +25,10 @@ class GarageUI {
         this.currentColorIndex = 0;
         this.isOpen = false;
 
-        // ショールームカメラ回転用
-        this.orbitAngle = 0.6;
-        this.orbitDistance = 6.2;
-        this.orbitHeight = 1.6;
+        // ショールームカメラ回転用 (斜め前方の英雄的ビュー)
+        this.orbitAngle = 0.65;
+        this.orbitDistance = 5.6;
+        this.orbitHeight = 1.35;
         this.isDragging = false;
         this.prevMouseX = 0;
         this.prevMouseY = 0;
@@ -26,7 +40,9 @@ class GarageUI {
         // DOM要素参照
         this.container = document.getElementById('garage-overlay');
         this.carNameElem = document.getElementById('garage-car-name');
+        this.carMfgElem = document.getElementById('garage-car-mfg');
         this.carCategoryElem = document.getElementById('garage-car-category');
+        this.carDriveBadge = document.getElementById('garage-car-drive-badge');
         this.carDriverElem = document.getElementById('garage-car-driver');
         this.carDescElem = document.getElementById('garage-car-desc');
         this.engineValElem = document.getElementById('garage-engine-val');
@@ -35,15 +51,22 @@ class GarageUI {
         this.weightValElem = document.getElementById('garage-weight-val');
         this.driveValElem = document.getElementById('garage-drive-val');
 
-        // パラメータバー
+        // パラメータバー ＆ 数値ラベル
         this.barSpeed = document.getElementById('stat-bar-speed');
         this.barAccel = document.getElementById('stat-bar-accel');
         this.barHandling = document.getElementById('stat-bar-handling');
         this.barDrift = document.getElementById('stat-bar-drift');
         this.barStability = document.getElementById('stat-bar-stability');
 
-        // カラーボタングループ
+        this.statValSpeed = document.getElementById('stat-val-speed');
+        this.statValAccel = document.getElementById('stat-val-accel');
+        this.statValHandling = document.getElementById('stat-val-handling');
+        this.statValDrift = document.getElementById('stat-val-drift');
+        this.statValStability = document.getElementById('stat-val-stability');
+
+        // カラーボタングループ ＆ カラー名表示
         this.colorGroup = document.getElementById('garage-color-group');
+        this.colorNameElem = document.getElementById('garage-color-name');
 
         // ボタン
         this.btnPrev = document.getElementById('btn-garage-prev');
@@ -59,27 +82,54 @@ class GarageUI {
         if (this.btnSelect) this.btnSelect.addEventListener('click', () => this.confirmSelection());
         if (this.btnClose) this.btnClose.addEventListener('click', () => this.close());
 
-        // 車両カードセレクター
+        // 車両セレクターカード群生成
         this.cardContainer = document.getElementById('garage-car-cards');
         if (this.cardContainer) {
+            this.cardContainer.innerHTML = '';
             this.carIds.forEach((id, idx) => {
                 const car = CAR_DATABASE[id];
+                if (!car) return;
+                const mfg = GARAGE_MFG_MAP[id] || 'JAPAN';
                 const card = document.createElement('div');
                 card.className = 'garage-car-card' + (idx === 0 ? ' active' : '');
                 card.id = `garage-card-${id}`;
                 card.innerHTML = `
-                    <div class="card-model">${car.modelCode}</div>
-                    <div class="card-name">${car.shortName}</div>
-                    <div class="card-drive">${car.drivetrain}</div>
+                    <div class="card-mfg-row">
+                        <span class="card-mfg-tag">${mfg}</span>
+                        <span class="card-drive-pill ${car.drivetrain.toLowerCase()}">${car.drivetrain}</span>
+                    </div>
+                    <div class="card-model-code">${car.modelCode}</div>
+                    <div class="card-car-name">${car.shortName}</div>
                 `;
                 card.addEventListener('click', () => this.selectCarByIndex(idx));
                 this.cardContainer.appendChild(card);
             });
         }
 
+        // キーボード操作サポート (左右で車両切替、Enterで決定、ESCで閉じる、Space/Rで空ぶかし)
+        window.addEventListener('keydown', (e) => {
+            if (!this.isOpen) return;
+            if (e.key === 'ArrowLeft') {
+                this.prevCar();
+                e.preventDefault();
+            } else if (e.key === 'ArrowRight') {
+                this.nextCar();
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                this.confirmSelection();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                this.close();
+                e.preventDefault();
+            } else if (e.key === ' ' || e.key === 'r' || e.key === 'R') {
+                this.revEngine();
+                e.preventDefault();
+            }
+        });
+
         // 3Dドラッグ回転イベント
         window.addEventListener('mousedown', (e) => {
-            if (this.isOpen && (e.target.id === 'canvas-container' || (e.target.tagName === 'CANVAS' && !e.target.closest('#hud-container')))) {
+            if (this.isOpen && (e.target.id === 'canvas-container' || (e.target.tagName === 'CANVAS' && !e.target.closest('#garage-overlay')))) {
                 this.isDragging = true;
                 this.prevMouseX = e.clientX;
                 this.prevMouseY = e.clientY;
@@ -89,8 +139,8 @@ class GarageUI {
             if (this.isOpen && this.isDragging) {
                 const dx = e.clientX - this.prevMouseX;
                 const dy = e.clientY - this.prevMouseY;
-                this.orbitAngle += dx * 0.008;
-                this.orbitHeight = Math.max(0.6, Math.min(3.5, this.orbitHeight - dy * 0.008));
+                this.orbitAngle += dx * 0.007;
+                this.orbitHeight = Math.max(0.6, Math.min(3.2, this.orbitHeight - dy * 0.007));
                 this.prevMouseX = e.clientX;
                 this.prevMouseY = e.clientY;
             }
@@ -103,7 +153,8 @@ class GarageUI {
     open() {
         this.isOpen = true;
         if (this.container) this.container.style.display = 'flex';
-        document.getElementById('start-overlay').style.display = 'none';
+        const startOverlay = document.getElementById('start-overlay');
+        if (startOverlay) startOverlay.style.display = 'none';
 
         if (this.game && this.game.audio) {
             this.game.audio.resume();
@@ -111,13 +162,30 @@ class GarageUI {
 
         // ガレージ位置にプレイヤー車を配置（原点付近）
         this.game.enterGarageMode();
+
+        // カメラ初期位置を車の3/4フロント美角（斜め前からの迫力アングル）に設定
+        const carYaw = (this.game.playerPhysics && this.game.playerPhysics.yaw !== undefined) ? this.game.playerPhysics.yaw : 0;
+        this.orbitAngle = carYaw + 0.65;
+        this.orbitDistance = 5.6;
+        this.orbitHeight = 1.35;
+
+        // 現在のマシンを選択
+        if (this.game && this.game.selectedCarId) {
+            const idx = this.carIds.indexOf(this.game.selectedCarId);
+            if (idx !== -1) {
+                this.currentIndex = idx;
+                this.currentColorIndex = this.game.selectedColorIndex || 0;
+            }
+        }
+
         this.updateCarDisplay();
     }
 
     close() {
         this.isOpen = false;
         if (this.container) this.container.style.display = 'none';
-        document.getElementById('start-overlay').style.display = 'flex';
+        const startOverlay = document.getElementById('start-overlay');
+        if (startOverlay) startOverlay.style.display = 'flex';
         this.game.exitGarageMode();
     }
 
@@ -178,29 +246,46 @@ class GarageUI {
         this.game.applyPlayerCar(carId, this.currentColorIndex);
 
         // テキスト情報
+        const mfg = GARAGE_MFG_MAP[carId] || 'JAPAN';
+        if (this.carMfgElem) this.carMfgElem.textContent = mfg;
         if (this.carNameElem) this.carNameElem.textContent = car.name;
-        if (this.carCategoryElem) this.carCategoryElem.textContent = `${car.category} / ${car.drivetrain}`;
-        if (this.carDriverElem) this.carDriverElem.textContent = car.driver;
+        if (this.carCategoryElem) this.carCategoryElem.textContent = car.category;
+        if (this.carDriveBadge) {
+            this.carDriveBadge.textContent = car.drivetrain;
+            this.carDriveBadge.className = `car-drive-pill ${car.drivetrain.toLowerCase()}`;
+        }
+        if (this.carDriverElem) this.carDriverElem.textContent = `劇中ドライバー: ${car.driver}`;
         if (this.carDescElem) this.carDescElem.textContent = car.desc;
         if (this.engineValElem) this.engineValElem.textContent = car.engineName;
         if (this.powerValElem) this.powerValElem.textContent = car.power;
         if (this.torqueValElem) this.torqueValElem.textContent = car.torque;
         if (this.weightValElem) this.weightValElem.textContent = car.weight;
-        if (this.driveValElem) this.driveValElem.textContent = car.drivetrain;
+        if (this.driveValElem) this.driveValElem.textContent = `${car.drivetrain} (${car.drivetrain === 'FR' ? '後輪駆動' : (car.drivetrain === '4WD' ? '四輪駆動' : '前輪駆動')})`;
 
-        // パラメータバー
+        // パラメータバー ＆ 数値
         if (this.barSpeed) this.barSpeed.style.width = `${car.stats.speed * 10}%`;
         if (this.barAccel) this.barAccel.style.width = `${car.stats.accel * 10}%`;
         if (this.barHandling) this.barHandling.style.width = `${car.stats.handling * 10}%`;
         if (this.barDrift) this.barDrift.style.width = `${car.stats.drift * 10}%`;
         if (this.barStability) this.barStability.style.width = `${car.stats.stability * 10}%`;
 
-        // 車両カードのアクティブ状態
+        if (this.statValSpeed) this.statValSpeed.textContent = car.stats.speed.toFixed(1);
+        if (this.statValAccel) this.statValAccel.textContent = car.stats.accel.toFixed(1);
+        if (this.statValHandling) this.statValHandling.textContent = car.stats.handling.toFixed(1);
+        if (this.statValDrift) this.statValDrift.textContent = car.stats.drift.toFixed(1);
+        if (this.statValStability) this.statValStability.textContent = car.stats.stability.toFixed(1);
+
+        // 車両カードのアクティブ状態 ＆ 自動スクロール
         this.carIds.forEach(id => {
             const card = document.getElementById(`garage-card-${id}`);
             if (card) {
-                if (id === carId) card.classList.add('active');
-                else card.classList.remove('active');
+                if (id === carId) {
+                    card.classList.add('active');
+                    // スムーズスクロールで中央へ
+                    card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                } else {
+                    card.classList.remove('active');
+                }
             }
         });
 
@@ -224,6 +309,10 @@ class GarageUI {
             btn.addEventListener('click', () => this.selectColor(idx));
             this.colorGroup.appendChild(btn);
         });
+
+        if (this.colorNameElem && car.colors[this.currentColorIndex]) {
+            this.colorNameElem.textContent = car.colors[this.currentColorIndex].name;
+        }
     }
 
     revEngine() {
@@ -240,13 +329,13 @@ class GarageUI {
     update(dt) {
         if (!this.isOpen) return;
 
-        // ドラッグ中でなければ優雅にターンテーブル自動回転
+        // 優雅にターンテーブル自動回転 (約38秒で1周するジェントルなサロン演出)
         if (!this.isDragging) {
-            this.orbitAngle += dt * 0.45;
+            this.orbitAngle += dt * 0.16;
         }
 
         // カメラを車の周囲を回るように配置
-        const targetPos = this.game.playerPhysics.position.clone().add(new THREE.Vector3(0, 0.4, 0));
+        const targetPos = this.game.playerPhysics.position.clone().add(new THREE.Vector3(0, 0.45, 0));
         const camX = targetPos.x + Math.sin(this.orbitAngle) * this.orbitDistance;
         const camZ = targetPos.z + Math.cos(this.orbitAngle) * this.orbitDistance;
         const camY = targetPos.y + this.orbitHeight;

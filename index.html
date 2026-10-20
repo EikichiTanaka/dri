@@ -633,60 +633,102 @@
         </div>
     </div>
 
-    <!-- ガレージ＆マシン選択 3Dショールーム オーバーレイ -->
+    <!-- ガレージ＆マシン選択 3Dショールーム オーバーレイ (SEGA Initial D 本格仕様) -->
     <div id="garage-overlay" style="display: none;">
         <div class="garage-header">
             <div class="garage-title-wrap">
-                <div class="garage-title">TOUGE MACHINE GARAGE</div>
-                <div class="garage-subtitle">3D SHOWROOM & TUNING SPEC SHEET</div>
+                <div class="garage-logo-tag">頭文字D</div>
+                <div class="garage-header-text">
+                    <h1 class="garage-title">愛車選択＆チューニングスペック <span class="garage-en-tag">MACHINE SELECT</span></h1>
+                    <span class="garage-subtitle">全国8大名峠 制覇マシン ＆ 3Dショールーム</span>
+                </div>
             </div>
-            <button id="btn-garage-close" class="garage-close-btn">&times;</button>
+            <button id="btn-garage-close" class="garage-close-btn">✕ 戻る [ESC]</button>
         </div>
 
         <!-- 車両セレクターカード横スクロール -->
         <div class="garage-car-bar">
-            <button id="btn-garage-prev" class="garage-nav-btn">&lt;</button>
+            <button id="btn-garage-prev" class="garage-nav-btn">◀</button>
             <div id="garage-car-cards" class="garage-cards-row"></div>
-            <button id="btn-garage-next" class="garage-nav-btn">&gt;</button>
+            <button id="btn-garage-next" class="garage-nav-btn">▶</button>
         </div>
 
         <!-- 下部：スペックシート ＆ コントロールパネル -->
         <div class="garage-bottom-panel">
+            <!-- パネル1: 車両情報＆仕様書 -->
             <div class="garage-card spec-card">
                 <div class="car-identity">
-                    <div id="garage-car-category" class="car-cat-tag">LIGHTWEIGHT FR</div>
+                    <div class="car-identity-top">
+                        <span id="garage-car-mfg" class="car-mfg-badge">TOYOTA</span>
+                        <span id="garage-car-category" class="car-cat-tag">LIGHTWEIGHT FR</span>
+                        <span id="garage-car-drive-badge" class="car-drive-pill fr">FR</span>
+                    </div>
                     <h2 id="garage-car-name" class="car-main-name">TOYOTA SPRINTER TRUENO GT-APEX</h2>
-                    <div id="garage-car-driver" class="car-driver-name">藤原拓海 (秋名スピードスターズ)</div>
+                    <div id="garage-car-driver" class="car-driver-name">藤原拓海 (秋名スピードスターズ / プロジェクトD)</div>
                 </div>
                 <div id="garage-car-desc" class="car-description">【ハチロク】超軽量ボディと高回転レーシングエンジン...</div>
 
                 <div class="car-spec-grid">
-                    <div class="spec-grid-item"><span class="spec-lbl">ENGINE</span><span id="garage-engine-val" class="spec-val">4A-GEU 20V</span></div>
-                    <div class="spec-grid-item"><span class="spec-lbl">MAX POWER</span><span id="garage-power-val" class="spec-val">240 PS</span></div>
-                    <div class="spec-grid-item"><span class="spec-lbl">MAX TORQUE</span><span id="garage-torque-val" class="spec-val">18.0 kgm</span></div>
-                    <div class="spec-grid-item"><span class="spec-lbl">DRIVE</span><span id="garage-drive-val" class="spec-val">FR</span></div>
-                    <div class="spec-grid-item"><span class="spec-lbl">WEIGHT</span><span id="garage-weight-val" class="spec-val">960 kg</span></div>
+                    <div class="spec-grid-item span-2"><span class="spec-lbl">エンジン型式</span><span id="garage-engine-val" class="spec-val">4A-GEU 改 レーシング仕様</span></div>
+                    <div class="spec-grid-item"><span class="spec-lbl">駆動方式</span><span id="garage-drive-val" class="spec-val">FR (後輪駆動)</span></div>
+                    <div class="spec-grid-item"><span class="spec-lbl">最高出力</span><span id="garage-power-val" class="spec-val">240 PS / 11,000 rpm</span></div>
+                    <div class="spec-grid-item"><span class="spec-lbl">最大トルク</span><span id="garage-torque-val" class="spec-val">18.0 kgm / 8,500 rpm</span></div>
+                    <div class="spec-grid-item"><span class="spec-lbl">車両重量</span><span id="garage-weight-val" class="spec-val">960 kg</span></div>
                 </div>
             </div>
 
-            <!-- 性能パラメータバー -->
+            <!-- パネル2: 性能パラメータバー -->
             <div class="garage-card stat-card">
-                <div class="stat-title">PERFORMANCE METRICS</div>
-                <div class="stat-row"><span class="stat-label">SPEED</span><div class="stat-bar-bg"><div id="stat-bar-speed" class="stat-bar-fill"></div></div></div>
-                <div class="stat-row"><span class="stat-label">ACCEL</span><div class="stat-bar-bg"><div id="stat-bar-accel" class="stat-bar-fill"></div></div></div>
-                <div class="stat-row"><span class="stat-label">HANDLING</span><div class="stat-bar-bg"><div id="stat-bar-handling" class="stat-bar-fill"></div></div></div>
-                <div class="stat-row"><span class="stat-label">DRIFT</span><div class="stat-bar-bg"><div id="stat-bar-drift" class="stat-bar-fill"></div></div></div>
-                <div class="stat-row"><span class="stat-label">STABILITY</span><div class="stat-bar-bg"><div id="stat-bar-stability" class="stat-bar-fill"></div></div></div>
+                <div class="panel-header-row">
+                    <span class="stat-title">PERFORMANCE METRICS</span>
+                    <span class="stat-subtitle">峠戦闘力評価</span>
+                </div>
+                <div class="stat-rows-wrap">
+                    <div class="stat-row">
+                        <span class="stat-label">最高速度 (SPEED)</span>
+                        <div class="stat-bar-bg"><div id="stat-bar-speed" class="stat-bar-fill"></div></div>
+                        <span id="stat-val-speed" class="stat-num-val">8.0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">加速力 (ACCEL)</span>
+                        <div class="stat-bar-bg"><div id="stat-bar-accel" class="stat-bar-fill"></div></div>
+                        <span id="stat-val-accel" class="stat-num-val">7.8</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">旋回性 (HANDLING)</span>
+                        <div class="stat-bar-bg"><div id="stat-bar-handling" class="stat-bar-fill max"></div></div>
+                        <span id="stat-val-handling" class="stat-num-val">10.0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">ドリフト (DRIFT)</span>
+                        <div class="stat-bar-bg"><div id="stat-bar-drift" class="stat-bar-fill"></div></div>
+                        <span id="stat-val-drift" class="stat-num-val">9.2</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">剛性 (STABILITY)</span>
+                        <div class="stat-bar-bg"><div id="stat-bar-stability" class="stat-bar-fill"></div></div>
+                        <span id="stat-val-stability" class="stat-num-val">6.5</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- アクション・カラー変更 -->
+            <!-- パネル3: カラー選択 ＆ アクション -->
             <div class="garage-card action-card">
-                <div class="action-title">BODY COLOR</div>
+                <div class="panel-header-row">
+                    <span class="action-title">BODY COLOR</span>
+                    <span id="garage-color-name" class="color-name-text">パンダ白黒 (ハイテックツートン)</span>
+                </div>
                 <div id="garage-color-group" class="garage-colors-row"></div>
 
                 <div class="action-buttons-col">
-                    <button id="btn-garage-rev" class="garage-rev-btn">🔊 REV ENGINE (空ぶかし試聴)</button>
-                    <button id="btn-garage-select" class="garage-confirm-btn">SELECT THIS MACHINE (決定)</button>
+                    <button id="btn-garage-rev" class="garage-rev-btn">
+                        <span class="btn-rev-icon">🔊</span>
+                        <span class="btn-rev-text">エキゾースト試聴 (REV ENGINE)</span>
+                    </button>
+                    <button id="btn-garage-select" class="garage-confirm-btn">
+                        <span class="btn-confirm-lead">このマシンで決定</span>
+                        <span class="btn-confirm-sub">ENTRY THIS MACHINE [ENTER]</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -713,7 +755,7 @@
     <script src="js/core/AudioManager.js?v=119_touge_arcade_select"></script>
     <script src="js/ui/CornerGuide.js?v=119_touge_arcade_select"></script>
     <script src="js/ui/HUD.js?v=119_touge_arcade_select"></script>
-    <script src="js/ui/GarageUI.js?v=119_touge_arcade_select"></script>
+    <script src="js/ui/GarageUI.js?v=121_garage_masterpiece"></script>
     <script src="js/core/Game.js?v=119_touge_arcade_select"></script>
 
     <script>
