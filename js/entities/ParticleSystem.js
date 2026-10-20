@@ -1233,7 +1233,7 @@ class ParticleSystem {
      * ★頭文字D名物：テールランプ残像（Light Trails）初期化
      */
     initLightTrails() {
-        this.maxTrailPoints = 35; // トレイルの履歴フレーム数
+        this.maxTrailPoints = 48; // トレイルの履歴フレーム数（長大でドラマチックなネオン光条）
 
         // 左右のトレイル用データ
         this.playerTrailL = [];
@@ -1272,48 +1272,83 @@ class ParticleSystem {
         const mat = new THREE.MeshBasicMaterial({
             vertexColors: true,
             transparent: true,
-            opacity: 0.95,
+            opacity: 0.96,
             blending: THREE.AdditiveBlending,
             side: THREE.DoubleSide,
             depthWrite: false
         });
 
-        return new THREE.Mesh(geom, mat);
+        const mesh = new THREE.Mesh(geom, mat);
+        // ★【超重要】Three.jsの視体積カリング（Frustum Culling）による動的リボン消失を100%防止！
+        mesh.frustumCulled = false;
+        mesh.renderOrder = 998;
+        return mesh;
     }
 
-    updateTrailPoints(trailArray, newPos, isDrifting) {
-        if (isDrifting) {
-            trailArray.unshift(newPos.clone());
-            if (trailArray.length > this.maxTrailPoints) {
-                trailArray.pop();
+    updateTrailPoints(trailArray, newPos, isEmitting) {
+        if (!newPos) return;
+
+        if (isEmitting) {
+            // 前のポイントと近すぎる（微小振動や静止時）重複記録を防ぎ、滑らかな補間を保証
+            if (trailArray.length === 0 || trailArray[0].distanceToSquared(newPos) > 0.02) {
+                trailArray.unshift(newPos.clone());
+                if (trailArray.length > this.maxTrailPoints) {
+                    trailArray.pop();
+                }
+            } else if (trailArray.length > 0) {
+                trailArray[0].copy(newPos);
             }
         } else {
+            // ドリフト終了時：一瞬で消えず、自然に尾を引いてフワッと消滅
             if (trailArray.length > 0) {
                 trailArray.pop();
-                if (trailArray.length > 0) trailArray.pop(); // 素早く消滅
             }
         }
     }
 
-    updateTrailMesh(mesh, trailArray) {
+    updateTrailMesh(mesh, trailArray, camera = null) {
         const posAttr = mesh.geometry.attributes.position;
         const colAttr = mesh.geometry.attributes.color;
         const len = trailArray.length;
-        const ribbonHalfHeight = 0.08;
+        const halfWidth = 0.075; // 光条の半幅 (m)
+
+        const camPos = camera ? camera.position : null;
 
         for (let i = 0; i < this.maxTrailPoints; i++) {
             const base = i * 2;
             if (i < len) {
                 const p = trailArray[i];
-                posAttr.setXYZ(base, p.x, p.y + ribbonHalfHeight, p.z);
-                posAttr.setXYZ(base + 1, p.x, p.y - ribbonHalfHeight, p.z);
+                let normX = 0, normY = halfWidth, normZ = 0;
 
-                // 先頭は鮮烈なネオンレッド、末尾に向かって自然に黒（透明）へ減衰
-                const alpha = Math.pow(1.0 - (i / this.maxTrailPoints), 1.6);
-                colAttr.setXYZ(base, 1.0 * alpha, 0.08 * alpha, 0.15 * alpha);
-                colAttr.setXYZ(base + 1, 1.0 * alpha, 0.08 * alpha, 0.15 * alpha);
+                // ★カメラ視線直交ビルボーディング（俯瞰・追従・横アングル問わず常に均一な幅でクッキリ描画）
+                if (camPos && i < len - 1) {
+                    const nextP = trailArray[i + 1];
+                    const dirX = p.x - nextP.x;
+                    const dirY = p.y - nextP.y;
+                    const dirZ = p.z - nextP.z;
+
+                    const toCamX = camPos.x - p.x;
+                    const toCamY = camPos.y - p.y;
+                    const toCamZ = camPos.z - p.z;
+
+                    let sideX = dirY * toCamZ - dirZ * toCamY;
+                    let sideY = dirZ * toCamX - dirX * toCamZ;
+                    let sideZ = dirX * toCamY - dirY * toCamX;
+                    const sideLen = Math.hypot(sideX, sideY, sideZ) || 1.0;
+                    normX = (sideX / sideLen) * halfWidth;
+                    normY = (sideY / sideLen) * halfWidth;
+                    normZ = (sideZ / sideLen) * halfWidth;
+                }
+
+                posAttr.setXYZ(base, p.x + normX, p.y + normY, p.z + normZ);
+                posAttr.setXYZ(base + 1, p.x - normX, p.y - normY, p.z - normZ);
+
+                // 先頭は鮮烈なネオンレッド、末尾に向かって自然に減衰
+                const alpha = Math.pow(1.0 - (i / this.maxTrailPoints), 1.35);
+                colAttr.setXYZ(base, 1.0 * alpha, 0.06 * alpha, 0.12 * alpha);
+                colAttr.setXYZ(base + 1, 1.0 * alpha, 0.06 * alpha, 0.12 * alpha);
             } else {
-                const lastP = (len > 0) ? trailArray[len - 1] : new THREE.Vector3(0, -9999, 0);
+                const lastP = (len > 0) ? trailArray[len - 1] : new THREE.Vector3(0, 0, 0);
                 posAttr.setXYZ(base, lastP.x, lastP.y, lastP.z);
                 posAttr.setXYZ(base + 1, lastP.x, lastP.y, lastP.z);
                 colAttr.setXYZ(base, 0, 0, 0);
@@ -1325,18 +1360,18 @@ class ParticleSystem {
         colAttr.needsUpdate = true;
     }
 
-    updateTailTrails(playerTails, isPlayerDrifting, rivalTails, isRivalDrifting) {
-        if (playerTails) {
-            this.updateTrailPoints(this.playerTrailL, playerTails.left, isPlayerDrifting);
-            this.updateTrailPoints(this.playerTrailR, playerTails.right, isPlayerDrifting);
-            this.updateTrailMesh(this.meshPlayerTrailL, this.playerTrailL);
-            this.updateTrailMesh(this.meshPlayerTrailR, this.playerTrailR);
+    updateTailTrails(playerTails, isPlayerEmitting, rivalTails, isRivalEmitting, camera = null) {
+        if (playerTails && playerTails.left && playerTails.right) {
+            this.updateTrailPoints(this.playerTrailL, playerTails.left, isPlayerEmitting);
+            this.updateTrailPoints(this.playerTrailR, playerTails.right, isPlayerEmitting);
+            this.updateTrailMesh(this.meshPlayerTrailL, this.playerTrailL, camera);
+            this.updateTrailMesh(this.meshPlayerTrailR, this.playerTrailR, camera);
         }
-        if (rivalTails) {
-            this.updateTrailPoints(this.rivalTrailL, rivalTails.left, isRivalDrifting);
-            this.updateTrailPoints(this.rivalTrailR, rivalTails.right, isRivalDrifting);
-            this.updateTrailMesh(this.meshRivalTrailL, this.rivalTrailL);
-            this.updateTrailMesh(this.meshRivalTrailR, this.rivalTrailR);
+        if (rivalTails && rivalTails.left && rivalTails.right) {
+            this.updateTrailPoints(this.rivalTrailL, rivalTails.left, isRivalEmitting);
+            this.updateTrailPoints(this.rivalTrailR, rivalTails.right, isRivalEmitting);
+            this.updateTrailMesh(this.meshRivalTrailL, this.rivalTrailL, camera);
+            this.updateTrailMesh(this.meshRivalTrailR, this.rivalTrailR, camera);
         }
     }
 }

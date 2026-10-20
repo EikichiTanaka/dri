@@ -807,7 +807,7 @@ class Game {
         }
     }
 
-        updateTitleEffects(dt) {
+    updateTitleEffects(dt) {
         if (!this.particles) return;
 
         if (this.playerPhysics.isDrifting && this.playerCar) {
@@ -817,6 +817,18 @@ class Game {
                 this.particles.emitSmoke(wheels.left, smokeVel, 0.92);
                 this.particles.emitSmoke(wheels.right, smokeVel, 0.92);
             }
+        }
+
+        // タイトル画面アトラクトデモ走行でも鮮烈なテールランプ残像（Light Trails）を描画！
+        if (this.playerCar) {
+            const pTails = this.playerCar.getTailLightPositions();
+            this.particles.updateTailTrails(
+                pTails,
+                this.playerPhysics.isDrifting,
+                null,
+                false,
+                this.camera
+            );
         }
 
         this.particles.update(dt, this.camera);
@@ -1125,14 +1137,20 @@ class Game {
             this.particles.endRivalDrift();
         }
 
-        // ★頭文字D名物：ドリフト時のテールランプ残像（Light Trails）更新
+        // ★頭文字D名物：ドリフト・旋回・ブレーキング時のテールランプ残像（Light Trails）更新
         const pTails = this.playerCar.getTailLightPositions();
         const rTails = this.rivalCar.getTailLightPositions();
+
+        // プレイヤーの光跡発生条件：本格ドリフト中、パワースライド中、スリップ角旋回中、切り返しホールド中、または急制動時
+        const pShouldTrail = (pIsDrifting || pIsPowerSliding || (pAbsAngle > 0.08 && pSpeed > 18) || (this.playerTireBurnTimer > 0) || (this.playerPhysics.brake > 0.30 && pSpeed > 20) || (this.playerPhysics.handbrake && pSpeed > 15));
+        const rShouldTrail = (this.rivalCar.isDrifting || (Math.abs(this.rivalCar.driftAngle || 0) > 0.08 && this.rivalCar.speed > 20));
+
         this.particles.updateTailTrails(
             pTails,
-            this.playerPhysics.isDrifting,
+            pShouldTrail,
             rTails,
-            this.rivalCar.isDrifting
+            rShouldTrail,
+            this.camera
         );
 
         this.particles.update(dt, this.camera);

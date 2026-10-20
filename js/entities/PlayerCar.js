@@ -376,8 +376,10 @@ class PlayerCar {
 
     getTailLightPositions() {
         this.meshGroup.updateMatrixWorld(true);
-        const leftTail = this.tailLPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
-        const rightTail = this.tailRPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
+        const lPos = this.tailLPos || new THREE.Vector3(-0.60, 0.58, -2.05);
+        const rPos = this.tailRPos || new THREE.Vector3(0.60, 0.58, -2.05);
+        const leftTail = lPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
+        const rightTail = rPos.clone().applyMatrix4(this.meshGroup.matrixWorld);
         return { left: leftTail, right: rightTail };
     }
 
