@@ -68,7 +68,15 @@ class PlayerCar {
         const model = CarModelBuilder.build(carId, colorDef);
         this.meshGroup.add(model.meshGroup);
 
-        this.wheels = model.wheels;
+        this.wheels = model.wheels || [];
+        if (this.wheels) {
+            this.wheels.forEach(w => {
+                if (w.pivot) {
+                    w.defaultY = w.pivot.position.y;
+                    w.defaultZ = w.pivot.position.z;
+                }
+            });
+        }
         this.frontWheelL = model.frontWheelL;
         this.frontWheelR = model.frontWheelR;
         this.tailLightMat = model.tailLightMat;
@@ -90,13 +98,35 @@ class PlayerCar {
         this.meshGroup.position.copy(this.physics.position);
         this.meshGroup.rotation.y = this.physics.yaw;
 
-        // 勾配（ピッチ）とロール・加減速・エンジンブレーキノーズダイブ・立体カントを滑らかに合成
+        // 勾配（ピッチ）とロール・立体カントを滑らかに合成
         const bankRoll = (this.physics.trackInfo ? (this.physics.trackInfo.bankAngle || 0) : 0);
         const rollAmount = -this.physics.steerAngle * (this.physics.speed / 180) * 0.12;
-        const accelPitch = (this.physics.throttle * 0.02) - (this.physics.brake * 0.05);
-        const engineBrakePitch = ((this.physics.engineBrakeForce || 0) / 7.2) * 0.045;
         this.meshGroup.rotation.z = rollAmount + bankRoll + (this.physics.gutterRoll || 0);
-        this.meshGroup.rotation.x = this.physics.pitch + accelPitch - engineBrakePitch;
+
+        // ★【ブレーキ・加減速ノーズダイブ＆タイヤ完全接地補正】
+        // ブレーキ時に車体（ボディ）が自然にノーズダイブするリアルなサスペンション沈み込みを再現しつつ、
+        // タイヤの接地パッチ（contact patch）が路面アスファルトへめり込む現象を100%防止！
+        const rawBrakePitch = (this.physics.brake * 0.022); // 正値 = ノーズダイブ（前下がり）
+        const rawEngineBrake = ((this.physics.engineBrakeForce || 0) / 7.2) * 0.012;
+        const rawAccelPitch = -(this.physics.throttle * 0.012); // 負値 = リアスクワット（前上がり）
+
+        const targetSuspensionPitch = (rawBrakePitch + rawEngineBrake + rawAccelPitch);
+        if (this.currentSuspensionPitch === undefined) this.currentSuspensionPitch = 0;
+        this.currentSuspensionPitch += (targetSuspensionPitch - this.currentSuspensionPitch) * Math.min(1.0, 10.0 * dt);
+
+        this.meshGroup.rotation.x = this.physics.pitch + this.currentSuspensionPitch;
+
+        // ★各ホイールのサスペンション幾何補正（タイヤ底面が路面高さ y=0 に完全固定）
+        // ボディが前傾しても前輪はアスファルトにめり込まず、フェンダーがタイヤに被る実車サスストロークを実現！
+        const sinSuspPitch = Math.sin(this.currentSuspensionPitch);
+        if (this.wheels) {
+            this.wheels.forEach(w => {
+                if (!w.pivot) return;
+                const zArm = w.defaultZ !== undefined ? w.defaultZ : (w.isFront ? 1.20 : -1.20);
+                const defY = w.defaultY !== undefined ? w.defaultY : 0.305;
+                w.pivot.position.y = defY + zArm * sinSuspPitch;
+            });
+        }
 
         // ★【視覚リアリズム】フロントタイヤのカウンターステア実舵角アニメーション
         // 通常走行時はドライバーの入力ステア角に自然に追従し、

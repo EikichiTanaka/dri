@@ -2572,3 +2572,320 @@ body, html {
     opacity: 0.9;
 }
 
+
+
+/* ==========================================================================
+   ★ SEGA Initial D Arcade Stage 本格ゲーム起動ロード画面 (Game Loading Screen)
+   ========================================================================== */
+#game-loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #06090e;
+    background-image: 
+        radial-gradient(circle at 50% 38%, rgba(20, 32, 48, 0.9) 0%, rgba(6, 9, 14, 0.98) 70%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 4px);
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 40px;
+    box-sizing: border-box;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    color: #ffffff;
+    user-select: none;
+    transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#game-loading-screen.fade-out {
+    opacity: 0;
+    transform: scale(1.02);
+    pointer-events: none;
+}
+
+/* 上部アーケードネットワークヘッダー */
+.loading-arcade-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.12);
+    padding-bottom: 12px;
+}
+
+.loading-sega-badge {
+    background: #0060a8;
+    color: #ffffff;
+    font-family: 'Arial Black', Impact, sans-serif;
+    font-size: 16px;
+    font-style: italic;
+    padding: 3px 14px;
+    border-radius: 3px;
+    letter-spacing: 2px;
+    box-shadow: 0 0 12px rgba(0, 96, 168, 0.6);
+}
+
+.loading-allnet-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #a0aec0;
+    letter-spacing: 1.5px;
+}
+
+.allnet-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00ff66;
+    box-shadow: 0 0 8px #00ff66;
+    animation: allnet-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes allnet-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.loading-ver-tag {
+    font-family: 'Consolas', monospace;
+    font-size: 10.5px;
+    color: #ffaa00;
+    letter-spacing: 1px;
+}
+
+/* 中央：メインタイトル＆タコメータープログレス */
+.loading-main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 680px;
+    margin: auto 0;
+}
+
+.loading-logo-box {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.loading-kanji-sub {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffaa00;
+    letter-spacing: 8px;
+    margin-bottom: 2px;
+    text-shadow: 0 0 10px rgba(255, 170, 0, 0.6);
+}
+
+.loading-logo-main {
+    font-size: 58px;
+    font-weight: 950;
+    font-style: italic;
+    color: #ffffff;
+    letter-spacing: 4px;
+    line-height: 1;
+    text-shadow: 
+        0 2px 0 #888888,
+        0 4px 15px rgba(0, 0, 0, 0.9),
+        0 0 25px rgba(255, 255, 255, 0.4);
+}
+
+.loading-logo-d {
+    color: #ff0022;
+    font-style: italic;
+    font-size: 72px;
+    margin-left: 6px;
+    text-shadow: 0 0 25px rgba(255, 0, 34, 0.8);
+}
+
+.loading-subtitle {
+    font-family: 'Arial Black', Impact, sans-serif;
+    font-size: 15px;
+    font-style: italic;
+    letter-spacing: 4px;
+    color: #00e5ff;
+    margin-top: 6px;
+    text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+}
+
+.loading-subtitle span {
+    color: #ffcc00;
+}
+
+/* プログレスゲージコンテナ */
+.loading-gauge-card {
+    width: 100%;
+    background: rgba(14, 22, 33, 0.88);
+    border: 1.5px solid rgba(0, 229, 255, 0.4);
+    border-radius: 8px;
+    padding: 24px 28px;
+    box-sizing: border-box;
+    box-shadow: 
+        0 8px 30px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        0 0 20px rgba(0, 229, 255, 0.15);
+}
+
+.loading-status-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.loading-status-title {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 16px;
+    font-style: italic;
+    font-weight: 900;
+    color: #ffcc00;
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+}
+
+.loading-pct-val {
+    font-family: 'Arial Black', Impact, sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    color: #00ffcc;
+    letter-spacing: 1px;
+    text-shadow: 0 0 12px rgba(0, 255, 204, 0.7);
+}
+
+.loading-status-sub {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+    min-height: 16px;
+}
+
+/* プログレスバー */
+.loading-bar-track {
+    width: 100%;
+    height: 12px;
+    background: #090e15;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    position: relative;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.loading-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff8800 0%, #ffcc00 50%, #00e5ff 100%);
+    box-shadow: 0 0 14px rgba(255, 204, 0, 0.8);
+    transition: width 0.18s ease-out;
+    position: relative;
+}
+
+.loading-bar-fill::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: bar-shimmer 1.4s infinite linear;
+}
+
+@keyframes bar-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* 下部：アーケード診断コンソール */
+.loading-diagnostics-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: 'Consolas', monospace;
+    font-size: 10px;
+    color: #64748b;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 12px;
+}
+
+.loading-diagnostics-bar .diag-ok {
+    color: #00ff88;
+    font-weight: bold;
+}
+
+/* ==========================================================================
+   ★ ガレージ画面 愛車切り替えローディングインジケーター (Garage Machine Loader)
+   ========================================================================== */
+.garage-loading-overlay {
+    position: absolute;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out;
+}
+
+.garage-loading-box {
+    background: rgba(10, 16, 26, 0.92);
+    border: 1.5px solid #00e5ff;
+    border-radius: 6px;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.8),
+        0 0 15px rgba(0, 229, 255, 0.35);
+    backdrop-filter: blur(6px);
+}
+
+.garage-loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(0, 229, 255, 0.25);
+    border-top-color: #ffcc00;
+    border-radius: 50%;
+    animation: garage-spin 0.65s infinite linear;
+}
+
+@keyframes garage-spin {
+    to { transform: rotate(360deg); }
+}
+
+.garage-loading-texts {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.garage-loading-title {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 12px;
+    font-style: italic;
+    font-weight: 900;
+    color: #ffcc00;
+    letter-spacing: 1.5px;
+}
+
+.garage-loading-sub {
+    font-size: 11px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 1px;
+}

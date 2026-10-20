@@ -200,22 +200,55 @@ class GarageUI {
         this.close();
     }
 
+    showLoading(car) {
+        if (!this.loadingIndicator) {
+            this.loadingIndicator = document.getElementById('garage-loading-indicator');
+            this.loadingCarName = document.getElementById('garage-loading-car-name');
+        }
+        if (this.loadingIndicator) {
+            if (this.loadingCarName && car) {
+                this.loadingCarName.textContent = 'RETRIEVING [' + (car ? car.name : '') + ']...';
+            }
+            this.loadingIndicator.style.display = 'flex';
+            this.loadingIndicator.style.opacity = '1';
+        }
+    }
+
+    hideLoading() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.style.opacity = '0';
+            setTimeout(() => {
+                if (this.loadingIndicator && this.loadingIndicator.style.opacity === '0') {
+                    this.loadingIndicator.style.display = 'none';
+                }
+            }, 200);
+        }
+    }
+
     nextCar() {
-        this.currentIndex = (this.currentIndex + 1) % this.carIds.length;
-        this.currentColorIndex = 0;
-        this.updateCarDisplay();
+        this.selectCarByIndex((this.currentIndex + 1) % this.carIds.length);
     }
 
     prevCar() {
-        this.currentIndex = (this.currentIndex - 1 + this.carIds.length) % this.carIds.length;
-        this.currentColorIndex = 0;
-        this.updateCarDisplay();
+        this.selectCarByIndex((this.currentIndex - 1 + this.carIds.length) % this.carIds.length);
     }
 
     selectCarByIndex(idx) {
         this.currentIndex = idx;
         this.currentColorIndex = 0;
-        this.updateCarDisplay();
+
+        const carId = this.carIds[this.currentIndex];
+        const car = CAR_DATABASE[carId];
+
+        // マシン読み込み中インジケーター表示（アーケード風アーカイブ検索）
+        this.showLoading(car);
+
+        setTimeout(() => {
+            this.updateCarDisplay();
+            setTimeout(() => {
+                this.hideLoading();
+            }, 180);
+        }, 30);
     }
 
     selectCar(id) {

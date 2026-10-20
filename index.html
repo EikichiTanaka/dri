@@ -4,9 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INITIAL D ARCADE STAGE - 峠ドリフトレース</title>
-    <link rel="stylesheet" href="css/style.css?v=120_touge_arcade_masterpiece">
+    <link rel="stylesheet" href="css/style.css?v=125_loading_screen_and_grounded_dive">
 </head>
 <body>
+    <!-- ★ SEGA Initial D Arcade Stage 本格ゲーム起動ロード画面 -->
+    <div id="game-loading-screen">
+        <div class="loading-arcade-header">
+            <span class="loading-sega-badge">SEGA</span>
+            <div class="loading-allnet-badge">
+                <span class="allnet-led"></span>
+                <span>ALL.Net ARCADE LINK SYSTEM</span>
+            </div>
+            <span class="loading-ver-tag">SYSTEM VER. 1.25.0 INITIAL D ZERO &amp; &infin;</span>
+        </div>
+
+        <div class="loading-main-content">
+            <div class="loading-logo-box">
+                <div class="loading-kanji-sub">[ イニシャル ]</div>
+                <div class="loading-logo-main">頭文字<span class="loading-logo-d">D</span></div>
+                <div class="loading-subtitle">ARCADE STAGE <span>ZERO &amp; &infin;</span></div>
+            </div>
+
+            <div class="loading-gauge-card">
+                <div class="loading-status-head">
+                    <span id="loading-status-title" class="loading-status-title">SYSTEM INITIALIZING...</span>
+                    <span id="loading-pct-text" class="loading-pct-val">0%</span>
+                </div>
+                <div id="loading-status-log" class="loading-status-sub">CHECKING 3D TOUGE TRACK GEOMETRY...</div>
+                <div class="loading-bar-track">
+                    <div id="loading-bar-fill" class="loading-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading-diagnostics-bar">
+            <span>MAIN BUS: <span class="diag-ok">OK</span></span>
+            <span>GRAPHICS ENGINE: <span class="diag-ok">60FPS ACTIVE</span></span>
+            <span>SOUND SYNTHESIZER: <span class="diag-ok">READY</span></span>
+            <span id="diag-line-4">CABINET I/O: <span class="diag-ok">ONLINE</span></span>
+        </div>
+    </div>
+
     <!-- 3D WebGL レンダリングキャンバス -->
     <div id="canvas-container"></div>
 
@@ -635,6 +673,17 @@
 
     <!-- ガレージ＆マシン選択 3Dショールーム オーバーレイ (SEGA Initial D 本格仕様) -->
     <div id="garage-overlay" style="display: none;">
+        <!-- ガレージ内マシン切り替えローディングインジケーター -->
+        <div id="garage-loading-indicator" class="garage-loading-overlay" style="display: none;">
+            <div class="garage-loading-box">
+                <div class="garage-loading-spinner"></div>
+                <div class="garage-loading-texts">
+                    <div class="garage-loading-title">MACHINE ARCHIVE RETRIEVAL</div>
+                    <div id="garage-loading-car-name" class="garage-loading-sub">ACCESSING MACHINE SPECIFICATIONS...</div>
+                </div>
+            </div>
+        </div>
+
         <div class="garage-header">
             <div class="garage-title-wrap">
                 <div class="garage-logo-tag">頭文字D</div>
@@ -743,25 +792,40 @@
 
     <!-- スクリプト群 -->
     <script src="js/lib/three.min.js"></script>
-    <script src="js/data/CarDatabase.js?v=119_touge_arcade_select"></script>
-    <script src="js/physics/TougeTrack.js?v=119_touge_arcade_select"></script>
-    <script src="js/physics/CarPhysics.js?v=119_touge_arcade_select"></script>
-    <script src="js/entities/CarModelBuilder.js?v=119_touge_arcade_select"></script>
-    <script src="js/entities/PlayerCar.js?v=119_touge_arcade_select"></script>
-    <script src="js/entities/RivalCar.js?v=119_touge_arcade_select"></script>
-    <script src="js/entities/ParticleSystem.js?v=119_touge_arcade_select"></script>
-    <script src="js/core/Input.js?v=119_touge_arcade_select"></script>
-    <script src="js/data/TireAudioData.js?v=119_touge_arcade_select"></script>
-    <script src="js/core/AudioManager.js?v=119_touge_arcade_select"></script>
-    <script src="js/ui/CornerGuide.js?v=119_touge_arcade_select"></script>
-    <script src="js/ui/HUD.js?v=119_touge_arcade_select"></script>
-    <script src="js/ui/GarageUI.js?v=124_grounded_smooth_attract"></script>
-    <script src="js/core/Game.js?v=124_grounded_smooth_attract"></script>
+    <script src="js/data/CarDatabase.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/physics/TougeTrack.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/physics/CarPhysics.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/entities/CarModelBuilder.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/entities/PlayerCar.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/entities/RivalCar.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/entities/ParticleSystem.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/core/Input.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/data/TireAudioData.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/core/AudioManager.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/ui/CornerGuide.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/ui/HUD.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/ui/GarageUI.js?v=125_loading_screen_and_grounded_dive"></script>
+    <script src="js/core/Game.js?v=125_loading_screen_and_grounded_dive"></script>
 
     <script>
         function initApp() {
             if (window.__appInitialized) return;
             window.__appInitialized = true;
+
+            const loaderElem = document.getElementById('game-loading-screen');
+            const barFill = document.getElementById('loading-bar-fill');
+            const pctText = document.getElementById('loading-pct-text');
+            const logText = document.getElementById('loading-status-log');
+            const statusTitle = document.getElementById('loading-status-title');
+
+            function updateLoader(pct, log, title) {
+                if (barFill) barFill.style.width = pct + '%';
+                if (pctText) pctText.textContent = Math.round(pct) + '%';
+                if (logText && log) logText.textContent = log;
+                if (statusTitle && title) statusTitle.textContent = title;
+            }
+
+            updateLoader(25, 'INITIALIZING THREE.JS 3D ENGINE & SCENE...');
 
             let game;
             try {
@@ -770,8 +834,22 @@
             } catch (err) {
                 console.error('initApp Error:', err);
                 window.__lastErr = err.toString() + '\n' + err.stack;
+                updateLoader(100, 'ERROR: ' + err.message, 'INITIALIZATION FAILED');
                 return;
             }
+
+            updateLoader(85, 'WARMING UP SHADERS & RUNNING SEGA ALL.Net VERIFICATION...');
+            setTimeout(() => {
+                updateLoader(100, 'ALL.Net ONLINE - SYSTEM READY 60FPS!', 'SYSTEM READY');
+                setTimeout(() => {
+                    if (loaderElem) {
+                        loaderElem.classList.add('fade-out');
+                        setTimeout(() => {
+                            loaderElem.style.display = 'none';
+                        }, 550);
+                    }
+                }, 350);
+            }, 180);
 
             // 【最重要】メイン出撃ボタン (1P START / 乱入出撃) 即時バインド
             const btnStart = document.getElementById('btn-start');

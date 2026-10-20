@@ -174,7 +174,7 @@ class RivalCar {
             pivot.add(wMesh);
             this.meshGroup.add(pivot);
 
-            this.wheels.push({ pivot, mesh: wMesh, isFront: wp.isFront, isLeft: wp.isLeft });
+            this.wheels.push({ pivot, mesh: wMesh, isFront: wp.isFront, isLeft: wp.isLeft, defaultY: wp.y, defaultZ: wp.z });
             if (wp.isFront) {
                 if (wp.isLeft) this.frontWheelL = pivot;
                 else this.frontWheelR = pivot;
@@ -453,8 +453,20 @@ class RivalCar {
 
         // 勾配ピッチ＋加減速ピッチ（ブレーキでノーズダイブ、加速でリア沈み込み）
         const trackPitch = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
-        const accelPitch = (this.accel > 0 ? 0.015 : -0.035);
-        this.pitch += ((trackPitch + accelPitch) - this.pitch) * Math.min(1.0, 8.0 * dt);
+        const targetSuspPitch = (this.accel > 0 ? -0.010 : 0.018);
+        if (this.currentSuspPitch === undefined) this.currentSuspPitch = 0;
+        this.currentSuspPitch += (targetSuspPitch - this.currentSuspPitch) * Math.min(1.0, 10.0 * dt);
+        this.pitch = trackPitch + this.currentSuspPitch;
+
+        // ホイールの接地補正（ブレーキ時沈み込みでもタイヤがめり込まない）
+        const sinSuspPitch = Math.sin(this.currentSuspPitch);
+        if (this.wheels) {
+            this.wheels.forEach(w => {
+                const zArm = w.defaultZ !== undefined ? w.defaultZ : (w.isFront ? 1.25 : -1.25);
+                const defY = w.defaultY !== undefined ? w.defaultY : 0.31;
+                w.pivot.position.y = defY + zArm * sinSuspPitch;
+            });
+        }
 
         // 6. 車体メッシュへの反映（Euler YXZ で姿勢合成）
         this.yaw = this.baseYaw + this.driftAngle;
