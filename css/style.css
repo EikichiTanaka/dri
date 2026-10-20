@@ -509,39 +509,78 @@ body, html {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     text-align: center;
-    margin: auto 0;
+    margin-top: 6px;
+    margin-bottom: auto;
     user-select: none;
+    z-index: 10;
 }
 
 .arcade-logo-container {
-    filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.95));
+    position: relative;
+    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 40px rgba(255, 30, 0, 0.45));
+    overflow: hidden;
+}
+
+.arcade-logo-container::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -80%;
+    width: 60%;
+    height: 200%;
+    background: linear-gradient(
+        105deg,
+        transparent 25%,
+        rgba(255, 255, 255, 0.35) 45%,
+        rgba(255, 255, 255, 0.95) 50%,
+        rgba(255, 255, 255, 0.35) 55%,
+        transparent 75%
+    );
+    transform: rotate(20deg);
+    animation: logoChromeSweep 4.5s infinite ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes logoChromeSweep {
+    0% { left: -80%; opacity: 0; }
+    15% { opacity: 0.9; }
+    35% { left: 150%; opacity: 0; }
+    100% { left: 150%; opacity: 0; }
 }
 
 .arcade-logo-svg {
-    max-width: 90vw;
+    max-width: 86vw;
     height: auto;
-    max-height: 195px;
+    max-height: 180px;
 }
 
 .title-stage-sub {
-    font-size: 13.5px;
-    color: #00ddff;
-    letter-spacing: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(90deg, rgba(0, 36, 72, 0.88) 0%, rgba(4, 12, 24, 0.94) 100%);
+    border: 1px solid rgba(0, 220, 255, 0.6);
+    border-radius: 4px;
+    padding: 3px 18px;
+    font-size: 12px;
+    color: #00e5ff;
+    letter-spacing: 2.2px;
     font-weight: 900;
     font-style: italic;
-    margin-top: 10px;
-    margin-bottom: 22px;
-    text-shadow: 0 0 12px rgba(0, 220, 255, 0.7);
+    margin-top: 6px;
+    margin-bottom: 12px;
+    text-shadow: 0 0 10px rgba(0, 220, 255, 0.8);
+    box-shadow: 0 0 16px rgba(0, 200, 255, 0.3);
 }
 
 /* PUSH START BUTTON（浮動式アーケードネオン：泥色ボックス完全撤廃） */
 .arcade-press-start-prompt {
     position: relative;
     cursor: pointer;
-    padding: 6px 24px;
-    margin-bottom: 12px;
+    padding: 2px 24px;
+    margin-bottom: 6px;
     transition: transform 0.12s ease-out;
 }
 
@@ -551,33 +590,33 @@ body, html {
 
 .press-start-text {
     font-family: 'Arial Black', 'Impact', sans-serif;
-    font-size: 34px;
+    font-size: 31px;
     font-weight: 950;
     font-style: italic;
-    letter-spacing: 6px;
+    letter-spacing: 5px;
     color: #ffffff;
-    animation: neonArcadePulse 1.8s infinite ease-in-out;
+    animation: neonArcadePulse 1.4s infinite ease-in-out;
     text-shadow: 
-        0 0 8px rgba(255, 230, 0, 0.9),
-        0 0 20px rgba(255, 120, 0, 0.9),
-        0 0 35px rgba(255, 50, 0, 0.8);
+        0 0 10px rgba(255, 240, 50, 0.95),
+        0 0 25px rgba(255, 130, 0, 0.95),
+        0 0 45px rgba(255, 40, 0, 0.85);
 }
 
 @keyframes neonArcadePulse {
     0%, 100% {
         color: #ffffff;
-        text-shadow: 0 0 10px rgba(255, 240, 50, 0.95), 0 0 25px rgba(255, 140, 0, 0.95), 0 0 45px rgba(255, 50, 0, 0.85);
+        text-shadow: 0 0 12px rgba(255, 240, 50, 0.98), 0 0 28px rgba(255, 140, 0, 0.98), 0 0 50px rgba(255, 50, 0, 0.9);
         opacity: 1;
     }
     50% {
         color: #ffe680;
-        text-shadow: 0 0 4px rgba(255, 180, 0, 0.6), 0 0 12px rgba(255, 80, 0, 0.6);
-        opacity: 0.82;
+        text-shadow: 0 0 6px rgba(255, 180, 0, 0.7), 0 0 16px rgba(255, 80, 0, 0.7);
+        opacity: 0.84;
     }
 }
 
 .press-start-sub {
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 2.5px;
     color: #ffd899;
@@ -700,6 +739,61 @@ body, html {
     padding: 1px 5px;
     border-radius: 3px;
     letter-spacing: 1px;
+}
+
+/* 本物のアーケード象徴：電光ニューステロップ */
+.arcade-marquee-ticker-wrap {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    background: rgba(3, 8, 16, 0.85);
+    border-top: 1px solid rgba(0, 200, 255, 0.35);
+    border-bottom: 1px solid rgba(0, 200, 255, 0.35);
+    padding: 3px 0;
+    margin-top: 3px;
+    margin-bottom: 2px;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    font-size: 11px;
+    box-sizing: border-box;
+    backdrop-filter: blur(4px);
+}
+
+.marquee-ticker-track {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: marqueeScroll 26s linear infinite;
+}
+
+@keyframes marqueeScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+    margin-right: 32px;
+    color: #c0d8f0;
+    letter-spacing: 1px;
+}
+
+.ticker-gold {
+    color: #ffea00;
+    font-weight: 900;
+    margin-right: 6px;
+    text-shadow: 0 0 6px rgba(255, 230, 0, 0.6);
+}
+
+.ticker-cyan {
+    color: #00e5ff;
+    font-weight: 900;
+    margin-right: 6px;
+    text-shadow: 0 0 6px rgba(0, 220, 255, 0.6);
+}
+
+.ticker-red {
+    color: #ff3344;
+    font-weight: 900;
+    margin-right: 6px;
+    text-shadow: 0 0 6px rgba(255, 50, 50, 0.6);
 }
 
 /* フッターメタ情報 */

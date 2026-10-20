@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INITIAL D ARCADE STAGE - 峠ドリフトレース</title>
-    <link rel="stylesheet" href="css/style.css?v=115_arcade_title">
+    <link rel="stylesheet" href="css/style.css?v=116_arcade_attract_drift">
 </head>
 <body>
     <!-- 3D WebGL レンダリングキャンバス -->
@@ -213,6 +213,23 @@
                     </span>
                     <span class="ribbon-btn-label">HOW TO PLAY</span>
                 </button>
+            </div>
+
+            <!-- 本物のアーケード象徴：リアルタイム電光ニューステロップ -->
+            <div class="arcade-marquee-ticker-wrap">
+                <div class="marquee-ticker-track">
+                    <span class="ticker-item"><span class="ticker-gold">★ ALL.Net ONLINE ACTIVE</span> SEGA TOUGE RACING NETWORK</span>
+                    <span class="ticker-item"><span class="ticker-cyan">★ AKINA DOWNHILL RECORD:</span> 02'58"128 [TAKUMI F. / AE86]</span>
+                    <span class="ticker-item"><span class="ticker-red">★ AKAGI UPHILL RECORD:</span> 02'42"554 [KEISUKE T. / FD3S]</span>
+                    <span class="ticker-item"><span class="ticker-gold">★ FREE PLAY MODE</span> INSERT COIN OR PRESS [ENTER] TO JOIN BATTLE</span>
+                    <span class="ticker-item"><span class="ticker-cyan">★ SEGA INTERACTIVE ENTERTAINMENT</span> ALL RIGHTS RESERVED</span>
+                    <!-- シームレスループ用複製 -->
+                    <span class="ticker-item"><span class="ticker-gold">★ ALL.Net ONLINE ACTIVE</span> SEGA TOUGE RACING NETWORK</span>
+                    <span class="ticker-item"><span class="ticker-cyan">★ AKINA DOWNHILL RECORD:</span> 02'58"128 [TAKUMI F. / AE86]</span>
+                    <span class="ticker-item"><span class="ticker-red">★ AKAGI UPHILL RECORD:</span> 02'42"554 [KEISUKE T. / FD3S]</span>
+                    <span class="ticker-item"><span class="ticker-gold">★ FREE PLAY MODE</span> INSERT COIN OR PRESS [ENTER] TO JOIN BATTLE</span>
+                    <span class="ticker-item"><span class="ticker-cyan">★ SEGA INTERACTIVE ENTERTAINMENT</span> ALL RIGHTS RESERVED</span>
+                </div>
             </div>
 
             <!-- コーナーコインクレジット ＆ 法的表記 -->
@@ -559,20 +576,20 @@
 
     <!-- スクリプト群 -->
     <script src="js/lib/three.min.js"></script>
-    <script src="js/data/CarDatabase.js?v=115_arcade_title"></script>
-    <script src="js/physics/TougeTrack.js?v=115_arcade_title"></script>
-    <script src="js/physics/CarPhysics.js?v=115_arcade_title"></script>
-    <script src="js/entities/CarModelBuilder.js?v=115_arcade_title"></script>
-    <script src="js/entities/PlayerCar.js?v=115_arcade_title"></script>
-    <script src="js/entities/RivalCar.js?v=115_arcade_title"></script>
-    <script src="js/entities/ParticleSystem.js?v=115_arcade_title"></script>
-    <script src="js/core/Input.js?v=115_arcade_title"></script>
-    <script src="js/data/TireAudioData.js?v=115_arcade_title"></script>
-    <script src="js/core/AudioManager.js?v=115_arcade_title"></script>
-    <script src="js/ui/CornerGuide.js?v=115_arcade_title"></script>
-    <script src="js/ui/HUD.js?v=115_arcade_title"></script>
-    <script src="js/ui/GarageUI.js?v=115_arcade_title"></script>
-    <script src="js/core/Game.js?v=115_arcade_title"></script>
+    <script src="js/data/CarDatabase.js?v=116_arcade_attract_drift"></script>
+    <script src="js/physics/TougeTrack.js?v=116_arcade_attract_drift"></script>
+    <script src="js/physics/CarPhysics.js?v=116_arcade_attract_drift"></script>
+    <script src="js/entities/CarModelBuilder.js?v=116_arcade_attract_drift"></script>
+    <script src="js/entities/PlayerCar.js?v=116_arcade_attract_drift"></script>
+    <script src="js/entities/RivalCar.js?v=116_arcade_attract_drift"></script>
+    <script src="js/entities/ParticleSystem.js?v=116_arcade_attract_drift"></script>
+    <script src="js/core/Input.js?v=116_arcade_attract_drift"></script>
+    <script src="js/data/TireAudioData.js?v=116_arcade_attract_drift"></script>
+    <script src="js/core/AudioManager.js?v=116_arcade_attract_drift"></script>
+    <script src="js/ui/CornerGuide.js?v=116_arcade_attract_drift"></script>
+    <script src="js/ui/HUD.js?v=116_arcade_attract_drift"></script>
+    <script src="js/ui/GarageUI.js?v=116_arcade_attract_drift"></script>
+    <script src="js/core/Game.js?v=116_arcade_attract_drift"></script>
 
     <script>
         function initApp() {
