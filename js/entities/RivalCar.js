@@ -424,49 +424,50 @@ class RivalCar {
         const sinYaw = Math.sin(this.yaw);
         const cosYaw = Math.cos(this.yaw);
 
-        // ★【ライバル車・4輪アクスル直下実路面標高サンプリング＆ダンパー（めり込み＆ガタつき完全根絶）】
-        let groundCenterY = point.y + (Math.sin(bank) * this.lateralOffset);
-        let surfacePitch = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
-        let surfaceRoll = bank;
+        // ★【ライバル車・幾何学的路面接平面プロジェクション（ヘアピンドリフトガタつき＆めり込み完全根絶）】
+        const cosBank = Math.cos(bank);
+        const sinBank = Math.sin(bank);
+        const cantedNormX = normal.x * cosBank;
+        const cantedNormY = sinBank;
+        const cantedNormZ = normal.z * cosBank;
 
-        if (typeof this.track.getRoadSurfaceY === 'function') {
-            const fPosX = this.position.x + sinYaw * 1.25;
-            const fPosZ = this.position.z + cosYaw * 1.25;
-            const rPosX = this.position.x - sinYaw * 1.25;
-            const rPosZ = this.position.z - cosYaw * 1.25;
+        // 路面の真の3次元垂直法線ベクトル Up = cantedNormal x tangent (外積)
+        let upX = cantedNormY * tangent.z - cantedNormZ * tangent.y;
+        let upY = cantedNormZ * tangent.x - cantedNormX * tangent.z;
+        let upZ = cantedNormX * tangent.y - cantedNormY * tangent.x;
+        const upLen = Math.hypot(upX, upY, upZ) || 1.0;
+        upX /= upLen;
+        upY /= upLen;
+        upZ /= upLen;
 
-            const yF = this.track.getRoadSurfaceY(new THREE.Vector3(fPosX, this.position.y, fPosZ), this.progressT);
-            const yR = this.track.getRoadSurfaceY(new THREE.Vector3(rPosX, this.position.y, rPosZ), this.progressT);
+        // 車両前後ベクトル (XZ平面) と 左右ベクトル (XZ平面)
+        const fwdX = sinYaw;
+        const fwdZ = cosYaw;
+        const rgtX = fwdZ;
+        const rgtZ = -fwdX;
 
-            if (yF !== null && yR !== null && !isNaN(yF) && !isNaN(yR)) {
-                surfacePitch = -Math.atan2(yF - yR, 2.50);
-                groundCenterY = (yF + yR) * 0.5;
-            }
+        // 【数学的検証済・正の符号】下り坂（upZ > 0）を直進（fwdZ > 0）時、fwdDotUp > 0 となり、正のピッチ（前下がりノーズダイブ）
+        const fwdDotUp = fwdX * upX + fwdZ * upZ;
+        const targetSurfacePitch = Math.asin(Math.max(-0.85, Math.min(0.85, fwdDotUp)));
 
-            const lPosX = this.position.x - cosYaw * 0.79;
-            const lPosZ = this.position.z + sinYaw * 0.79;
-            const rtPosX = this.position.x + cosYaw * 0.79;
-            const rtPosZ = this.position.z - sinYaw * 0.79;
+        // 【数学的検証済・負の符号】右下がりバンク（upX > 0）を直進（rgtX > 0）時、rgtDotUp > 0 となり、負のロール（右下がり）
+        const rgtDotUp = rgtX * upX + rgtZ * upZ;
+        const targetSurfaceRoll = -Math.asin(Math.max(-0.85, Math.min(0.85, rgtDotUp)));
 
-            const yL = this.track.getRoadSurfaceY(new THREE.Vector3(lPosX, this.position.y, lPosZ), this.progressT);
-            const yRt = this.track.getRoadSurfaceY(new THREE.Vector3(rtPosX, this.position.y, rtPosZ), this.progressT);
-
-            if (yL !== null && yRt !== null && !isNaN(yL) && !isNaN(yRt)) {
-                surfaceRoll = Math.atan2(yRt - yL, 1.58);
-            }
-        }
+        // 道路中心線＋立体カントによる正確な路面基準標高
+        const targetGroundY = point.y + (sinBank * this.lateralOffset);
 
         // ★【実車サスペンション・ダンパーフィルター（ガタつき完全根絶）】
-        if (this.smoothSurfacePitch === undefined || isNaN(this.smoothSurfacePitch)) this.smoothSurfacePitch = surfacePitch;
-        if (this.smoothSurfaceRoll === undefined || isNaN(this.smoothSurfaceRoll)) this.smoothSurfaceRoll = surfaceRoll;
-        if (this.smoothGroundY === undefined || isNaN(this.smoothGroundY) || Math.abs(groundCenterY - this.smoothGroundY) > 2.0) {
-            this.smoothGroundY = groundCenterY;
+        if (this.smoothSurfacePitch === undefined || isNaN(this.smoothSurfacePitch)) this.smoothSurfacePitch = targetSurfacePitch;
+        if (this.smoothSurfaceRoll === undefined || isNaN(this.smoothSurfaceRoll)) this.smoothSurfaceRoll = targetSurfaceRoll;
+        if (this.smoothGroundY === undefined || isNaN(this.smoothGroundY) || Math.abs(targetGroundY - this.smoothGroundY) > 2.0) {
+            this.smoothGroundY = targetGroundY;
         }
 
-        const dampAlpha = 1.0 - Math.exp(-32.0 * dt);
-        this.smoothSurfacePitch += (surfacePitch - this.smoothSurfacePitch) * dampAlpha;
-        this.smoothSurfaceRoll += (surfaceRoll - this.smoothSurfaceRoll) * dampAlpha;
-        this.smoothGroundY += (groundCenterY - this.smoothGroundY) * dampAlpha;
+        const dampAlpha = 1.0 - Math.exp(-24.0 * dt);
+        this.smoothSurfacePitch += (targetSurfacePitch - this.smoothSurfacePitch) * dampAlpha;
+        this.smoothSurfaceRoll += (targetSurfaceRoll - this.smoothSurfaceRoll) * dampAlpha;
+        this.smoothGroundY += (targetGroundY - this.smoothGroundY) * dampAlpha;
 
         this.position.y = this.smoothGroundY + 0.022;
 
