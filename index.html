@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INITIAL D ARCADE STAGE - 峠ドリフトレース</title>
-    <link rel="stylesheet" href="css/style.css?v=118_arcade_course_theater">
+    <link rel="stylesheet" href="css/style.css?v=120_touge_arcade_masterpiece">
 </head>
 <body>
     <!-- 3D WebGL レンダリングキャンバス -->
@@ -91,7 +91,7 @@
                     <span class="aime-sensor-ring"></span>
                     <span class="aime-text">Aime / ALL.Net</span>
                 </span>
-                <span class="cabinet-id">CABINET #01 [TWIN LINK]</span>
+                <span class="cabinet-id">ALL.Net NETWORK</span>
             </div>
             <div class="hud-top-right">
                 <span class="net-status-dot"></span>
@@ -182,11 +182,11 @@
             <div class="arcade-spec-monitor">
                 <div class="spec-mon-unit">
                     <span class="mon-label">STAGE</span>
-                    <span class="mon-val cyan" id="attract-stage-badge">秋名 下り (7,552m)</span>
+                    <span class="mon-val" id="attract-stage-badge">秋名 下り (7,552m)</span>
                 </div>
                 <div class="mon-sep"></div>
                 <div class="spec-mon-unit">
-                    <span class="mon-label">CAR</span>
+                    <span class="mon-label">MACHINE</span>
                     <span class="mon-val gold" id="attract-car-badge">AE86 TRUENO [藤原拓海]</span>
                 </div>
                 <div class="mon-sep"></div>
@@ -194,50 +194,53 @@
                     <span class="mon-label">SETTINGS</span>
                     <span class="mon-val white" id="attract-cond-badge">MIDNIGHT / DRY / AT</span>
                 </div>
-                <div class="mon-status">
-                    <span class="mon-status-led">●</span>
-                    <span class="mon-status-text">SYS OK</span>
-                </div>
             </div>
         </div>
 
         <!-- 3. 下部：SEGAアーケード操作コンソール（Webボタン完全撤廃・実機スイッチ仕様） -->
         <div class="arcade-bottom-deck">
             <div class="arcade-control-console">
-                <!-- 巨大メインアクションスイッチ：1P START / 乱入出撃 -->
+                <!-- アーケード実機スタートボタン：乱入出撃 (1P BATTLE START) -->
                 <button id="btn-start" class="arcade-switch switch-battle start-btn">
-                    <div class="switch-hazard-stripe"></div>
-                    <div class="switch-inner">
-                        <span class="switch-jp">乱入出撃</span>
-                        <span class="switch-en">1P BATTLE START</span>
-                        <span class="switch-key">[ENTER]</span>
+                    <div class="switch-btn-core">
+                        <div class="switch-label-group">
+                            <span class="switch-jp">乱入出撃</span>
+                            <span class="switch-en">1P BATTLE START</span>
+                        </div>
+                        <span class="switch-key-pill">[ENTER]</span>
                     </div>
                 </button>
 
-                <!-- アーケード物理ファンクションキースイッチ（コース選択） -->
+                <!-- アーケード実機スイッチ：コース選択 -->
                 <button id="btn-open-setup" class="arcade-switch switch-stage">
-                    <div class="switch-led cyan"></div>
-                    <div class="switch-inner">
-                        <span class="switch-jp">コース選択</span>
-                        <span class="switch-en">STAGE SELECT</span>
+                    <div class="switch-btn-core">
+                        <span class="switch-icon-mark">峠</span>
+                        <div class="switch-label-group">
+                            <span class="switch-jp">コース選択</span>
+                            <span class="switch-en">STAGE SELECT</span>
+                        </div>
                     </div>
                 </button>
 
-                <!-- アーケード物理ファンクションキースイッチ（愛車ガレージ） -->
+                <!-- アーケード実機スイッチ：愛車ガレージ -->
                 <button id="btn-open-garage" class="arcade-switch switch-garage garage-btn">
-                    <div class="switch-led blue"></div>
-                    <div class="switch-inner">
-                        <span class="switch-jp">愛車ガレージ</span>
-                        <span class="switch-en">MACHINE &amp; TUNE</span>
+                    <div class="switch-btn-core">
+                        <span class="switch-icon-mark">車</span>
+                        <div class="switch-label-group">
+                            <span class="switch-jp">愛車ガレージ</span>
+                            <span class="switch-en">MACHINE &amp; TUNE</span>
+                        </div>
                     </div>
                 </button>
 
-                <!-- アーケード物理ファンクションキースイッチ（遊び方・操作） -->
+                <!-- アーケード実機スイッチ：遊び方・操作 -->
                 <button id="btn-open-guide" class="arcade-switch switch-guide">
-                    <div class="switch-led purple"></div>
-                    <div class="switch-inner">
-                        <span class="switch-jp">遊び方・操作</span>
-                        <span class="switch-en">HOW TO PLAY</span>
+                    <div class="switch-btn-core">
+                        <span class="switch-icon-mark">案</span>
+                        <div class="switch-label-group">
+                            <span class="switch-jp">操作・走法</span>
+                            <span class="switch-en">HOW TO PLAY</span>
+                        </div>
                     </div>
                 </button>
             </div>
@@ -275,163 +278,165 @@
             </div>
         </div>
 
-                <!-- 4. モーダル1：コース＆レース設定 アーケードスクリーン（COURSE & CONDITIONS押下時に展開） -->
+                        <!-- 4. モーダル1：コース＆レース設定 アーケードスクリーン（頭文字D 本格峠コースセレクト仕様） -->
         <div id="arcade-course-modal" class="arcade-sub-modal" style="display: none;">
             <div class="modal-backdrop"></div>
-            <div class="modal-window arcade-course-window">
-                <div class="modal-header">
-                    <div class="modal-title-wrap">
-                        <span class="modal-badge-arcade">STAGE SELECT</span>
-                        <span class="modal-title-text">TOUGE COURSE BATTLEFIELD // 全國8大名峠 決戦舞台選択</span>
+            <div class="modal-window touge-select-window">
+                <!-- アーケードヘッダー -->
+                <div class="touge-modal-header">
+                    <div class="touge-title-group">
+                        <div class="touge-logo-tag">頭文字D</div>
+                        <div class="touge-header-text">
+                            <h2 class="arcade-stage-title">峠コース選択 <span class="arcade-en-tag">COURSE SELECT</span></h2>
+                            <span class="title-sub">全国8大名峠 タイムアタック＆ライバル対決</span>
+                        </div>
                     </div>
-                    <div class="modal-header-right">
-                        <span class="cabinet-status-pill">● CABINET #01 [TWIN LINK]</span>
-                        <button id="btn-close-setup" class="arcade-close-switch">✕ 戻る / CLOSE [ESC]</button>
+                    <div class="touge-header-right">
+                        <button id="btn-close-setup" class="touge-back-btn">✕ 戻る [ESC]</button>
                     </div>
                 </div>
 
-                <div class="modal-body arcade-course-body">
-                    <!-- 左列：8大名峠 コースセレクター -->
-                    <div class="modal-col modal-col-left">
-                        <div class="col-section-header">
-                            <span class="header-led-badge">COURSES</span>
-                            <span class="header-title-text">SELECT TOUGE PASS</span>
-                            <span class="course-badge-total">全8大名峠</span>
+                <div class="touge-modal-body">
+                    <!-- 左列：8大名峠 コースカードセレクター -->
+                    <div class="touge-col-left">
+                        <div class="col-header-bar">
+                            <span class="col-header-tag">COURSE DIRECTORY</span>
+                            <span class="col-header-total">全8峠</span>
                         </div>
 
-                        <div class="course-selector-scroll">
+                        <div class="touge-card-list">
                             <!-- 群馬エリア -->
-                            <div class="course-area-group">
-                                <div class="area-banner gunma-banner">
-                                    <span class="area-tag-badge">群馬エリア</span>
-                                    <span class="area-sub-badge">GUNMA 5 COURSES</span>
+                            <div class="touge-area-section">
+                                <div class="touge-area-label gunma">
+                                    <span class="area-jp">群馬エリア</span>
+                                    <span class="area-en">GUNMA 5 PASSES</span>
                                 </div>
-                                <div class="stage-cards-column">
-                                    <button id="btn-akina" class="arcade-stage-card toggle-btn course-toggle-btn active" data-course="akina">
-                                        <div class="card-stage-num">01</div>
-                                        <div class="card-stage-info">
-                                            <div class="card-name-row">
-                                                <span class="card-jp-name">秋名 下り</span>
-                                                <span class="card-en-name">AKINA DOWNHILL</span>
-                                            </div>
-                                            <div class="card-meta-row">
+                                <div class="touge-cards-stack">
+                                    <button id="btn-akina" class="touge-course-card active" data-course="akina">
+                                        <div class="card-route-mark pref">県道<br>33</div>
+                                        <div class="card-main">
+                                            <div class="card-title-line">
+                                                <span class="card-name">秋名</span>
+                                                <span class="card-dir-badge down">下り</span>
                                                 <span class="card-dist">7,552m</span>
-                                                <span class="card-diff-bar lv4"><span class="diff-fill"></span>LV.4</span>
-                                                <span class="card-feature">5連ヘアピン・溝落とし</span>
+                                            </div>
+                                            <div class="card-info-line">
+                                                <span class="card-stars">★★★★☆</span>
+                                                <span class="card-gimmick">5連ヘアピン・溝落とし</span>
                                             </div>
                                         </div>
                                     </button>
 
-                                    <button id="btn-akina-uphill" class="arcade-stage-card toggle-btn course-toggle-btn" data-course="akina_uphill">
-                                        <div class="card-stage-num">02</div>
-                                        <div class="card-stage-info">
-                                            <div class="card-name-row">
-                                                <span class="card-jp-name">秋名 上り</span>
-                                                <span class="card-en-name">AKINA UPHILL</span>
-                                            </div>
-                                            <div class="card-meta-row">
+                                    <button id="btn-akina-uphill" class="touge-course-card" data-course="akina_uphill">
+                                        <div class="card-route-mark pref">県道<br>33</div>
+                                        <div class="card-main">
+                                            <div class="card-title-line">
+                                                <span class="card-name">秋名</span>
+                                                <span class="card-dir-badge up">上り</span>
                                                 <span class="card-dist">7,552m</span>
-                                                <span class="card-diff-bar lv5"><span class="diff-fill"></span>LV.5</span>
-                                                <span class="card-feature">標高差+490m 全開登坂</span>
+                                            </div>
+                                            <div class="card-info-line">
+                                                <span class="card-stars">★★★★★</span>
+                                                <span class="card-gimmick">標高差+490m 全開登坂</span>
                                             </div>
                                         </div>
                                     </button>
 
-                                    <button id="btn-myogi" class="arcade-stage-card toggle-btn course-toggle-btn" data-course="myogi">
-                                        <div class="card-stage-num">03</div>
-                                        <div class="card-stage-info">
-                                            <div class="card-name-row">
-                                                <span class="card-jp-name">妙義</span>
-                                                <span class="card-en-name">MYOGI HIGHSPEED</span>
-                                            </div>
-                                            <div class="card-meta-row">
+                                    <button id="btn-myogi" class="touge-course-card" data-course="myogi">
+                                        <div class="card-route-mark pref">県道<br>196</div>
+                                        <div class="card-main">
+                                            <div class="card-title-line">
+                                                <span class="card-name">妙義</span>
+                                                <span class="card-dir-badge all">往復</span>
                                                 <span class="card-dist">7,068m</span>
-                                                <span class="card-diff-bar lv3"><span class="diff-fill"></span>LV.3</span>
-                                                <span class="card-feature">高速G・ダブルヘアピン</span>
+                                            </div>
+                                            <div class="card-info-line">
+                                                <span class="card-stars">★★★☆☆</span>
+                                                <span class="card-gimmick">超高速G・ダブルヘアピン</span>
                                             </div>
                                         </div>
                                     </button>
 
-                                    <button id="btn-usui" class="arcade-stage-card toggle-btn course-toggle-btn" data-course="usui">
-                                        <div class="card-stage-num">04</div>
-                                        <div class="card-stage-info">
-                                            <div class="card-name-row">
-                                                <span class="card-jp-name">碓氷</span>
-                                                <span class="card-en-name">USUI PASS</span>
+                                    <button id="btn-usui" class="touge-course-card" data-course="usui">
+                                        <div class="card-route-mark nat">国道<br>18</div>
+                                        <div class="card-main">
+                                            <div class="card-title-line">
+                                                <span class="card-name">碓氷</span>
+                                                <span class="card-dir-badge down">下り</span>
+                                                <span class="card-dist">4,800m</span>
                                             </div>
-                                            <div class="card-meta-row">
-                                                <span class="card-dist">4.8km</span>
-                                                <span class="card-diff-bar lv4"><span class="diff-fill"></span>LV.4</span>
-                                                <span class="card-feature">めがね橋・極狭C-121</span>
+                                            <div class="card-info-line">
+                                                <span class="card-stars">★★★★☆</span>
+                                                <span class="card-gimmick">めがね橋・極狭C-121</span>
                                             </div>
                                         </div>
                                     </button>
 
-                                    <button id="btn-akagi" class="arcade-stage-card toggle-btn course-toggle-btn" data-course="akagi">
-                                        <div class="card-stage-num">05</div>
-                                        <div class="card-stage-info">
-                                            <div class="card-name-row">
-                                                <span class="card-jp-name">赤城</span>
-                                                <span class="card-en-name">AKAGI CLIMAX</span>
+                                    <button id="btn-akagi" class="touge-course-card" data-course="akagi">
+                                        <div class="card-route-mark pref">県道<br>4</div>
+                                        <div class="card-main">
+                                            <div class="card-title-line">
+                                                <span class="card-name">赤城</span>
+                                                <span class="card-dir-badge down">下り</span>
+                                                <span class="card-dist">6,200m</span>
                                             </div>
-                                            <div class="card-meta-row">
-                                                <span class="card-dist">6.2km</span>
-                                                <span class="card-diff-bar lv4"><span class="diff-fill"></span>LV.4</span>
-                                                <span class="card-feature">白樺・悪魔の急減速V字</span>
+                                            <div class="card-info-line">
+                                                <span class="card-stars">★★★★☆</span>
+                                                <span class="card-gimmick">白樺並木・悪魔の急減速V字</span>
                                             </div>
                                         </div>
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- 遠征・関東＆箱根エリア -->
-                            <div class="course-area-group">
-                                <div class="area-banner kanto-banner">
-                                    <span class="area-tag-badge">遠征・関東＆箱根</span>
-                                    <span class="area-sub-badge">EXPEDITION 3 COURSES</span>
+                            <!-- 遠征・関東＆箱根 -->
+                            <div class="touge-area-section">
+                                <div class="touge-area-label kanto">
+                                    <span class="area-jp">遠征・関東＆箱根</span>
+                                    <span class="area-en">EXPEDITION 3 PASSES</span>
                                 </div>
-                                <div class="stage-cards-column">
-                                    <button id="btn-iroha" class="arcade-stage-card toggle-btn course-toggle-btn" data-course="irohazaka">
-                                        <div class="card-stage-num">06</div>
-                                        <div class="card-stage-info">
-                                            <div class="card-name-row">
-                                                <span class="card-jp-name">いろは坂</span>
-                                                <span class="card-en-name">IROHAZAKA JUMP</span>
-                                            </div>
-                                            <div class="card-meta-row">
+                                <div class="touge-cards-stack">
+                                    <button id="btn-iroha" class="touge-course-card" data-course="irohazaka">
+                                        <div class="card-route-mark nat">国道<br>120</div>
+                                        <div class="card-main">
+                                            <div class="card-title-line">
+                                                <span class="card-name">いろは坂</span>
+                                                <span class="card-dir-badge down">下り</span>
                                                 <span class="card-dist">5,116m</span>
-                                                <span class="card-diff-bar lv5"><span class="diff-fill"></span>LV.5</span>
-                                                <span class="card-feature">33連急降下・空挺ジャンプ</span>
+                                            </div>
+                                            <div class="card-info-line">
+                                                <span class="card-stars">★★★★★</span>
+                                                <span class="card-gimmick">33連ヘアピン・空挺ジャンプ</span>
                                             </div>
                                         </div>
                                     </button>
 
-                                    <button id="btn-happo" class="arcade-stage-card toggle-btn course-toggle-btn" data-course="happo">
-                                        <div class="card-stage-num">07</div>
-                                        <div class="card-stage-info">
-                                            <div class="card-name-row">
-                                                <span class="card-jp-name">八方ヶ原</span>
-                                                <span class="card-en-name">HAPPOGAHARA</span>
-                                            </div>
-                                            <div class="card-meta-row">
+                                    <button id="btn-happo" class="touge-course-card" data-course="happo">
+                                        <div class="card-route-mark pref">県道<br>56</div>
+                                        <div class="card-main">
+                                            <div class="card-title-line">
+                                                <span class="card-name">八方ヶ原</span>
+                                                <span class="card-dir-badge all">往復</span>
                                                 <span class="card-dist">5,754m</span>
-                                                <span class="card-diff-bar lv5"><span class="diff-fill"></span>LV.5</span>
-                                                <span class="card-feature">東堂塾ホーム・2大トラス鉄橋</span>
+                                            </div>
+                                            <div class="card-info-line">
+                                                <span class="card-stars">★★★★★</span>
+                                                <span class="card-gimmick">東堂塾ホーム・2大トラス鉄橋</span>
                                             </div>
                                         </div>
                                     </button>
 
-                                    <button id="btn-tsubaki" class="arcade-stage-card toggle-btn course-toggle-btn" data-course="tsubaki">
-                                        <div class="card-stage-num">08</div>
-                                        <div class="card-stage-info">
-                                            <div class="card-name-row">
-                                                <span class="card-jp-name">椿ライン</span>
-                                                <span class="card-en-name">TSUBAKI LINE</span>
-                                            </div>
-                                            <div class="card-meta-row">
+                                    <button id="btn-tsubaki" class="touge-course-card" data-course="tsubaki">
+                                        <div class="card-route-mark pref">県道<br>75</div>
+                                        <div class="card-main">
+                                            <div class="card-title-line">
+                                                <span class="card-name">椿ライン</span>
+                                                <span class="card-dir-badge down">下り</span>
                                                 <span class="card-dist">7,312m</span>
-                                                <span class="card-diff-bar lv5"><span class="diff-fill"></span>LV.5</span>
-                                                <span class="card-feature">標高差-730m 神奈川最終決戦</span>
+                                            </div>
+                                            <div class="card-info-line">
+                                                <span class="card-stars">★★★★★</span>
+                                                <span class="card-gimmick">標高差-730m 神奈川最終決戦</span>
                                             </div>
                                         </div>
                                     </button>
@@ -440,164 +445,145 @@
                         </div>
                     </div>
 
-                    <!-- 中央列：タクティカルトラックレーダー ＆ 標高プロファイル＆戦術インテル -->
-                    <div class="modal-col modal-col-center">
-                        <div class="radar-panel-box">
-                            <div class="radar-panel-header">
-                                <div class="radar-header-left">
-                                    <span class="radar-tag">TACTICAL TRACK RADAR</span>
-                                    <span id="radar-stage-title" class="radar-stage-name">秋名 下り (AKINA DOWNHILL)</span>
+                    <!-- 中央列：リアル峠ルートマップ ＆ 高低差プロファイル ＆ 原作名勝負 -->
+                    <div class="touge-col-center">
+                        <div class="touge-map-frame">
+                            <div class="touge-map-header">
+                                <div class="map-title-left">
+                                    <span class="highway-sign-badge">公道</span>
+                                    <span id="touge-stage-name-display" class="map-stage-title">秋名山 [下り] (AKINA DOWNHILL)</span>
                                 </div>
-                                <div class="radar-header-right">
-                                    <span class="radar-scanner-blinker">● SCANNER ACTIVE</span>
-                                </div>
-                            </div>
-
-                            <!-- 2Dコーストップビュー レーダーCanvas -->
-                            <div class="radar-canvas-container">
-                                <canvas id="course-radar-canvas" width="480" height="260"></canvas>
-                                <div class="radar-corner-brackets">
-                                    <span class="cb top-left"></span>
-                                    <span class="cb top-right"></span>
-                                    <span class="cb btm-left"></span>
-                                    <span class="cb btm-right"></span>
+                                <div class="map-title-right">
+                                    <span id="touge-route-num-display" class="highway-num-badge">群馬県道33号 渋川松井田線</span>
                                 </div>
                             </div>
 
-                            <!-- 標高プロファイル Canvas -->
-                            <div class="elevation-panel-box">
-                                <div class="elevation-header">
-                                    <span class="elev-tag">ELEVATION PROFILE // 標高・勾配プロファイル</span>
-                                    <span id="elev-delta-tag" class="elev-val">高低差 -490m (最大勾配 10.8%)</span>
-                                </div>
-                                <canvas id="course-elevation-canvas" width="480" height="70"></canvas>
+                            <!-- アスファルト峠道 ルートマップCanvas -->
+                            <div class="touge-canvas-box">
+                                <canvas id="course-radar-canvas" width="500" height="240"></canvas>
                             </div>
 
-                            <!-- コーススペック・テレメトリーリボン -->
-                            <div class="course-telemetry-ribbon">
-                                <div class="tel-item">
-                                    <span class="tel-k">全長</span>
-                                    <span id="tel-length" class="tel-v cyan">7,552m</span>
+                            <!-- 山岳断面 高低差プロファイル Canvas -->
+                            <div class="touge-elev-box">
+                                <div class="elev-label-row">
+                                    <span class="elev-section-tag">MOUNTAIN ELEVATION // 山岳高低差 断面図</span>
+                                    <span id="elev-delta-tag" class="elev-spec-tag">標高差 -490m (最大勾配 10.8%)</span>
                                 </div>
-                                <div class="tel-item">
-                                    <span class="tel-k">高低差</span>
-                                    <span id="tel-elev" class="tel-v gold">-490m</span>
+                                <canvas id="course-elevation-canvas" width="500" height="65"></canvas>
+                            </div>
+
+                            <!-- コーススペック 5大指標 -->
+                            <div class="touge-specs-bar">
+                                <div class="spec-unit">
+                                    <span class="sp-k">コース全長</span>
+                                    <span id="tel-length" class="sp-v gold">7,552m</span>
                                 </div>
-                                <div class="tel-item">
-                                    <span class="tel-k">最大勾配</span>
-                                    <span id="tel-slope" class="tel-v orange">10.8%</span>
+                                <div class="spec-unit">
+                                    <span class="sp-k">高低差</span>
+                                    <span id="tel-elev" class="sp-v red">-490m</span>
                                 </div>
-                                <div class="tel-item">
-                                    <span class="tel-k">コーナー</span>
-                                    <span id="tel-turns" class="tel-v white">31</span>
+                                <div class="spec-unit">
+                                    <span class="sp-k">最大勾配</span>
+                                    <span id="tel-slope" class="sp-v orange">10.8%</span>
                                 </div>
-                                <div class="tel-item">
-                                    <span class="tel-k">道幅</span>
-                                    <span id="tel-width" class="tel-v white">8.0-11.5m</span>
+                                <div class="spec-unit">
+                                    <span class="sp-k">コーナー数</span>
+                                    <span id="tel-turns" class="sp-v white">31</span>
+                                </div>
+                                <div class="spec-unit">
+                                    <span class="sp-k">平均道幅</span>
+                                    <span id="tel-width" class="sp-v white">8.0〜11.5m</span>
                                 </div>
                             </div>
 
-                            <!-- 戦術インテル ＆ 原作対決情報 -->
-                            <div class="tactical-intel-box">
-                                <div class="intel-rival-row">
-                                    <span class="intel-badge">ORIGINAL BATTLE</span>
-                                    <span id="course-rival-tag" class="intel-rival-text">藤原拓海 (AE86) vs 高橋啓介 (FD3S) / 中里毅 (BNR32)</span>
+                            <!-- 原作ライバル＆名勝負解説 -->
+                            <div class="touge-story-box">
+                                <div class="story-rival-header">
+                                    <span class="rival-lead">劇中名勝負</span>
+                                    <span id="course-rival-tag" class="rival-names">藤原拓海 (AE86) vs 高橋啓介 (FD3S) / 中里毅 (BNR32)</span>
                                 </div>
-                                <div id="course-desc-box" class="course-desc-box">
+                                <div id="course-desc-box" class="story-desc-text">
                                     【秋名山 下り フルコース 7,552m】画像公式レイアウトゼロから完全再構築！山頂スタート〜給水塔〜急降下ダウンヒル〜伝説の5連ヘアピン溝落とし〜伊香保ゴール！
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 右列：コンディション設定 ＆ 搭乗マシン確認 ＆ 出撃スイッチ -->
-                    <div class="modal-col modal-col-right">
-                        <!-- 搭乗マシン確認 -->
-                        <div class="entry-machine-card">
-                            <div class="machine-card-header">
-                                <span class="machine-tag">ENTRY MACHINE</span>
-                                <span class="machine-ready-led"><span class="led-blink green">●</span> SYS OK / TUNED</span>
+                    <!-- 右列：搭乗マシン ＆ レース環境設定 ＆ 出撃ボタン -->
+                    <div class="touge-col-right">
+                        <!-- 搭乗マシン -->
+                        <div class="touge-machine-panel">
+                            <div class="panel-section-title">
+                                <span>ENTRY MACHINE PROFILE</span>
                             </div>
-                            <div class="machine-card-body">
-                                <div id="title-entry-car-name" class="machine-car-name">TOYOTA SPRINTER TRUENO GT-APEX [AE86]</div>
-                                <div class="machine-info-grid">
-                                    <div class="machine-info-item">
-                                        <span class="info-k">DRIVER</span>
-                                        <span id="title-entry-driver" class="info-v">藤原 拓海 (秋名スピードスターズ)</span>
+                            <div id="title-entry-car-name" class="machine-title-text">TOYOTA SPRINTER TRUENO GT-APEX [AE86]</div>
+                            <div class="machine-specs-list">
+                                <div class="spec-row"><span class="m-k">DRIVER</span><span id="title-entry-driver" class="m-v">藤原 拓海 (秋名スピードスターズ)</span></div>
+                                <div class="spec-row"><span class="m-k">ENGINE</span><span id="title-entry-specs" class="m-v">FR / 1.6L 4A-GEU (210PS) / 950kg</span></div>
+                                <div class="spec-row"><span class="m-k">TARGET</span><span id="title-entry-target-time" class="m-v gold">03'04"820 [TARGET]</span></div>
+                            </div>
+                        </div>
+
+                        <!-- アーケードレース条件設定 (本物のアーケード押しボタンスイッチ仕様) -->
+                        <div class="touge-conditions-panel">
+                            <div class="cond-group">
+                                <span class="cond-title">天候 (WEATHER)</span>
+                                <div class="cond-btn-row">
+                                    <button id="btn-weather-dry" class="cond-toggle active">晴天 (DRY)</button>
+                                    <button id="btn-weather-rain" class="cond-toggle">雨天 (RAIN)</button>
+                                    <button id="btn-weather-fog" class="cond-toggle">濃霧 (FOG)</button>
+                                </div>
+                            </div>
+
+                            <div class="cond-group">
+                                <span class="cond-title">時間帯 (TIME)</span>
+                                <div class="cond-btn-row">
+                                    <button id="btn-time-midnight" class="cond-toggle active">深夜 (NIGHT)</button>
+                                    <button id="btn-time-sunset" class="cond-toggle">夕暮れ (SUNSET)</button>
+                                    <button id="btn-time-daylight" class="cond-toggle">昼間 (DAY)</button>
+                                </div>
+                            </div>
+
+                            <div class="cond-split-row">
+                                <div class="cond-group-half">
+                                    <span class="cond-title">変速 (MISSION)</span>
+                                    <div class="cond-btn-row">
+                                        <button id="btn-at" class="cond-toggle active">AT (オートマ)</button>
+                                        <button id="btn-mt" class="cond-toggle">MT (マニュアル)</button>
                                     </div>
-                                    <div class="machine-info-item">
-                                        <span class="info-k">SPEC</span>
-                                        <span id="title-entry-specs" class="info-v">FR / 1.6L 4A-GEU / 210PS / 950kg</span>
+                                </div>
+                                <div class="cond-group-half">
+                                    <span class="cond-title">ユーロビート BGM</span>
+                                    <div class="cond-btn-row">
+                                        <button id="btn-bgm-on" class="cond-toggle active">ON</button>
+                                        <button id="btn-bgm-off" class="cond-toggle">OFF</button>
                                     </div>
-                                    <div class="machine-info-item">
-                                        <span class="info-k">RECORD</span>
-                                        <span id="title-entry-target-time" class="info-v gold">03'04"820 [TARGET]</span>
+                                </div>
+                            </div>
+
+                            <div class="cond-split-row">
+                                <div class="cond-group-half">
+                                    <span class="cond-title">対戦難易度</span>
+                                    <div class="cond-btn-row">
+                                        <button id="btn-diff-normal" class="cond-toggle active">NORMAL</button>
+                                        <button id="btn-diff-hard" class="cond-toggle">HARD</button>
+                                    </div>
+                                </div>
+                                <div class="cond-group-half">
+                                    <span class="cond-title">コーナーアシスト</span>
+                                    <div class="cond-btn-row">
+                                        <button id="btn-assist-weak" class="cond-toggle active">リアル</button>
+                                        <button id="btn-assist-strong" class="cond-toggle">アシスト</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- アーケード実機環境設定コンソール -->
-                        <div class="arcade-settings-console">
-                            <div class="setting-rocker-row">
-                                <span class="rocker-label">WEATHER // 天候</span>
-                                <div class="rocker-btn-group">
-                                    <button id="btn-weather-dry" class="rocker-btn toggle-btn active"><span class="btn-led"></span>DRY (晴天)</button>
-                                    <button id="btn-weather-rain" class="rocker-btn toggle-btn"><span class="btn-led"></span>RAIN (雨滴)</button>
-                                    <button id="btn-weather-fog" class="rocker-btn toggle-btn"><span class="btn-led"></span>FOG (濃霧)</button>
-                                </div>
-                            </div>
-
-                            <div class="setting-rocker-row">
-                                <span class="rocker-label">TIME // 時間帯</span>
-                                <div class="rocker-btn-group">
-                                    <button id="btn-time-midnight" class="rocker-btn toggle-btn active"><span class="btn-led"></span>MIDNIGHT</button>
-                                    <button id="btn-time-sunset" class="rocker-btn toggle-btn"><span class="btn-led"></span>SUNSET</button>
-                                    <button id="btn-time-daylight" class="rocker-btn toggle-btn"><span class="btn-led"></span>DAY</button>
-                                </div>
-                            </div>
-
-                            <div class="setting-rocker-split">
-                                <div class="setting-rocker-half">
-                                    <span class="rocker-label-sub">TRANSMISSION // 変速</span>
-                                    <div class="rocker-btn-group">
-                                        <button id="btn-at" class="rocker-btn toggle-btn active"><span class="btn-led"></span>AT</button>
-                                        <button id="btn-mt" class="rocker-btn toggle-btn"><span class="btn-led"></span>MT</button>
-                                    </div>
-                                </div>
-                                <div class="setting-rocker-half">
-                                    <span class="rocker-label-sub">EUROBEAT // BGM</span>
-                                    <div class="rocker-btn-group">
-                                        <button id="btn-bgm-on" class="rocker-btn toggle-btn active"><span class="btn-led"></span>ON</button>
-                                        <button id="btn-bgm-off" class="rocker-btn toggle-btn"><span class="btn-led"></span>OFF</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="setting-rocker-split">
-                                <div class="setting-rocker-half">
-                                    <span class="rocker-label-sub">DIFFICULTY // 難易度</span>
-                                    <div class="rocker-btn-group">
-                                        <button id="btn-diff-normal" class="rocker-btn toggle-btn active"><span class="btn-led"></span>NORMAL</button>
-                                        <button id="btn-diff-hard" class="rocker-btn toggle-btn"><span class="btn-led"></span>HARD</button>
-                                    </div>
-                                </div>
-                                <div class="setting-rocker-half">
-                                    <span class="rocker-label-sub">ASSIST // コーナー補助</span>
-                                    <div class="rocker-btn-group">
-                                        <button id="btn-assist-weak" class="rocker-btn toggle-btn active"><span class="btn-led"></span>弱 (リアル)</button>
-                                        <button id="btn-assist-strong" class="rocker-btn toggle-btn"><span class="btn-led"></span>強 (超旋回)</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- モーダル内決定出撃スイッチ -->
-                        <button id="btn-modal-confirm-start" class="modal-start-btn arcade-hero-start-switch">
-                            <div class="switch-hazard-stripe"></div>
-                            <div class="modal-btn-content">
-                                <span class="switch-jp">このコースで出撃</span>
-                                <span class="switch-en">START BATTLE [ENTER]</span>
+                        <!-- 巨大決定出撃スイッチ (SEGA実機アーケード赤スタートボタン仕様) -->
+                        <button id="btn-modal-confirm-start" class="touge-decision-start-btn">
+                            <div class="btn-text-block">
+                                <span class="btn-jp-lead">このコースで出撃</span>
+                                <span class="btn-en-sub">START BATTLE [ENTER]</span>
                             </div>
                         </button>
                     </div>
@@ -715,28 +701,45 @@
 
     <!-- スクリプト群 -->
     <script src="js/lib/three.min.js"></script>
-    <script src="js/data/CarDatabase.js?v=118_arcade_course_theater"></script>
-    <script src="js/physics/TougeTrack.js?v=118_arcade_course_theater"></script>
-    <script src="js/physics/CarPhysics.js?v=118_arcade_course_theater"></script>
-    <script src="js/entities/CarModelBuilder.js?v=118_arcade_course_theater"></script>
-    <script src="js/entities/PlayerCar.js?v=118_arcade_course_theater"></script>
-    <script src="js/entities/RivalCar.js?v=118_arcade_course_theater"></script>
-    <script src="js/entities/ParticleSystem.js?v=118_arcade_course_theater"></script>
-    <script src="js/core/Input.js?v=118_arcade_course_theater"></script>
-    <script src="js/data/TireAudioData.js?v=118_arcade_course_theater"></script>
-    <script src="js/core/AudioManager.js?v=118_arcade_course_theater"></script>
-    <script src="js/ui/CornerGuide.js?v=118_arcade_course_theater"></script>
-    <script src="js/ui/HUD.js?v=118_arcade_course_theater"></script>
-    <script src="js/ui/GarageUI.js?v=118_arcade_course_theater"></script>
-    <script src="js/core/Game.js?v=118_arcade_course_theater"></script>
+    <script src="js/data/CarDatabase.js?v=119_touge_arcade_select"></script>
+    <script src="js/physics/TougeTrack.js?v=119_touge_arcade_select"></script>
+    <script src="js/physics/CarPhysics.js?v=119_touge_arcade_select"></script>
+    <script src="js/entities/CarModelBuilder.js?v=119_touge_arcade_select"></script>
+    <script src="js/entities/PlayerCar.js?v=119_touge_arcade_select"></script>
+    <script src="js/entities/RivalCar.js?v=119_touge_arcade_select"></script>
+    <script src="js/entities/ParticleSystem.js?v=119_touge_arcade_select"></script>
+    <script src="js/core/Input.js?v=119_touge_arcade_select"></script>
+    <script src="js/data/TireAudioData.js?v=119_touge_arcade_select"></script>
+    <script src="js/core/AudioManager.js?v=119_touge_arcade_select"></script>
+    <script src="js/ui/CornerGuide.js?v=119_touge_arcade_select"></script>
+    <script src="js/ui/HUD.js?v=119_touge_arcade_select"></script>
+    <script src="js/ui/GarageUI.js?v=119_touge_arcade_select"></script>
+    <script src="js/core/Game.js?v=119_touge_arcade_select"></script>
 
     <script>
         function initApp() {
             if (window.__appInitialized) return;
             window.__appInitialized = true;
+
+            let game;
             try {
-                const game = new Game();
-    
+                game = new Game();
+                window.game = game;
+            } catch (err) {
+                console.error('initApp Error:', err);
+                window.__lastErr = err.toString() + '\n' + err.stack;
+                return;
+            }
+
+            // 【最重要】メイン出撃ボタン (1P START / 乱入出撃) 即時バインド
+            const btnStart = document.getElementById('btn-start');
+            if (btnStart) {
+                btnStart.addEventListener('click', () => {
+                    if (game.audio) game.audio.resume();
+                    game.startRace();
+                });
+            }
+
             // アーケードサブモーダル制御 (COURSE SETUP / HOW TO PLAY)
             const btnOpenSetup = document.getElementById('btn-open-setup');
             const modalSetup = document.getElementById('arcade-course-modal');
@@ -751,6 +754,18 @@
             if (btnOpenSetup && modalSetup) {
                 btnOpenSetup.addEventListener('click', () => {
                     modalSetup.style.display = 'flex';
+                    // 搭乗マシン情報の最新同期
+                    if (game && game.currentCarKey && window.CAR_DATABASE) {
+                        const cData = window.CAR_DATABASE[game.currentCarKey];
+                        if (cData) {
+                            const nameB = document.getElementById('title-entry-car-name');
+                            if (nameB) nameB.textContent = cData.name + ' [' + cData.modelCode + ']';
+                            const drvB = document.getElementById('title-entry-driver');
+                            if (drvB) drvB.textContent = cData.driver;
+                            const spcB = document.getElementById('title-entry-specs');
+                            if (spcB) spcB.textContent = cData.drivetrain + ' / ' + cData.engineName + ' / ' + cData.power + ' / ' + cData.weight;
+                        }
+                    }
                     if (window.drawCourseRadarAndElevation) {
                         window.drawCourseRadarAndElevation(game.currentCourse || 'akina');
                     }
@@ -762,7 +777,7 @@
             if (btnModalConfirmStart) {
                 btnModalConfirmStart.addEventListener('click', () => {
                     if (modalSetup) modalSetup.style.display = 'none';
-                    btnStart.click();
+                    if (btnStart) btnStart.click();
                 });
             }
 
@@ -773,13 +788,26 @@
                 btnCloseGuide.addEventListener('click', () => { modalGuide.style.display = 'none'; });
             }
             if (btnCalloutStart) {
-                btnCalloutStart.addEventListener('click', () => { btnStart.click(); });
+                btnCalloutStart.addEventListener('click', () => {
+                    if (btnStart) btnStart.click();
+                });
             }
 
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     if (modalSetup && modalSetup.style.display !== 'none') modalSetup.style.display = 'none';
                     if (modalGuide && modalGuide.style.display !== 'none') modalGuide.style.display = 'none';
+                }
+                if (e.key === 'Enter') {
+                    const startOverlay = document.getElementById('start-overlay');
+                    const garage = document.getElementById('garage-overlay');
+                    if (startOverlay && startOverlay.style.display !== 'none' && (!garage || garage.style.display === 'none')) {
+                        if (modalSetup && modalSetup.style.display !== 'none') {
+                            if (btnModalConfirmStart) btnModalConfirmStart.click();
+                        } else {
+                            if (btnStart) btnStart.click();
+                        }
+                    }
                 }
             });
 
@@ -815,100 +843,99 @@
             setInterval(updateAttractPills, 500);
             updateAttractPills();
 
-            window.game = game;
-            } catch (err) {
-                console.error('initApp Error:', err);
-                window.__lastErr = err.toString() + '\\n' + err.stack;
-            }
-
             // コース選択 (8大名峠 メタデータ ＆ テレメトリー辞書)
             const courseMetadata = {
                 'akina': {
-                    title: '秋名 下り (AKINA DOWNHILL)',
+                    title: '秋名山 [下り] (AKINA DOWNHILL)',
                     subTitle: 'AKINA DOWNHILL // 秋名 下り 7,552m',
+                    route: '群馬県道33号 渋川松井田線',
                     length: '7,552m',
                     elev: '-490m',
                     slope: '10.8%',
                     turns: '31',
-                    width: '8.0-11.5m',
-                    elevTag: '高低差 -490m (最大勾配 10.8%)',
+                    width: '8.0〜11.5m',
+                    elevTag: '標高差 -490m (最大勾配 10.8%)',
                     targetTime: '03\'04"820 [TARGET]',
                     rival: '藤原拓海 (AE86) vs 高橋啓介 (FD3S) / 中里毅 (BNR32)',
                     desc: '【秋名山 下り フルコース 7,552m】画像公式レイアウトゼロから完全再構築！山頂スタート〜給水塔〜急降下ダウンヒル〜伝説の5連ヘアピン溝落とし〜伊香保ゴール！',
                     name: 'AKINA 7,552m',
                     landmarks: [
-                        { t: 0.08, name: '給水塔 [WATER TOWER]' },
-                        { t: 0.31, name: '5連ヘアピン [5-HAIRPINS]' },
-                        { t: 0.35, name: 'ガードレール溝落とし' },
-                        { t: 0.98, name: '伊香保ゴール' }
+                        { t: 0.08, name: '秋名給水塔' },
+                        { t: 0.31, name: '伝説の5連ヘアピン' },
+                        { t: 0.35, name: 'イン側溝落とし' },
+                        { t: 0.98, name: '伊香保温泉ゴール' }
                     ]
                 },
                 'akina_uphill': {
-                    title: '秋名 上り (AKINA UPHILL)',
+                    title: '秋名山 [上り] (AKINA UPHILL)',
                     subTitle: 'AKINA UPHILL // 秋名 上り 7,552m',
+                    route: '群馬県道33号 渋川松井田線',
                     length: '7,552m',
                     elev: '+490m',
                     slope: '+10.8%',
                     turns: '31',
-                    width: '8.0-11.5m',
-                    elevTag: '高低差 +490m (最大登坂 10.8%)',
+                    width: '8.0〜11.5m',
+                    elevTag: '標高差 +490m (最大登坂 10.8%)',
                     targetTime: '03\'12"450 [TARGET]',
                     rival: '高橋啓介 (FD3S) vs 星野好造 (BNR34) / 渉 (AE86T)',
-                    desc: '【秋名山 上り フルコース 7,552m】頭文字DACプレイ映像完全準拠！旧料金所跡スタート〜伊香保〜5連ヘアピン溝落とし〜給水塔〜山頂ゴール！標高差+490mを駆け上がるハイパワーヒルクライム！',
+                    desc: '【秋名山 上り フルコース 7,552m】頭文字DACプレイ映像完全準拠！旧料金所跡スタート〜伊香保〜5連ヘアピン登坂〜給水塔〜山頂ゴール！標高差+490mを駆け上がるハイパワーヒルクライム！',
                     name: 'AKINA 7,552m (UP)',
                     landmarks: [
-                        { t: 0.02, name: '旧料金所スタート' },
+                        { t: 0.02, name: '旧料金所跡' },
                         { t: 0.68, name: '5連ヘアピン登坂' },
-                        { t: 0.98, name: '山頂給水塔ゴール' }
+                        { t: 0.98, name: '山頂給水塔' }
                     ]
                 },
                 'myogi': {
-                    title: '妙義 (MYOGI HIGHSPEED)',
+                    title: '妙義山 (MYOGI HIGHSPEED)',
                     subTitle: 'MYOGI HIGHSPEED // 妙義 7,068m',
+                    route: '群馬県道196号 下仁田安中線',
                     length: '7,068m',
                     elev: '185m',
                     slope: '6.2%',
                     turns: '24',
-                    width: '9.0-12.0m',
-                    elevTag: '高低差 185m (最大勾配 6.2%)',
+                    width: '9.0〜12.0m',
+                    elevTag: '標高差 185m (最大勾配 6.2%)',
                     targetTime: '02\'46"110 [TARGET]',
                     rival: '中里毅 (BNR32) vs 庄司慎吾 (EG6)',
-                    desc: '【妙義山 ナイトキッズ本拠地 全長7,068m】画像公式レイアウトゼロから完全再構築！第①名物ダブルヘアピン〜第②高速S字＆大ループ〜第③中速ワインディング〜第④鋭角スイッチバック＆超高速フィニッシュ！',
+                    desc: '【妙義山 ナイトキッズ本拠地 全長7,068m】広大な道幅と中高速の連続うねり。第①名物ダブルヘアピン〜第②高速S字＆大ループ〜第③中速ワインディング〜第④鋭角スイッチバック＆超高速フィニッシュ！',
                     name: 'MYOGI 7,068m',
                     landmarks: [
                         { t: 0.18, name: '第1ダブルヘアピン' },
-                        { t: 0.45, name: '高速S字大ループ' },
+                        { t: 0.45, name: '高速S字ループ' },
                         { t: 0.88, name: '超高速フィニッシュ' }
                     ]
                 },
                 'usui': {
-                    title: '碓氷 (USUI PASS)',
+                    title: '碓氷峠 (USUI PASS)',
                     subTitle: 'USUI PASS // 碓氷 4.8km',
+                    route: '国道18号 旧道 (中山道)',
                     length: '4,800m',
                     elev: '260m',
                     slope: '8.4%',
                     turns: '184',
                     width: '7.4m (極狭)',
-                    elevTag: '高低差 260m (最大勾配 8.4%)',
+                    elevTag: '標高差 260m (最大勾配 8.4%)',
                     targetTime: '02\'54"330 [TARGET]',
                     rival: '佐藤真子＆沙雪 (シルエイティ) vs 藤原拓海 (AE86)',
                     desc: '【碓氷峠 下り フルコース 4.8km】道幅7.4mの極狭テクニカル！全184コーナーの難所〜めがね橋（碓氷第三橋梁）〜勝負を決める超難関複合「C-121」減速バトル！',
                     name: 'USUI 4.8km',
                     landmarks: [
-                        { t: 0.22, name: '全184コーナー進入' },
-                        { t: 0.55, name: 'めがね橋 [BRIDGE]' },
-                        { t: 0.84, name: '勝負の超難所 C-121' }
+                        { t: 0.22, name: '連続コーナー進入' },
+                        { t: 0.55, name: 'めがね橋 (第三橋梁)' },
+                        { t: 0.84, name: '超難所 C-121' }
                     ]
                 },
                 'akagi': {
-                    title: '赤城 (AKAGI CLIMAX)',
+                    title: '赤城山 (AKAGI CLIMAX)',
                     subTitle: 'AKAGI CLIMAX // 赤城 6.2km',
+                    route: '群馬県道4号 前橋赤城線',
                     length: '6,200m',
                     elev: '380m',
                     slope: '9.5%',
                     turns: '28',
-                    width: '8.5-10.5m',
-                    elevTag: '高低差 380m (最大勾配 9.5%)',
+                    width: '8.5〜10.5m',
+                    elevTag: '標高差 380m (最大勾配 9.5%)',
                     targetTime: '02\'38"900 [TARGET]',
                     rival: '高橋涼介 (FC3S) vs 須藤京一 (エボIII) / 啓介 (FD3S)',
                     desc: '【赤城山 下り フルコース 6.2km】レッドサンズの本拠地！スタート直後くぐる朱色の大鳥居〜白樺並木〜急激にインへ巻き込む恐怖の「悪魔のV字コーナー」！',
@@ -916,64 +943,67 @@
                     landmarks: [
                         { t: 0.15, name: '大鳥居ゲート' },
                         { t: 0.52, name: '白樺ストレート' },
-                        { t: 0.78, name: '悪魔のV字ヘアピン' }
+                        { t: 0.78, name: '悪魔のV字コーナー' }
                     ]
                 },
                 'irohazaka': {
-                    title: 'いろは坂 (IROHAZAKA JUMP)',
+                    title: '日光いろは坂 (IROHAZAKA JUMP)',
                     subTitle: 'IROHAZAKA // いろは坂 5,116m',
+                    route: '国道120号 第一いろは坂 (下り専用)',
                     length: '5,116m',
                     elev: '-440m',
                     slope: '12.0%',
                     turns: '33',
-                    width: '6.8-8.2m',
-                    elevTag: '高低差 -440m (最大勾配 12.0%)',
+                    width: '6.8〜8.2m',
+                    elevTag: '標高差 -440m (最大勾配 12.0%)',
                     targetTime: '03\'08"210 [TARGET]',
                     rival: '小柏カイ (MR2 SW20) vs 藤原拓海 (AE86) / 須藤京一 (エボIII)',
                     desc: '【第一いろは坂 下り 全長5,116m】一方通行の超急勾配ワインディング！第1コーナーから第33コーナーまで続く連続ヘアピン群。インベタ空挺ジャンプによる掟破りのショートカットが可能！',
                     name: 'IROHA 5,116m',
                     landmarks: [
                         { t: 0.12, name: '第1ヘアピン' },
-                        { t: 0.45, name: 'インベタ空挺ジャンプ' },
+                        { t: 0.45, name: '空挺ジャンプポイント' },
                         { t: 0.90, name: '第33ヘアピン' }
                     ]
                 },
                 'happo': {
                     title: '八方ヶ原 (HAPPOGAHARA)',
                     subTitle: 'HAPPOGAHARA // 八方ヶ原 5,754m',
+                    route: '栃木県道56号 塩原矢板線',
                     length: '5,754m',
                     elev: '195m',
                     slope: '7.8%',
                     turns: '29',
-                    width: '7.8-9.0m',
-                    elevTag: '高低差 195m (最大勾配 7.8%)',
+                    width: '7.8〜9.0m',
+                    elevTag: '標高差 195m (最大勾配 7.8%)',
                     targetTime: '02\'49"770 [TARGET]',
                     rival: '舘智幸 (EK9 東堂塾デモカー) vs 藤原拓海 (AE86 ブラインドアタック)',
                     desc: '【八方ヶ原 往路 5,754m】東堂塾ホームコース！照明のない完全漆黒の夜間峠。第1トラス鉄橋と第2トラス鉄橋を挟む超複合S字。ヘッドライトを消して抜き去る「ブラインドアタック」が炸裂！',
                     name: 'HAPPO 5,754m',
                     landmarks: [
                         { t: 0.20, name: '漆黒スネークS字' },
-                        { t: 0.42, name: '第1トラス鉄橋' },
-                        { t: 0.74, name: '第2トラス鉄橋' }
+                        { t: 0.42, name: 'スネーク第1鉄橋' },
+                        { t: 0.74, name: 'スネーク第2鉄橋' }
                     ]
                 },
                 'tsubaki': {
-                    title: '椿ライン (TSUBAKI LINE)',
+                    title: '箱根 椿ライン (TSUBAKI LINE)',
                     subTitle: 'TSUBAKI LINE // 椿ライン 7,312m',
+                    route: '神奈川県道75号 湯河原箱根仙石原線',
                     length: '7,312m',
                     elev: '-730m',
                     slope: '11.2%',
                     turns: '38',
-                    width: '8.2-10.0m',
-                    elevTag: '高低差 -730m (最大勾配 11.2%)',
+                    width: '8.2〜10.0m',
+                    elevTag: '標高差 -730m (最大勾配 11.2%)',
                     targetTime: '03\'18"600 [TARGET]',
                     rival: '乾信司 (AE86 2D) vs 藤原拓海 (AE86 3D 最終決戦)',
-                    desc: '【椿ライン 下り 全長7,312m】神奈川決戦の最高峰！大観山頂上（標高1,011m）スタート〜連続七曲りヘアピンを経て奥湯河原へ下る過酷な超長距離ダウンヒル。全コース最大の標高差-730m！',
+                    desc: '【椿ライン 下り 全長7,312m】プロジェクトD最終決戦の地！大観山頂上（標高1,011m）スタート〜連続七曲りヘアピンを経て奥湯河原へ下る過酷な超長距離ダウンヒル。全コース最大の標高差-730m！',
                     name: 'TSUBAKI 7,312m',
                     landmarks: [
-                        { t: 0.05, name: '大観山頂上スタート' },
+                        { t: 0.05, name: '大観山頂上' },
                         { t: 0.50, name: '連続七曲りヘアピン' },
-                        { t: 0.95, name: '奥湯河原ゴール' }
+                        { t: 0.95, name: '奥湯河原' }
                     ]
                 }
             };
@@ -992,49 +1022,48 @@
             const courseDescBox = document.getElementById('course-desc-box');
             const minimapCourseName = document.getElementById('minimap-course-name');
 
+            // リアル峠道 ルートマップ ＆ 山岳高低差プロファイル描画
             function drawCourseRadarAndElevation(courseKey) {
                 const radarCanvas = document.getElementById('course-radar-canvas');
                 const elevCanvas = document.getElementById('course-elevation-canvas');
-                if (!radarCanvas || !elevCanvas || !window.game || !window.game.track) return;
+                if (!radarCanvas || !elevCanvas || !game || !game.track) return;
 
-                const samples = window.game.track.samples;
+                const samples = game.track.samples;
                 if (!samples || samples.length === 0) return;
 
                 const meta = courseMetadata[courseKey] || courseMetadata['akina'];
 
-                // 1. レーダーキャンバス描画
+                // 1. リアル峠道 ルートマップ描画 (国土地理院等高線＆本格アスファルト峠仕様)
                 const rCtx = radarCanvas.getContext('2d');
                 const rw = radarCanvas.width;
                 const rh = radarCanvas.height;
                 rCtx.clearRect(0, 0, rw, rh);
 
-                rCtx.fillStyle = '#060a14';
+                // アスファルト地盤カラー
+                rCtx.fillStyle = '#0f141d';
                 rCtx.fillRect(0, 0, rw, rh);
 
-                // サイバーグリッド
-                rCtx.strokeStyle = 'rgba(0, 160, 255, 0.09)';
+                // 山岳等高線 / 地形等深線の微細描画 (リアルな峠マップ演出)
+                rCtx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
                 rCtx.lineWidth = 1;
-                for (let x = 0; x < rw; x += 32) {
-                    rCtx.beginPath(); rCtx.moveTo(x, 0); rCtx.lineTo(x, rh); rCtx.stroke();
+                for (let y = 20; y < rh; y += 32) {
+                    rCtx.beginPath();
+                    rCtx.moveTo(0, y);
+                    rCtx.lineTo(rw, y);
+                    rCtx.stroke();
                 }
-                for (let y = 0; y < rh; y += 32) {
-                    rCtx.beginPath(); rCtx.moveTo(0, y); rCtx.lineTo(rw, y); rCtx.stroke();
+                for (let x = 20; x < rw; x += 40) {
+                    rCtx.beginPath();
+                    rCtx.moveTo(x, 0);
+                    rCtx.lineTo(x, rh);
+                    rCtx.stroke();
                 }
 
-                // レーダー同心円 & 照準線
-                rCtx.strokeStyle = 'rgba(0, 200, 255, 0.15)';
-                rCtx.beginPath();
-                rCtx.arc(rw / 2, rh / 2, Math.min(rw, rh) * 0.44, 0, Math.PI * 2);
-                rCtx.arc(rw / 2, rh / 2, Math.min(rw, rh) * 0.24, 0, Math.PI * 2);
-                rCtx.stroke();
+                // 方位マーク (N)
+                rCtx.font = '900 10px "Arial Black", sans-serif';
+                rCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                rCtx.fillText('▲ N', rw - 35, 24);
 
-                rCtx.strokeStyle = 'rgba(0, 220, 255, 0.18)';
-                rCtx.beginPath();
-                rCtx.moveTo(rw / 2 - 15, rh / 2); rCtx.lineTo(rw / 2 + 15, rh / 2);
-                rCtx.moveTo(rw / 2, rh / 2 - 15); rCtx.lineTo(rw / 2, rh / 2 + 15);
-                rCtx.stroke();
-
-                // バウンディングボックス
                 let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
                 for (let s of samples) {
                     if (s.pos.x < minX) minX = s.pos.x;
@@ -1042,95 +1071,117 @@
                     if (s.pos.z < minZ) minZ = s.pos.z;
                     if (s.pos.z > maxZ) maxZ = s.pos.z;
                 }
-                const pad = 36;
+                const pad = 38;
                 const spanX = (maxX - minX) || 1;
                 const spanZ = (maxZ - minZ) || 1;
                 const scale = Math.min((rw - pad * 2) / spanX, (rh - pad * 2) / spanZ);
                 const offsetX = (rw - spanX * scale) / 2;
                 const offsetZ = (rh - spanZ * scale) / 2;
 
-                const toRadarX = (x) => offsetX + (x - minX) * scale;
-                const toRadarY = (z) => offsetZ + (z - minZ) * scale;
+                const toX = (x) => offsetX + (x - minX) * scale;
+                const toY = (z) => offsetZ + (z - minZ) * scale;
 
-                // ネオン外光グロー
-                rCtx.save();
-                rCtx.shadowColor = '#00e5ff';
-                rCtx.shadowBlur = 10;
-                rCtx.strokeStyle = 'rgba(0, 220, 255, 0.6)';
-                rCtx.lineWidth = 5;
+                // 道路幅：外縁白線 (路肩エッジ)
+                rCtx.strokeStyle = '#55657a';
+                rCtx.lineWidth = 8;
+                rCtx.lineCap = 'round';
+                rCtx.lineJoin = 'round';
                 rCtx.beginPath();
                 for (let i = 0; i < samples.length; i++) {
-                    const rx = toRadarX(samples[i].pos.x);
-                    const ry = toRadarY(samples[i].pos.z);
+                    const rx = toX(samples[i].pos.x);
+                    const ry = toY(samples[i].pos.z);
                     if (i === 0) rCtx.moveTo(rx, ry);
                     else rCtx.lineTo(rx, ry);
                 }
                 rCtx.stroke();
-                rCtx.restore();
 
-                // コース芯線
-                rCtx.strokeStyle = '#ffffff';
+                // アスファルト路面 (ダークグレー)
+                rCtx.strokeStyle = '#222935';
+                rCtx.lineWidth = 6;
+                rCtx.beginPath();
+                for (let i = 0; i < samples.length; i++) {
+                    const rx = toX(samples[i].pos.x);
+                    const ry = toY(samples[i].pos.z);
+                    if (i === 0) rCtx.moveTo(rx, ry);
+                    else rCtx.lineTo(rx, ry);
+                }
+                rCtx.stroke();
+
+                // センターライン (レーシングイエロー)
+                rCtx.strokeStyle = '#ffbb00';
                 rCtx.lineWidth = 2;
                 rCtx.beginPath();
                 for (let i = 0; i < samples.length; i++) {
-                    const rx = toRadarX(samples[i].pos.x);
-                    const ry = toRadarY(samples[i].pos.z);
+                    const rx = toX(samples[i].pos.x);
+                    const ry = toY(samples[i].pos.z);
                     if (i === 0) rCtx.moveTo(rx, ry);
                     else rCtx.lineTo(rx, ry);
                 }
                 rCtx.stroke();
 
-                // スタート地点
+                // スタート地点 (日本の公道ラリー・緑標識看板)
                 const s0 = samples[0];
-                const sx = toRadarX(s0.pos.x);
-                const sy = toRadarY(s0.pos.z);
-                rCtx.fillStyle = '#00ff66';
-                rCtx.beginPath(); rCtx.arc(sx, sy, 6, 0, Math.PI * 2); rCtx.fill();
-                rCtx.font = '900 11px "Share Tech Mono", monospace';
-                rCtx.fillText('▲ START', sx + 8, sy + 4);
+                const sx = toX(s0.pos.x);
+                const sy = toY(s0.pos.z);
+                rCtx.fillStyle = '#00bb55';
+                rCtx.beginPath(); rCtx.arc(sx, sy, 5, 0, Math.PI * 2); rCtx.fill();
+                rCtx.fillStyle = '#007733';
+                rCtx.fillRect(sx + 6, sy - 9, 56, 17);
+                rCtx.strokeStyle = '#ffffff';
+                rCtx.lineWidth = 1;
+                rCtx.strokeRect(sx + 6, sy - 9, 56, 17);
+                rCtx.font = '900 9.5px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif';
+                rCtx.fillStyle = '#ffffff';
+                rCtx.fillText('START ▲', sx + 10, sy + 3);
 
-                // ゴール地点
+                // ゴール地点 (チェッカー赤看板)
                 const sLast = samples[samples.length - 1];
-                const gx = toRadarX(sLast.pos.x);
-                const gy = toRadarY(sLast.pos.z);
-                rCtx.fillStyle = '#ff2244';
-                rCtx.beginPath(); rCtx.arc(gx, gy, 6, 0, Math.PI * 2); rCtx.fill();
-                rCtx.fillStyle = '#ff5577';
-                rCtx.fillText('🏁 GOAL', gx + 8, gy + 4);
+                const gx = toX(sLast.pos.x);
+                const gy = toY(sLast.pos.z);
+                rCtx.fillStyle = '#e60012';
+                rCtx.beginPath(); rCtx.arc(gx, gy, 5, 0, Math.PI * 2); rCtx.fill();
+                rCtx.fillStyle = '#99000a';
+                rCtx.fillRect(gx + 6, gy - 9, 56, 17);
+                rCtx.strokeStyle = '#ffffff';
+                rCtx.lineWidth = 1;
+                rCtx.strokeRect(gx + 6, gy - 9, 56, 17);
+                rCtx.fillStyle = '#ffffff';
+                rCtx.fillText('GOAL 🏁', gx + 10, gy + 3);
 
-                // ランドマークピン描画 (重なり防止オフセット)
+                // ランドマーク標識 (日本の道路標識・青看板スタイル)
                 if (meta && meta.landmarks) {
                     rCtx.font = '900 9px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif';
                     meta.landmarks.forEach((lm, lmIdx) => {
                         const idx = Math.min(samples.length - 1, Math.max(0, Math.floor(lm.t * samples.length)));
                         const pt = samples[idx];
-                        const lx = toRadarX(pt.pos.x);
-                        const ly = toRadarY(pt.pos.z);
+                        const lx = toX(pt.pos.x);
+                        const ly = toY(pt.pos.z);
 
-                        rCtx.fillStyle = '#ffea00';
+                        rCtx.fillStyle = '#0077cc';
                         rCtx.beginPath(); rCtx.arc(lx, ly, 3.5, 0, Math.PI * 2); rCtx.fill();
 
                         const tw = rCtx.measureText(lm.name).width;
-                        const yOff = (lmIdx % 2 === 0) ? -16 : 8;
-                        const xOff = (lx > rw - 130) ? -tw - 8 : 6;
+                        const yOff = (lmIdx % 2 === 0) ? -17 : 8;
+                        const xOff = (lx > rw - 130) ? -tw - 10 : 6;
 
-                        rCtx.fillStyle = 'rgba(6, 12, 22, 0.92)';
-                        rCtx.strokeStyle = '#ffcc00';
+                        // 青看板 (国土交通省 案内標識ブルー)
+                        rCtx.fillStyle = '#0055aa';
+                        rCtx.strokeStyle = '#ffffff';
                         rCtx.lineWidth = 1;
-                        rCtx.fillRect(lx + xOff, ly + yOff, tw + 8, 14);
-                        rCtx.strokeRect(lx + xOff, ly + yOff, tw + 8, 14);
-                        rCtx.fillStyle = '#ffea00';
-                        rCtx.fillText(lm.name, lx + xOff + 4, ly + yOff + 10.5);
+                        rCtx.fillRect(lx + xOff, ly + yOff, tw + 10, 16);
+                        rCtx.strokeRect(lx + xOff, ly + yOff, tw + 10, 16);
+                        rCtx.fillStyle = '#ffffff';
+                        rCtx.fillText(lm.name, lx + xOff + 5, ly + yOff + 11);
                     });
                 }
 
-                // 2. 標高プロファイル
+                // 2. 山岳高低差 標高断面図プロファイル
                 const eCtx = elevCanvas.getContext('2d');
                 const ew = elevCanvas.width;
                 const eh = elevCanvas.height;
                 eCtx.clearRect(0, 0, ew, eh);
 
-                eCtx.fillStyle = '#060912';
+                eCtx.fillStyle = '#0f141d';
                 eCtx.fillRect(0, 0, ew, eh);
 
                 let minY = Infinity, maxY = -Infinity;
@@ -1139,13 +1190,25 @@
                     if (s.pos.y > maxY) maxY = s.pos.y;
                 }
                 const spanY = Math.max(10, maxY - minY);
-                const elevPadX = 16;
+                const elevPadX = 14;
                 const elevPadY = 12;
 
                 const toElevX = (i) => elevPadX + (i / (samples.length - 1)) * (ew - elevPadX * 2);
                 const toElevY = (y) => eh - elevPadY - ((y - minY) / spanY) * (eh - elevPadY * 2);
 
-                // 断面グラデーション塗りつぶし
+                // 標高グリッド線 (破線)
+                eCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                eCtx.lineWidth = 1;
+                eCtx.setLineDash([3, 3]);
+                for (let gl = eh * 0.25; gl < eh; gl += eh * 0.35) {
+                    eCtx.beginPath();
+                    eCtx.moveTo(elevPadX, gl);
+                    eCtx.lineTo(ew - elevPadX, gl);
+                    eCtx.stroke();
+                }
+                eCtx.setLineDash([]);
+
+                // 山岳断面 (大地グラデーション)
                 eCtx.beginPath();
                 eCtx.moveTo(toElevX(0), eh);
                 for (let i = 0; i < samples.length; i++) {
@@ -1155,13 +1218,14 @@
                 eCtx.closePath();
 
                 const grad = eCtx.createLinearGradient(0, 0, 0, eh);
-                grad.addColorStop(0, 'rgba(255, 170, 0, 0.35)');
-                grad.addColorStop(1, 'rgba(10, 20, 40, 0.05)');
+                grad.addColorStop(0, 'rgba(160, 120, 50, 0.45)');
+                grad.addColorStop(0.5, 'rgba(40, 50, 65, 0.35)');
+                grad.addColorStop(1, 'rgba(15, 20, 30, 0.6)');
                 eCtx.fillStyle = grad;
                 eCtx.fill();
 
-                // 標高ライン
-                eCtx.strokeStyle = '#ffaa00';
+                // 峠道路線 (ゴールド稜線)
+                eCtx.strokeStyle = '#ffcc00';
                 eCtx.lineWidth = 2.2;
                 eCtx.beginPath();
                 for (let i = 0; i < samples.length; i++) {
@@ -1172,13 +1236,13 @@
                 }
                 eCtx.stroke();
 
-                // 標高テキスト (開始点基準)
-                eCtx.font = '900 10px "Share Tech Mono", monospace';
-                eCtx.fillStyle = '#ffdd44';
-                eCtx.fillText(`START: ±0m`, 14, 18);
-                eCtx.fillStyle = '#00ddff';
+                // 標高テキスト
+                eCtx.font = '900 10px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif';
+                eCtx.fillStyle = '#ffffff';
+                eCtx.fillText('▲ 山頂スタート: ±0m', 14, 16);
                 const deltaY = (sLast.pos.y - s0.pos.y).toFixed(0);
-                eCtx.fillText(`GOAL: ${deltaY >= 0 ? '+' : ''}${deltaY}m`, ew - 95, 18);
+                eCtx.fillStyle = (deltaY <= 0) ? '#ff4444' : '#44bbff';
+                eCtx.fillText('▼ 麓ゴール: ' + (deltaY >= 0 ? '+' : '') + deltaY + 'm', ew - 120, 16);
             }
 
             window.drawCourseRadarAndElevation = drawCourseRadarAndElevation;
@@ -1197,8 +1261,11 @@
                     if (courseDescBox) courseDescBox.textContent = meta.desc;
                     if (minimapCourseName) minimapCourseName.textContent = meta.name;
 
-                    const rTitle = document.getElementById('radar-stage-title');
+                    const rTitle = document.getElementById('touge-stage-name-display');
                     if (rTitle) rTitle.textContent = meta.title;
+                    const routeDisplay = document.getElementById('touge-route-num-display');
+                    if (routeDisplay && meta.route) routeDisplay.textContent = meta.route;
+
 
                     const elevTag = document.getElementById('elev-delta-tag');
                     if (elevTag) elevTag.textContent = meta.elevTag;
@@ -1233,8 +1300,6 @@
             if (btnHappo) btnHappo.addEventListener('click', () => selectCourse('happo', btnHappo));
             if (btnTsubaki) btnTsubaki.addEventListener('click', () => selectCourse('tsubaki', btnTsubaki));
 
-
-
             // 天候選択 (DRY / RAIN / FOG)
             const btnWeatherDry = document.getElementById('btn-weather-dry');
             const btnWeatherRain = document.getElementById('btn-weather-rain');
@@ -1255,7 +1320,7 @@
                         tag.className = 'hud-condition-tag fog';
                     } else {
                         tag.textContent = 'DRY';
-                        tag.className = 'hud-condition-tag dry';
+                        tag.className = 'hud-condition-tag';
                     }
                 }
             }
@@ -1264,7 +1329,7 @@
             if (btnWeatherRain) btnWeatherRain.addEventListener('click', () => selectWeather('rain', btnWeatherRain));
             if (btnWeatherFog) btnWeatherFog.addEventListener('click', () => selectWeather('fog', btnWeatherFog));
 
-            // 時間帯選択 (MIDNIGHT / SUNSET / DAYLIGHT)
+            // 時間帯選択 (MIDNIGHT / SUNSET / DAY)
             const btnTimeMidnight = document.getElementById('btn-time-midnight');
             const btnTimeSunset = document.getElementById('btn-time-sunset');
             const btnTimeDaylight = document.getElementById('btn-time-daylight');
@@ -1280,61 +1345,70 @@
             if (btnTimeSunset) btnTimeSunset.addEventListener('click', () => selectTime('sunset', btnTimeSunset));
             if (btnTimeDaylight) btnTimeDaylight.addEventListener('click', () => selectTime('daylight', btnTimeDaylight));
 
-            // AT / MT 選択
-            const btnAt = document.getElementById('btn-at');
-            const btnMt = document.getElementById('btn-mt');
-            btnAt.addEventListener('click', () => {
-                btnAt.classList.add('active');
-                btnMt.classList.remove('active');
-                game.playerPhysics.isAutomatic = true;
-            });
-            btnMt.addEventListener('click', () => {
-                btnMt.classList.add('active');
-                btnAt.classList.remove('active');
-                game.playerPhysics.isAutomatic = false;
-            });
-            if (game.playerPhysics) game.playerPhysics.isAutomatic = true;
-
-            // BGM
-            const btnBgmOn = document.getElementById('btn-bgm-on');
-            const btnBgmOff = document.getElementById('btn-bgm-off');
-            btnBgmOn.addEventListener('click', () => {
-                btnBgmOn.classList.add('active');
-                btnBgmOff.classList.remove('active');
-                game.audio.isBgmEnabled = true;
-            });
-            btnBgmOff.addEventListener('click', () => {
-                btnBgmOff.classList.add('active');
-                btnBgmOn.classList.remove('active');
-                game.audio.isBgmEnabled = false;
-            });
-
-            // 難易度
-            const btnDiffEasy = document.getElementById('btn-diff-easy');
-            const btnDiffNormal = document.getElementById('btn-diff-normal');
-            const btnDiffHard = document.getElementById('btn-diff-hard');
-
-            function selectDifficulty(diff, activeBtn) {
-                [btnDiffEasy, btnDiffNormal, btnDiffHard].forEach(b => b.classList.remove('active'));
-                activeBtn.classList.add('active');
-                game.setDifficulty(diff);
+            // ミッション選択 (AT / MT)
+            const btnAT = document.getElementById('btn-at');
+            const btnMT = document.getElementById('btn-mt');
+            if (btnAT && btnMT) {
+                btnAT.addEventListener('click', () => {
+                    btnAT.classList.add('active');
+                    btnMT.classList.remove('active');
+                    game.playerPhysics.isAutomatic = true;
+                });
+                btnMT.addEventListener('click', () => {
+                    btnMT.classList.add('active');
+                    btnAT.classList.remove('active');
+                    game.playerPhysics.isAutomatic = false;
+                });
             }
 
-            btnDiffEasy.addEventListener('click', () => selectDifficulty('easy', btnDiffEasy));
-            btnDiffNormal.addEventListener('click', () => selectDifficulty('normal', btnDiffNormal));
-            btnDiffHard.addEventListener('click', () => selectDifficulty('hard', btnDiffHard));
+            // BGM (ON / OFF)
+            const btnBgmOn = document.getElementById('btn-bgm-on');
+            const btnBgmOff = document.getElementById('btn-bgm-off');
+            if (btnBgmOn && btnBgmOff) {
+                btnBgmOn.addEventListener('click', () => {
+                    btnBgmOn.classList.add('active');
+                    btnBgmOff.classList.remove('active');
+                    if (game.audio) game.audio.isBgmEnabled = true;
+                });
+                btnBgmOff.addEventListener('click', () => {
+                    btnBgmOff.classList.add('active');
+                    btnBgmOn.classList.remove('active');
+                    if (game.audio) {
+                        game.audio.isBgmEnabled = false;
+                        game.audio.stopBGM();
+                    }
+                });
+            }
+
+            // 難易度選択 (NORMAL / HARD)
+            const btnDiffNorm = document.getElementById('btn-diff-normal');
+            const btnDiffHard = document.getElementById('btn-diff-hard');
+            if (btnDiffNorm && btnDiffHard) {
+                btnDiffNorm.addEventListener('click', () => {
+                    btnDiffNorm.classList.add('active');
+                    btnDiffHard.classList.remove('active');
+                    if (game.rivalCar) game.rivalCar.difficulty = 'normal';
+                });
+                btnDiffHard.addEventListener('click', () => {
+                    btnDiffHard.classList.add('active');
+                    btnDiffNorm.classList.remove('active');
+                    if (game.rivalCar) game.rivalCar.difficulty = 'hard';
+                });
+            }
 
             // コーナーアシスト選択 (弱 / 強)
             const btnAssistWeak = document.getElementById('btn-assist-weak');
             const btnAssistStrong = document.getElementById('btn-assist-strong');
-            if (btnAssistWeak) {
+            if (btnAssistWeak && btnAssistStrong) {
                 btnAssistWeak.addEventListener('click', () => {
-                    game.setCornerAssist('weak');
+                    btnAssistWeak.classList.add('active');
+                    btnAssistStrong.classList.remove('active');
+                    game.isEnhancedGrip = false;
                 });
-            }
-            if (btnAssistStrong) {
                 btnAssistStrong.addEventListener('click', () => {
-                    game.setCornerAssist('strong');
+                    btnAssistStrong.classList.add('active');
+                    btnAssistWeak.classList.remove('active');
+                    game.isEnhancedGrip = true;
                 });
             }
 
@@ -1347,12 +1421,6 @@
                 });
             }
 
-            // スタート & リトライ
-            const btnStart = document.getElementById('btn-start');
-            btnStart.addEventListener('click', () => {
-                if (game.audio) game.audio.resume();
-                game.startRace();
-            });
             // タイトル画面 アーケードクロック更新
             function updateMarqueeClock() {
                 const clockElem = document.getElementById('arcade-clock');
@@ -1366,30 +1434,18 @@
             setInterval(updateMarqueeClock, 1000);
             updateMarqueeClock();
 
-            // [ENTER] キーでの即時出撃サポート
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const startOverlay = document.getElementById('start-overlay');
-                    const garage = document.getElementById('garage-overlay');
-                    if (startOverlay && startOverlay.style.display !== 'none' && (!garage || garage.style.display === 'none')) {
-                        const btnStart = document.getElementById('btn-start');
-                        if (btnStart) btnStart.click();
-                    }
-                }
-            });
-
-
             const btnRetry = document.getElementById('btn-retry');
-            btnRetry.addEventListener('click', () => {
-                if (game.audio) game.audio.resume();
-                game.playerPhysics.resetToTrack(0.003, -1.8);
-                game.rivalCar.resetPosition();
-                game.hud.currentTime = 0;
-                game.hud.isFinished = false;
-                document.getElementById('result-overlay').style.display = 'none';
-                game.startRace();
-            });
-            window.game = game;
+            if (btnRetry) {
+                btnRetry.addEventListener('click', () => {
+                    if (game.audio) game.audio.resume();
+                    game.playerPhysics.resetToTrack(0.003, -1.8);
+                    game.rivalCar.resetPosition();
+                    game.hud.currentTime = 0;
+                    game.hud.isFinished = false;
+                    document.getElementById('result-overlay').style.display = 'none';
+                    game.startRace();
+                });
+            }
 
             // URLパラメータによるダイレクト起動サポート
             const params = new URLSearchParams(window.location.search);
@@ -1410,7 +1466,7 @@
             }
             if (params.get('autostart') === '1') {
                 setTimeout(() => {
-                    btnStart.click();
+                    if (btnStart) btnStart.click();
 
                     if (params.has('seek_t')) {
                         const st = parseFloat(params.get('seek_t'));
