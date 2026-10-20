@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INITIAL D ARCADE STAGE - 峠ドリフトレース</title>
-    <link rel="stylesheet" href="css/style.css?v=116_arcade_attract_drift">
+    <link rel="stylesheet" href="css/style.css?v=117_arcade_cabinet_ui">
 </head>
 <body>
     <!-- 3D WebGL レンダリングキャンバス -->
@@ -158,60 +158,87 @@
   </g>
 </svg>
             </div>
-            <div id="course-title-sub" class="title-stage-sub">ARCADE STAGE : AKINA DOWNHILL (7,552m・原作公式完全再現)</div>
 
-            <!-- 本物のアーケード象徴：浮動式ネオン PUSH START BUTTON -->
-            <div class="arcade-press-start-prompt" id="btn-callout-start">
-                <div class="press-start-glow"></div>
-                <div class="press-start-text">PUSH START BUTTON</div>
-                <div class="press-start-sub">INSERT COIN &bull; PRESS [ENTER] OR TOUCH TO PLAY</div>
+            <!-- 1. 峠ステージバッジ（斜角レーシングカット） -->
+            <div id="course-title-sub" class="arcade-stage-badge">
+                <span class="badge-stage-tag">STAGE</span>
+                <span class="badge-stage-name">AKINA DOWNHILL // 秋名 下り 7,552m</span>
             </div>
 
-            <!-- 現在セッティングのクイック確認ピル -->
-            <div class="attract-current-setup">
-                <span class="setup-pill stage" id="attract-stage-badge">秋名 下り (7,552m)</span>
-                <span class="setup-pill-dot">&bull;</span>
-                <span class="setup-pill car" id="attract-car-badge">AE86 TRUENO [藤原拓海]</span>
-                <span class="setup-pill-dot">&bull;</span>
-                <span class="setup-pill cond" id="attract-cond-badge">MIDNIGHT / DRY / AT</span>
+            <!-- 2. 本物のアーケード象徴：アトラクト・フラッシングビーコン -->
+            <div class="arcade-attract-beacon" id="btn-callout-start">
+                <span class="beacon-chevrons left">▶▶▶</span>
+                <div class="beacon-body">
+                    <div class="beacon-title">PUSH START BUTTON</div>
+                    <div class="beacon-coin-row">
+                        <span class="coin-led-blink">●</span>
+                        <span class="coin-msg">INSERT COIN &bull; CREDIT 01 &bull; PRESS [ENTER] TO PLAY</span>
+                    </div>
+                </div>
+                <span class="beacon-chevrons right">◀◀◀</span>
+            </div>
+
+            <!-- 3. 車両・コーススペック・テレメトリーモニター（Web丸角ピル完全撤廃） -->
+            <div class="arcade-spec-monitor">
+                <div class="spec-mon-unit">
+                    <span class="mon-label">STAGE</span>
+                    <span class="mon-val cyan" id="attract-stage-badge">秋名 下り (7,552m)</span>
+                </div>
+                <div class="mon-sep"></div>
+                <div class="spec-mon-unit">
+                    <span class="mon-label">CAR</span>
+                    <span class="mon-val gold" id="attract-car-badge">AE86 TRUENO [藤原拓海]</span>
+                </div>
+                <div class="mon-sep"></div>
+                <div class="spec-mon-unit">
+                    <span class="mon-label">SETTINGS</span>
+                    <span class="mon-val white" id="attract-cond-badge">MIDNIGHT / DRY / AT</span>
+                </div>
+                <div class="mon-status">
+                    <span class="mon-status-led">●</span>
+                    <span class="mon-status-text">SYS OK</span>
+                </div>
             </div>
         </div>
 
-        <!-- 3. 下部：洗練されたアーケード操作リボン ＆ 法的クレジット -->
+        <!-- 3. 下部：SEGAアーケード操作コンソール（Webボタン完全撤廃・実機スイッチ仕様） -->
         <div class="arcade-bottom-deck">
-            <div class="arcade-action-ribbon">
-                <!-- START BATTLE -->
-                <button id="btn-start" class="ribbon-btn ribbon-btn-battle start-btn">
-                    <span class="ribbon-btn-glow"></span>
-                    <span class="ribbon-btn-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#ffea00" stroke="#ff8800" stroke-width="1.5"/></svg>
-                    </span>
-                    <span class="ribbon-btn-label">START BATTLE</span>
-                    <span class="ribbon-btn-tag">[ENTER]</span>
+            <div class="arcade-control-console">
+                <!-- 巨大メインアクションスイッチ：1P START / 乱入出撃 -->
+                <button id="btn-start" class="arcade-switch switch-battle start-btn">
+                    <div class="switch-hazard-stripe"></div>
+                    <div class="switch-inner">
+                        <span class="switch-jp">乱入出撃</span>
+                        <span class="switch-en">1P BATTLE START</span>
+                        <span class="switch-key">[ENTER]</span>
+                    </div>
                 </button>
 
-                <!-- COURSE & RACE SETUP -->
-                <button id="btn-open-setup" class="ribbon-btn ribbon-btn-setup">
-                    <span class="ribbon-btn-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 2V22M4 4H20L17 9L20 14H4" stroke="#00ddff" stroke-width="2" stroke-linecap="round"/></svg>
-                    </span>
-                    <span class="ribbon-btn-label">COURSE &amp; CONDITIONS</span>
+                <!-- アーケード物理ファンクションキースイッチ（コース選択） -->
+                <button id="btn-open-setup" class="arcade-switch switch-stage">
+                    <div class="switch-led cyan"></div>
+                    <div class="switch-inner">
+                        <span class="switch-jp">コース選択</span>
+                        <span class="switch-en">STAGE SELECT</span>
+                    </div>
                 </button>
 
-                <!-- MACHINE GARAGE -->
-                <button id="btn-open-garage" class="ribbon-btn ribbon-btn-garage garage-btn">
-                    <span class="ribbon-btn-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 13L5 6H19L21 13M3 13V18H6M3 13H21M21 13V18H18M6 18H18" stroke="#00ccff" stroke-width="1.8" stroke-linecap="round"/></svg>
-                    </span>
-                    <span class="ribbon-btn-label">MACHINE GARAGE</span>
+                <!-- アーケード物理ファンクションキースイッチ（愛車ガレージ） -->
+                <button id="btn-open-garage" class="arcade-switch switch-garage garage-btn">
+                    <div class="switch-led blue"></div>
+                    <div class="switch-inner">
+                        <span class="switch-jp">愛車ガレージ</span>
+                        <span class="switch-en">MACHINE &amp; TUNE</span>
+                    </div>
                 </button>
 
-                <!-- HOW TO PLAY -->
-                <button id="btn-open-guide" class="ribbon-btn ribbon-btn-guide">
-                    <span class="ribbon-btn-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="4" stroke="#a080ff" stroke-width="2"/><path d="M6 12H10M8 10V14M15 11H15.01M17 13H17.01" stroke="#a080ff" stroke-width="2" stroke-linecap="round"/></svg>
-                    </span>
-                    <span class="ribbon-btn-label">HOW TO PLAY</span>
+                <!-- アーケード物理ファンクションキースイッチ（遊び方・操作） -->
+                <button id="btn-open-guide" class="arcade-switch switch-guide">
+                    <div class="switch-led purple"></div>
+                    <div class="switch-inner">
+                        <span class="switch-jp">遊び方・操作</span>
+                        <span class="switch-en">HOW TO PLAY</span>
+                    </div>
                 </button>
             </div>
 
@@ -235,6 +262,7 @@
             <!-- コーナーコインクレジット ＆ 法的表記 -->
             <div class="arcade-footer-meta">
                 <div class="arcade-credit-counter">
+                    <span class="credit-slot-icon">🪙</span>
                     <span class="credit-label">CREDIT(S)</span>
                     <span class="credit-digit">1</span>
                     <span class="freeplay-badge">FREE PLAY</span>
@@ -576,20 +604,20 @@
 
     <!-- スクリプト群 -->
     <script src="js/lib/three.min.js"></script>
-    <script src="js/data/CarDatabase.js?v=116_arcade_attract_drift"></script>
-    <script src="js/physics/TougeTrack.js?v=116_arcade_attract_drift"></script>
-    <script src="js/physics/CarPhysics.js?v=116_arcade_attract_drift"></script>
-    <script src="js/entities/CarModelBuilder.js?v=116_arcade_attract_drift"></script>
-    <script src="js/entities/PlayerCar.js?v=116_arcade_attract_drift"></script>
-    <script src="js/entities/RivalCar.js?v=116_arcade_attract_drift"></script>
-    <script src="js/entities/ParticleSystem.js?v=116_arcade_attract_drift"></script>
-    <script src="js/core/Input.js?v=116_arcade_attract_drift"></script>
-    <script src="js/data/TireAudioData.js?v=116_arcade_attract_drift"></script>
-    <script src="js/core/AudioManager.js?v=116_arcade_attract_drift"></script>
-    <script src="js/ui/CornerGuide.js?v=116_arcade_attract_drift"></script>
-    <script src="js/ui/HUD.js?v=116_arcade_attract_drift"></script>
-    <script src="js/ui/GarageUI.js?v=116_arcade_attract_drift"></script>
-    <script src="js/core/Game.js?v=116_arcade_attract_drift"></script>
+    <script src="js/data/CarDatabase.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/physics/TougeTrack.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/physics/CarPhysics.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/entities/CarModelBuilder.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/entities/PlayerCar.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/entities/RivalCar.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/entities/ParticleSystem.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/core/Input.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/data/TireAudioData.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/core/AudioManager.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/ui/CornerGuide.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/ui/HUD.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/ui/GarageUI.js?v=117_arcade_cabinet_ui"></script>
+    <script src="js/core/Game.js?v=117_arcade_cabinet_ui"></script>
 
     <script>
         function initApp() {
@@ -643,6 +671,7 @@
             function updateAttractPills() {
                 const stageBadge = document.getElementById('attract-stage-badge');
                 const condBadge = document.getElementById('attract-cond-badge');
+                const carBadge = document.getElementById('attract-car-badge');
                 if (stageBadge && game) {
                     const cKey = game.currentCourse || 'akina';
                     const names = {
@@ -662,6 +691,9 @@
                     const t = (game.currentTimeOfDay || 'midnight').toUpperCase();
                     const m = (game.playerPhysics && game.playerPhysics.isAutomatic) ? 'AT' : 'MT';
                     condBadge.textContent = `${t} / ${w} / ${m}`;
+                }
+                if (carBadge && game && game.currentCarKey && window.CarDatabase && window.CarDatabase[game.currentCarKey]) {
+                    carBadge.textContent = window.CarDatabase[game.currentCarKey].name;
                 }
             }
             setInterval(updateAttractPills, 500);
@@ -735,9 +767,14 @@
                 allCourseBtns.forEach(b => { if (b) b.classList.remove('active'); });
                 if (activeBtn) activeBtn.classList.add('active');
                 if (courseDescs[courseKey]) {
-                    courseTitleSub.textContent = courseDescs[courseKey].title;
-                    courseDescBox.textContent = courseDescs[courseKey].desc;
-                    minimapCourseName.textContent = courseDescs[courseKey].name;
+                    const badgeName = courseTitleSub ? courseTitleSub.querySelector('.badge-stage-name') : null;
+                    if (badgeName) {
+                        badgeName.textContent = courseDescs[courseKey].title.replace('ARCADE STAGE : ', '');
+                    } else if (courseTitleSub) {
+                        courseTitleSub.textContent = courseDescs[courseKey].title;
+                    }
+                    if (courseDescBox) courseDescBox.textContent = courseDescs[courseKey].desc;
+                    if (minimapCourseName) minimapCourseName.textContent = courseDescs[courseKey].name;
                 }
                 game.setCourse(courseKey);
             }
