@@ -1080,6 +1080,9 @@ body, html {
 /* ==========================================================================
    4. モーダル：アーケード コース＆レース設定スクリーン
    ========================================================================== */
+/* ==========================================================================
+   4. モーダル：アーケード コース＆レース設定スクリーン (3カラム・バトルシアター仕様)
+   ========================================================================== */
 .arcade-sub-modal {
     position: fixed;
     top: 0;
@@ -1090,7 +1093,7 @@ body, html {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    padding: 12px;
     box-sizing: border-box;
 }
 
@@ -1100,27 +1103,28 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(4, 7, 14, 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: radial-gradient(circle at center, rgba(8, 16, 28, 0.88) 0%, rgba(2, 4, 8, 0.96) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
 
-.modal-window {
+.arcade-course-window {
     position: relative;
     z-index: 2;
-    width: 1220px;
-    max-width: 96vw;
+    width: 1280px;
+    max-width: 98vw;
     max-height: 94vh;
-    background: rgba(10, 15, 24, 0.94);
-    border: 2px solid #ffaa00;
-    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(14, 20, 32, 0.96) 0%, rgba(6, 10, 18, 0.98) 100%);
+    border: 2px solid #00d4ff;
+    border-radius: 8px;
     box-shadow: 
-        0 0 45px rgba(255, 170, 0, 0.3),
-        inset 0 0 25px rgba(0, 180, 255, 0.08);
+        0 0 50px rgba(0, 200, 255, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 0 40px rgba(0, 60, 120, 0.4);
     display: flex;
     flex-direction: column;
-    padding: 14px 18px;
-    gap: 10px;
+    padding: 10px 16px;
+    gap: 8px;
     box-sizing: border-box;
     overflow-y: auto;
 }
@@ -1129,8 +1133,8 @@ body, html {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(80, 120, 170, 0.35);
-    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(0, 200, 255, 0.3);
+    padding-bottom: 6px;
 }
 
 .modal-title-wrap {
@@ -1139,61 +1143,80 @@ body, html {
     gap: 10px;
 }
 
-.modal-badge {
-    background: #0055aa;
+.modal-badge-arcade {
+    background: linear-gradient(135deg, #0066cc 0%, #0099ff 100%);
     color: #fff;
     font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    padding: 3px 8px;
-    border-radius: 3px;
-    box-shadow: 0 0 8px rgba(0, 140, 255, 0.5);
+    font-weight: 950;
+    font-style: italic;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(0, 160, 255, 0.8);
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
 }
 
-.modal-title {
-    font-size: 16px;
+.modal-title-text {
+    font-family: 'Arial Black', 'Hiragino Kaku Gothic ProN', sans-serif;
+    font-size: 15px;
     font-weight: 900;
     letter-spacing: 1.5px;
-    color: #fff;
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(0, 220, 255, 0.6);
 }
 
-.modal-close-btn {
-    background: rgba(255, 50, 50, 0.15);
-    border: 1px solid rgba(255, 80, 80, 0.5);
-    color: #ff8888;
-    padding: 4px 12px;
-    border-radius: 4px;
+.modal-header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.cabinet-status-pill {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
     font-weight: 900;
-    font-size: 11.5px;
+    color: #00ff66;
+    letter-spacing: 1px;
+    background: rgba(0, 255, 100, 0.1);
+    border: 1px solid rgba(0, 255, 100, 0.3);
+    padding: 2px 8px;
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(0, 255, 100, 0.3);
+}
+
+.arcade-close-switch {
+    background: linear-gradient(180deg, rgba(80, 20, 20, 0.8) 0%, rgba(40, 10, 10, 0.9) 100%);
+    border: 1px solid rgba(255, 80, 80, 0.6);
+    color: #ff9999;
+    padding: 4px 14px;
+    border-radius: 3px;
+    font-weight: 900;
+    font-size: 11px;
     cursor: pointer;
     letter-spacing: 1px;
-    transition: all 0.15s;
+    transition: all 0.1s ease-out;
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
 }
 
-.modal-close-btn:hover {
-    background: #dd2222;
+.arcade-close-switch:hover {
+    background: #cc1111;
     color: #fff;
-    box-shadow: 0 0 10px rgba(255, 50, 50, 0.6);
+    box-shadow: 0 0 12px rgba(255, 40, 40, 0.8);
 }
 
-.modal-body {
+.arcade-course-body {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     width: 100%;
+    align-items: stretch;
 }
 
-.modal-col-left {
-    flex: 1.25;
+/* 1. 左列：コースセレクター (幅 ~310px) */
+.arcade-course-body .modal-col-left {
+    flex: 0 0 310px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-}
-
-.modal-col-right {
-    flex: 0.95;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .col-section-header {
@@ -1205,47 +1228,47 @@ body, html {
 .header-led-badge {
     background: #0055aa;
     color: #fff;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 900;
     letter-spacing: 1px;
-    padding: 2px 8px;
-    border-radius: 3px;
-    box-shadow: 0 0 8px rgba(0, 140, 255, 0.5);
+    padding: 2px 7px;
+    border-radius: 2px;
 }
 
 .header-title-text {
-    font-size: 14.5px;
+    font-size: 12.5px;
     font-weight: 900;
     color: #eee;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
 }
 
 .course-badge-total {
-    background: linear-gradient(90deg, #ff3300, #ff9900);
+    background: linear-gradient(90deg, #ff3300, #ff8800);
     color: #fff;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 900;
     letter-spacing: 1px;
-    padding: 2px 10px;
-    border-radius: 10px;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    box-shadow: 0 0 10px rgba(255, 80, 0, 0.5);
+    padding: 1px 7px;
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(255, 60, 0, 0.5);
 }
 
-.course-selector-grid {
+.course-selector-scroll {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background: rgba(6, 10, 16, 0.7);
+    background: rgba(4, 8, 14, 0.7);
     border: 1px solid rgba(80, 120, 170, 0.35);
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 6px;
+    padding: 6px;
+    max-height: 540px;
+    overflow-y: auto;
 }
 
-.course-area-section {
+.course-area-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
 .area-banner {
@@ -1253,7 +1276,7 @@ body, html {
     align-items: center;
     justify-content: space-between;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 3px;
     background: rgba(0, 120, 200, 0.15);
     border-left: 3px solid #00bbff;
 }
@@ -1264,7 +1287,7 @@ body, html {
 }
 
 .area-tag-badge {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 900;
     color: #00ddff;
     letter-spacing: 1px;
@@ -1275,130 +1298,376 @@ body, html {
 }
 
 .area-sub-badge {
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 800;
     color: #88aacc;
 }
 
-.stage-cards-row {
+.stage-cards-column {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.stage-card-btn {
-    position: relative;
-    flex: 1 1 calc(50% - 6px);
-    background: linear-gradient(135deg, rgba(20, 28, 42, 0.95) 0%, rgba(12, 16, 26, 0.95) 100%);
-    border: 1px solid rgba(80, 120, 170, 0.45);
-    border-radius: 5px;
+.arcade-stage-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(16, 24, 38, 0.95) 0%, rgba(8, 12, 20, 0.98) 100%);
+    border: 1px solid rgba(80, 130, 180, 0.4);
+    border-left: 3px solid #4a6688;
     padding: 5px 8px;
     cursor: pointer;
     text-align: left;
-    transition: all 0.14s ease-out;
-    box-sizing: border-box;
+    transition: all 0.1s ease-out;
+    border-radius: 3px;
+    outline: none;
+}
+
+.arcade-stage-card:hover {
+    border-color: #00ddff;
+    border-left-color: #00ddff;
+    transform: translateX(3px);
+    box-shadow: 0 0 12px rgba(0, 220, 255, 0.35);
+}
+
+.arcade-stage-card.active {
+    background: linear-gradient(135deg, rgba(0, 60, 120, 0.7) 0%, rgba(10, 24, 44, 0.95) 100%);
+    border: 1.5px solid #00e5ff;
+    border-left: 4px solid #ffcc00;
+    box-shadow: 
+        0 0 16px rgba(0, 220, 255, 0.6),
+        inset 0 0 12px rgba(0, 180, 255, 0.3);
+    transform: translateX(4px);
+}
+
+.card-stage-num {
+    font-family: 'Share Tech Mono', 'Arial Black', monospace;
+    font-size: 18px;
+    font-weight: 900;
+    font-style: italic;
+    color: #446688;
+    line-height: 1;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.arcade-stage-card.active .card-stage-num {
+    color: #ffea00;
+    text-shadow: 0 0 8px rgba(255, 230, 0, 0.8);
+}
+
+.card-stage-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
     overflow: hidden;
 }
 
-.stage-card-btn:hover {
-    border-color: #00ddff;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 10px rgba(0, 200, 255, 0.3);
-}
-
-.stage-card-btn.active {
-    background: linear-gradient(135deg, rgba(255, 140, 0, 0.3) 0%, rgba(180, 40, 0, 0.35) 100%), #141b27;
-    border: 1.8px solid #ffcc00;
-    box-shadow: 
-        0 0 16px rgba(255, 170, 0, 0.6),
-        inset 0 0 10px rgba(255, 200, 0, 0.25);
-}
-
-.stage-name-row {
+.card-name-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2px;
+    align-items: baseline;
+    gap: 6px;
 }
 
-.stage-jp-name {
+.card-jp-name {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
     font-size: 13.5px;
-    font-weight: 900;
-    color: #eee;
+    font-weight: 950;
+    color: #e8f2ff;
     letter-spacing: 0.5px;
 }
 
-.stage-card-btn.active .stage-jp-name {
+.arcade-stage-card.active .card-jp-name {
     color: #ffffff;
-    text-shadow: 0 0 8px #ffaa00;
+    text-shadow: 0 0 8px rgba(0, 220, 255, 0.8);
 }
 
-.stage-stars {
-    font-size: 10px;
+.card-en-name {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 8.5px;
+    font-weight: 900;
+    color: #7090b0;
+    letter-spacing: 0.5px;
+}
+
+.card-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9.5px;
+}
+
+.card-dist {
+    font-family: 'Share Tech Mono', monospace;
+    font-weight: 900;
+    color: #00ddff;
+}
+
+.card-diff-bar {
+    font-family: 'Share Tech Mono', monospace;
+    font-weight: 900;
+    font-size: 8.5px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+}
+
+.card-diff-bar.lv3 { background: rgba(0, 200, 100, 0.25); color: #00ff88; border: 1px solid #00cc66; }
+.card-diff-bar.lv4 { background: rgba(255, 170, 0, 0.25); color: #ffbb00; border: 1px solid #ff9900; }
+.card-diff-bar.lv5 { background: rgba(255, 40, 0, 0.25); color: #ff4433; border: 1px solid #ff2200; }
+
+.card-feature {
+    color: #8899aa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 9px;
+}
+
+.arcade-stage-card.active .card-feature {
+    color: #d8eeff;
+}
+
+/* 2. 中央列：タクティカルレーダー ＆ 標高 ＆ インテル (幅 ~540px) */
+.arcade-course-body .modal-col-center {
+    flex: 1.6;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.radar-panel-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(6, 10, 18, 0.85);
+    border: 1px solid rgba(0, 200, 255, 0.4);
+    border-radius: 6px;
+    padding: 8px 10px;
+    box-shadow: inset 0 0 20px rgba(0, 140, 255, 0.12);
+}
+
+.radar-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 200, 255, 0.25);
+    padding-bottom: 4px;
+}
+
+.radar-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.radar-tag {
+    background: #0055aa;
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 2px;
+}
+
+.radar-stage-name {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 13.5px;
+    font-weight: 900;
+    color: #00e5ff;
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(0, 220, 255, 0.6);
+}
+
+.radar-scanner-blinker {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9.5px;
+    font-weight: 900;
+    color: #00ff66;
+    letter-spacing: 1px;
+    animation: scannerPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes scannerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.radar-canvas-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background: #040810;
+    border: 1px solid rgba(0, 180, 255, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#course-radar-canvas {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    height: 245px;
+}
+
+.radar-corner-brackets .cb {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #00ddff;
+    pointer-events: none;
+}
+
+.radar-corner-brackets .top-left { top: 3px; left: 3px; border-right: none; border-bottom: none; }
+.radar-corner-brackets .top-right { top: 3px; right: 3px; border-left: none; border-bottom: none; }
+.radar-corner-brackets .btm-left { bottom: 3px; left: 3px; border-right: none; border-top: none; }
+.radar-corner-brackets .btm-right { bottom: 3px; right: 3px; border-left: none; border-top: none; }
+
+/* 標高プロファイル */
+.elevation-panel-box {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: rgba(4, 8, 14, 0.7);
+    border: 1px solid rgba(255, 170, 0, 0.35);
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+.elevation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.elev-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    font-weight: 900;
     color: #ffaa00;
     letter-spacing: 1px;
 }
 
-.stage-specs-row {
+.elev-val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    font-weight: 900;
+    color: #ffdd44;
+}
+
+#course-elevation-canvas {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    height: 65px;
+    background: #060912;
+    border-radius: 2px;
+}
+
+/* コーステレメトリーリボン (5分割デジタルボックス) */
+.course-telemetry-ribbon {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+}
+
+.tel-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(8, 14, 24, 0.8);
+    border: 1px solid rgba(80, 130, 180, 0.3);
+    padding: 3px 2px;
+    border-radius: 3px;
+}
+
+.tel-k {
+    font-family: 'Share Tech Mono', 'Hiragino Kaku Gothic ProN', sans-serif;
+    font-size: 9px;
+    font-weight: 900;
+    color: #7090b0;
+    letter-spacing: 0.5px;
+}
+
+.tel-v {
+    font-family: 'Share Tech Mono', sans-serif;
+    font-size: 11.5px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+}
+
+.tel-v.cyan { color: #00e5ff; text-shadow: 0 0 6px rgba(0, 220, 255, 0.6); }
+.tel-v.gold { color: #ffea00; text-shadow: 0 0 6px rgba(255, 230, 0, 0.6); }
+.tel-v.orange { color: #ff7700; text-shadow: 0 0 6px rgba(255, 120, 0, 0.6); }
+.tel-v.white { color: #e0f0ff; }
+
+/* 戦術インテル & 原作対決 */
+.tactical-intel-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.intel-rival-row {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 10.5px;
+    background: rgba(255, 40, 0, 0.12);
+    border-left: 3px solid #ff3300;
+    padding: 3px 8px;
+    border-radius: 0 3px 3px 0;
 }
 
-.stage-dist {
+.intel-badge {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 8.5px;
     font-weight: 900;
-    color: #00ddff;
+    background: #dd1100;
+    color: #fff;
+    padding: 1px 4px;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
 }
 
-.stage-card-btn.active .stage-dist {
-    color: #ffea00;
-}
-
-.stage-tag {
-    color: #99aabb;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.stage-card-btn.active .stage-tag {
-    color: #ffe0aa;
-}
-
-.course-briefing-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.briefing-tag {
-    font-size: 10px;
+.intel-rival-text {
+    font-size: 11px;
     font-weight: 900;
-    color: #00ddff;
-    letter-spacing: 1px;
+    color: #ffaa99;
+    letter-spacing: 0.5px;
 }
 
 .course-desc-box {
-    background: rgba(0, 40, 70, 0.55);
-    border-left: 4px solid #00ddff;
-    padding: 8px 12px;
-    font-size: 12px;
-    line-height: 1.45;
-    color: #b8e2ff;
-    border-radius: 0 5px 5px 0;
-    box-shadow: inset 0 0 15px rgba(0, 180, 255, 0.1);
+    background: rgba(0, 30, 60, 0.5);
+    border-left: 3px solid #00ddff;
+    padding: 6px 10px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #c2e5ff;
+    border-radius: 0 3px 3px 0;
 }
 
-/* 右列：搭乗マシン確認 & 環境設定 */
+/* 3. 右列：搭乗マシン ＆ アーケード環境設定 ＆ 出撃スイッチ (幅 ~330px) */
+.arcade-course-body .modal-col-right {
+    flex: 1.1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
 .entry-machine-card {
     background: linear-gradient(135deg, rgba(16, 24, 38, 0.95) 0%, rgba(10, 15, 24, 0.95) 100%);
     border: 1px solid rgba(0, 200, 255, 0.4);
-    border-radius: 6px;
-    padding: 8px 12px;
+    border-radius: 4px;
+    padding: 6px 10px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
 .machine-card-header {
@@ -1408,49 +1677,53 @@ body, html {
 }
 
 .machine-tag {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 900;
     color: #00ddff;
     letter-spacing: 1px;
 }
 
 .machine-ready-led {
-    font-size: 10.5px;
+    font-size: 9.5px;
     font-weight: 800;
-    color: #ffaa00;
+    color: #00ff66;
 }
 
+.machine-ready-led .green { color: #00ff66; text-shadow: 0 0 6px #00ff66; }
+
 .machine-car-name {
-    font-size: 14.5px;
-    font-weight: 900;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    font-size: 13.5px;
+    font-weight: 950;
     color: #ffea00;
     letter-spacing: 0.5px;
-    text-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
+    text-shadow: 0 0 8px rgba(255, 230, 0, 0.5);
 }
 
 .machine-info-grid {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 5px 8px;
-    border-radius: 4px;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 4px 6px;
+    border-radius: 3px;
     border-left: 2px solid #ffaa00;
 }
 
 .machine-info-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 11.5px;
+    gap: 6px;
+    font-size: 10.5px;
 }
 
 .machine-info-item .info-k {
     font-weight: 900;
-    color: #7799bb;
-    width: 65px;
+    color: #7090b0;
+    width: 54px;
     flex-shrink: 0;
-    font-size: 10px;
+    font-size: 9px;
+    font-family: 'Share Tech Mono', monospace;
 }
 
 .machine-info-item .info-v {
@@ -1461,37 +1734,43 @@ body, html {
     text-overflow: ellipsis;
 }
 
+.machine-info-item .info-v.gold {
+    color: #ffea00;
+    font-family: 'Share Tech Mono', monospace;
+    font-weight: 900;
+}
+
 .arcade-settings-console {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    background: rgba(6, 10, 16, 0.6);
-    border: 1px solid rgba(80, 120, 170, 0.3);
-    border-radius: 6px;
-    padding: 8px;
+    gap: 5px;
+    background: rgba(6, 10, 16, 0.65);
+    border: 1px solid rgba(80, 120, 170, 0.35);
+    border-radius: 4px;
+    padding: 6px 8px;
 }
 
 .setting-rocker-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .setting-rocker-split {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .setting-rocker-half {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
 }
 
 .rocker-label {
-    font-size: 11.5px;
+    font-size: 10.5px;
     font-weight: 900;
     color: #b0c4de;
     letter-spacing: 0.5px;
@@ -1499,7 +1778,7 @@ body, html {
 }
 
 .rocker-label-sub {
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 900;
     color: #8899aa;
     letter-spacing: 0.5px;
@@ -1507,31 +1786,32 @@ body, html {
 
 .rocker-btn-group {
     display: flex;
-    gap: 4px;
+    gap: 3px;
 }
 
 .rocker-btn {
     flex: 1;
-    background: #141b26;
+    background: #101722;
     border: 1px solid #3d5673;
-    color: #a0b0c0;
-    padding: 4px 7px;
-    font-size: 11.5px;
+    color: #9cb0c4;
+    padding: 3px 5px;
+    font-size: 10.5px;
     font-weight: 800;
     cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.12s;
+    border-radius: 3px;
+    transition: all 0.1s ease-out;
     white-space: nowrap;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
+    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
 }
 
 .rocker-btn .btn-led {
     display: inline-block;
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
     background: #334455;
     flex-shrink: 0;
@@ -1539,42 +1819,97 @@ body, html {
 
 .rocker-btn:hover {
     color: #fff;
-    border-color: #6699cc;
+    border-color: #00ddff;
 }
 
 .rocker-btn.active {
-    background: linear-gradient(180deg, #ffaa00 0%, #ee7700 100%);
-    color: #000;
-    border-color: #ffdd44;
-    box-shadow: 0 0 10px rgba(255, 150, 0, 0.65);
-    font-weight: 900;
+    background: linear-gradient(180deg, #00aaee 0%, #0066aa 100%);
+    color: #ffffff;
+    border-color: #00ffff;
+    box-shadow: 0 0 10px rgba(0, 200, 255, 0.65);
+    font-weight: 950;
 }
 
 .rocker-btn.active .btn-led {
-    background: #fff;
-    box-shadow: 0 0 6px #fff;
+    background: #00ffff;
+    box-shadow: 0 0 6px #00ffff;
 }
 
-.modal-start-btn {
+/* 巨大出撃スイッチ：このコースで出撃 */
+.arcade-hero-start-switch {
+    position: relative;
     width: 100%;
-    height: 46px;
-    background: linear-gradient(90deg, #dd1111 0%, #ee4400 50%, #ff8800 100%);
-    border: 2px solid #ffe600;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 900;
-    font-style: italic;
-    letter-spacing: 1.5px;
+    height: 52px;
+    background: linear-gradient(135deg, #cc0000 0%, #ff3300 45%, #ff8800 100%);
+    border: none;
+    border-radius: 3px;
     cursor: pointer;
-    box-shadow: 0 0 20px rgba(255, 60, 0, 0.6);
-    transition: transform 0.12s;
-    margin-top: 4px;
+    overflow: hidden;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    box-shadow: 
+        0 4px 0 #770000,
+        0 8px 20px rgba(255, 50, 0, 0.75),
+        inset 0 1px 2px rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    transition: transform 0.08s ease-out, filter 0.1s ease-out;
+    outline: none;
+    margin-top: 2px;
 }
 
-.modal-start-btn:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 30px rgba(255, 100, 0, 0.9);
+.arcade-hero-start-switch:hover {
+    filter: brightness(1.15);
+}
+
+.arcade-hero-start-switch:active {
+    transform: translateY(3px) scale(0.99);
+    box-shadow: 0 1px 0 #770000, 0 3px 10px rgba(255, 50, 0, 0.9);
+}
+
+.arcade-hero-start-switch .switch-hazard-stripe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ffea00,
+        #ffea00 5px,
+        #111111 5px,
+        #111111 10px
+    );
+    opacity: 0.9;
+}
+
+.modal-btn-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-left: 14px;
+}
+
+.modal-btn-content .switch-jp {
+    font-family: 'Arial Black', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    font-size: 17px;
+    font-weight: 950;
+    font-style: italic;
+    color: #ffffff;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 230, 0, 0.8);
+    line-height: 1.1;
+}
+
+.modal-btn-content .switch-en {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 10px;
+    font-weight: 900;
+    color: #ffea00;
+    letter-spacing: 1.5px;
+    line-height: 1;
+    margin-top: 2px;
 }
 
 /* ==========================================================================
