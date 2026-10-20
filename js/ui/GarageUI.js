@@ -148,6 +148,13 @@ class GarageUI {
         window.addEventListener('mouseup', () => {
             this.isDragging = false;
         });
+
+        // マウスホイールによる距離ズーム調整 (4.2m〜7.0m)
+        window.addEventListener('wheel', (e) => {
+            if (this.isOpen) {
+                this.orbitDistance = Math.max(4.2, Math.min(7.0, this.orbitDistance + e.deltaY * 0.003));
+            }
+        }, { passive: true });
     }
 
     open() {
@@ -334,7 +341,12 @@ class GarageUI {
             this.orbitAngle += dt * 0.16;
         }
 
-        // カメラを車の周囲を回るように配置
+        // カメラの高さを床下に潜り込まないよう安全クランプ (0.65m〜3.0m)
+        this.orbitHeight = Math.max(0.65, Math.min(3.0, this.orbitHeight));
+        // カメラ距離を快適なショールーム範囲にクランプ (4.2m〜7.0m)
+        this.orbitDistance = Math.max(4.2, Math.min(7.0, this.orbitDistance || 5.6));
+
+        // カメラを車の周囲を回るように配置 (車体中心に焦点を当てる)
         const targetPos = this.game.playerPhysics.position.clone().add(new THREE.Vector3(0, 0.45, 0));
         const camX = targetPos.x + Math.sin(this.orbitAngle) * this.orbitDistance;
         const camZ = targetPos.z + Math.cos(this.orbitAngle) * this.orbitDistance;

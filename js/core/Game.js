@@ -154,6 +154,68 @@ class Game {
         }
     }
 
+    buildShowroomStage() {
+        if (this.showroomGroup) return;
+
+        this.showroomGroup = new THREE.Group();
+        this.showroomGroup.name = 'showroomStage';
+        this.showroomGroup.visible = false;
+
+        // 1. 円形ターンテーブル台座 (Turntable Platform)
+        // 自動車が美しく載る直径7.4mのアルミニウム＆ダークスレート台座
+        const platGeom = new THREE.CylinderGeometry(3.7, 3.9, 0.14, 64);
+        const platMat = new THREE.MeshStandardMaterial({
+            color: 0x181e28,
+            roughness: 0.35,
+            metalness: 0.75
+        });
+        const platform = new THREE.Mesh(platGeom, platMat);
+        platform.position.y = -0.07;
+        platform.receiveShadow = true;
+        this.showroomGroup.add(platform);
+
+        // 2. ターンテーブル外周 LEDリング (Glowing Accent Ring)
+        const ringGeom = new THREE.RingGeometry(3.72, 3.84, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0xffaa00,
+            side: THREE.DoubleSide
+        });
+        const ring = new THREE.Mesh(ringGeom, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.003;
+        this.showroomGroup.add(ring);
+
+        // 3. 広大なダークスタジオフロア (Studio Floor)
+        // 360度どこまでカメラが回っても壁にめり込まず破綻しないスタジオ床面
+        const floorGeom = new THREE.CircleGeometry(32, 64);
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x0a0d14,
+            roughness: 0.85,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeom, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.075;
+        floor.receiveShadow = true;
+        this.showroomGroup.add(floor);
+
+        // 4. 専用スタジオ照明 (Showroom Studio Lighting)
+        // 車体のエッジ・プレスライン・ホイールの輝きを引き立てる3点照明
+        const keyLight = new THREE.SpotLight(0xffffff, 2.4, 25, Math.PI / 4, 0.45);
+        keyLight.position.set(4.5, 7.5, 5.0);
+        this.showroomGroup.add(keyLight);
+
+        const fillLight = new THREE.SpotLight(0xfff0dd, 2.0, 25, Math.PI / 4, 0.45);
+        fillLight.position.set(-4.5, 6.5, -4.5);
+        this.showroomGroup.add(fillLight);
+
+        const topLight = new THREE.SpotLight(0xffffff, 1.8, 18, Math.PI / 3, 0.5);
+        topLight.position.set(0, 8.5, 0);
+        this.showroomGroup.add(topLight);
+
+        this.scene.add(this.showroomGroup);
+    }
+
     enterGarageMode() {
         this.prevState = this.state;
         this.state = 'GARAGE';
@@ -168,10 +230,41 @@ class Game {
         this.playerPhysics.speedMs = 0;
         this.playerPhysics.yawRate = 0;
         this.playerPhysics.steerAngle = 0;
+
+        // ショールームステージを生成＆配置
+        this.buildShowroomStage();
+        if (this.showroomGroup) {
+            const p = this.playerPhysics.position;
+            this.showroomGroup.position.set(p.x, p.y, p.z);
+            this.showroomGroup.visible = true;
+        }
+
+        // カメラめり込み防止：コースの壁・ガードレール・スタートゲートを非表示化
+        if (this.track && this.track.trackGroup) {
+            this.track.trackGroup.visible = false;
+        }
+        // ライバル車を非表示化（ショールーム内に映り込まないように）
+        if (this.rivalCar && this.rivalCar.meshGroup) {
+            this.rivalCar.meshGroup.visible = false;
+        }
     }
 
     exitGarageMode() {
         this.state = this.prevState || 'WAITING';
+
+        // ショールームステージを非表示化
+        if (this.showroomGroup) {
+            this.showroomGroup.visible = false;
+        }
+
+        // コース環境＆ライバル車を復元
+        if (this.track && this.track.trackGroup) {
+            this.track.trackGroup.visible = true;
+        }
+        if (this.rivalCar && this.rivalCar.meshGroup) {
+            this.rivalCar.meshGroup.visible = true;
+        }
+
         this.playerPhysics.resetToTrack(0.003, -1.8);
     }
 
