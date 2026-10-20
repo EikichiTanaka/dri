@@ -595,6 +595,44 @@ class Game {
      * タイトル画面放置時に、名峰・秋名峠の5連ヘアピンを豪快なカウンターステアとタイヤスモークで攻め立てる
      * ゲームセンター実機さながらの60FPSライブデモ走行シミュレーション！
      */
+    /**
+     * タイトル画面用カメラの安全クランプ（壁面・岩肌・アスファルト下へのめり込みを100%防止）
+     */
+    clampTitleCamera(camPos, trackT, minHeightAboveRoad = 0.70) {
+        if (!this.track || !camPos) return;
+        const halfRoad = (this.track.roadWidth || 8.5) * 0.5;
+        const probe = this.track.getSmoothTrackInfo(camPos, trackT);
+        if (!probe) return;
+
+        // 壁面・岩肌・ガードレールへのめり込み防止（道路幅の境界から安全マージン 0.45m 内側に収める）
+        const safeLimit = Math.max(1.6, halfRoad - 0.45);
+        const absOffset = Math.abs(probe.offset || 0);
+        if (absOffset > safeLimit) {
+            const excess = absOffset - safeLimit;
+            const pushSign = Math.sign(probe.offset) || 1;
+            camPos.x -= probe.normal.x * pushSign * excess;
+            camPos.z -= probe.normal.z * pushSign * excess;
+        }
+
+        // 地面・アスファルト下へのめり込み防止
+        let surfaceY = probe.centerPos.y;
+        if (typeof this.track.getRoadSurfaceY === 'function') {
+            const groundY = this.track.getRoadSurfaceY(camPos, probe.t);
+            if (groundY !== null && !isNaN(groundY)) {
+                surfaceY = groundY;
+            }
+        }
+        const minSafeY = surfaceY + minHeightAboveRoad;
+        if (camPos.y < minSafeY) {
+            camPos.y = minSafeY;
+        }
+    }
+
+    /**
+     * ★【頭文字D ARCADE STAGE アトラクト・リアルタイムドリフトデモ】
+     * タイトル画面放置時に、名峰・秋名峠の5連ヘアピンを豪快なカウンターステアとタイヤスモークで攻め立てる
+     * ゲームセンター実機さながらの60FPSライブデモ走行シミュレーション！
+     */
     updateTitleAttract(dt) {
         if (!this.track || !this.track.curve) return;
 
@@ -617,6 +655,8 @@ class Game {
                 speedKmh: 104,
                 steerAngle: 0,
                 driftAngle: 0,
+                lateralOffset: 0,
+                camSideBias: 0,
                 isDrifting: false,
                 shotIndex: 0,
                 shotTimer: 0,
@@ -633,6 +673,10 @@ class Game {
         attr.progressT += (speedMs * dt) / totalLen;
         if (attr.progressT > range.endT) {
             attr.progressT = range.startT;
+            attr.lateralOffset = 0;
+            attr.driftAngle = 0;
+            attr.steerAngle = 0;
+            attr.camSideBias = 0;
             attr.shotIndex = (attr.shotIndex + 1) % 4;
             attr.shotTimer = 0;
             this.titleCamInitialized = false;
@@ -640,67 +684,56 @@ class Game {
 
         const t = attr.progressT;
         const trackPt = this.track.getPointAt(t);
-        const tangent = this.track.curve.getTangentAt(t).normalize();
-        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+        const trackInfo = this.track.getSmoothTrackInfo(trackPt, t);
+        const tangent = trackInfo.tangent;
+        const normal = trackInfo.normal;
+        const curv = trackInfo.curvature || 0;
+        const turnDir = trackInfo.turnDir || 1;
 
-        // 前方マルチサンプルによるコーナー曲率と旋回方向の算出
-        const sampleCount = (this.track.samples && this.track.samples.length) ? this.track.samples.length : 1000;
-        const curIdx = Math.min(sampleCount - 1, Math.max(0, Math.floor(t * (sampleCount - 1))));
-        const curSample = (this.track.samples && this.track.samples[curIdx]) ? this.track.samples[curIdx] : { curvature: 0, turnDir: 0 };
+        // ★滑らかで連続的なコーナー強度算出（カクつき・しきい値チャタリングの完全解消）
+        const cornerIntensity = Math.max(0, Math.min(1.0, (curv - 0.0035) / 0.018));
+        attr.isDrifting = (cornerIntensity > 0.18);
 
-        const lookAheadT = Math.min(0.999, t + 0.009);
-        const tanAhead = this.track.curve.getTangentAt(lookAheadT).normalize();
-        const crossY = tangent.z * tanAhead.x - tangent.x * tanAhead.z;
-        const turnDir = (Math.abs(crossY) > 0.0004) ? Math.sign(crossY) : (curSample.turnDir || 1);
-        const curv = Math.max(curSample.curvature || 0, Math.abs(crossY) * 22.0);
+        // ターゲット値の連続算出（流麗なアウト・イン・アウトのレーシングライン）
+        const targetDriftAngle = -turnDir * (cornerIntensity * 0.54);
+        const targetLateralOffset = -turnDir * (cornerIntensity * 1.35);
+        const targetSteerAngle = -turnDir * (cornerIntensity * 0.68);
+        attr.speedKmh = 112 - cornerIntensity * 16;
+        this.playerPhysics.brake = cornerIntensity > 0.3 ? 0.20 : 0.0;
 
-        // コーナー判定：曲率が一定以上の場合は本格ドリフトモーション！
-        const inCorner = (curv > 0.0065 || Math.abs(crossY) > 0.00065);
-        attr.isDrifting = inCorner;
+        // ★指数関数イージングによる完全スムージング（急変ゼロ）
+        const driftAlpha = 1.0 - Math.exp(-6.5 * dt);
+        const steerAlpha = 1.0 - Math.exp(-8.0 * dt);
+        const latAlpha = 1.0 - Math.exp(-4.2 * dt);
 
-        let targetDriftAngle = 0;
-        let targetLateralOffset = 0;
-        let targetSteerAngle = 0;
+        attr.driftAngle += (targetDriftAngle - attr.driftAngle) * driftAlpha;
+        attr.steerAngle += (targetSteerAngle - attr.steerAngle) * steerAlpha;
+        attr.lateralOffset += (targetLateralOffset - attr.lateralOffset) * latAlpha;
 
-        if (inCorner) {
-            // ドリフト角：実車28～36度（0.46～0.60 rad）内向きにノーズを進入！
-            const intensity = Math.min(1.0, (curv - 0.0065) / 0.024);
-            targetDriftAngle = -turnDir * (0.44 + intensity * 0.18);
-            // アウト・イン・アウトのダイナミックドリフトライン
-            targetLateralOffset = -turnDir * (0.85 + intensity * 0.75);
-            // フルカウンターステア実舵角：スリップ方向と逆に前輪を大きく切る！
-            targetSteerAngle = -turnDir * 0.70;
-            attr.speedKmh = 98 + (1.0 - intensity) * 14;
-            this.playerPhysics.brake = 0.22; // テールランプ点灯
-        } else {
-            targetDriftAngle = 0;
-            targetLateralOffset = 0;
-            targetSteerAngle = 0;
-            attr.speedKmh = 118;
-            this.playerPhysics.brake = 0.0;
-        }
-
-        // スムーズな補間
-        attr.driftAngle += (targetDriftAngle - attr.driftAngle) * Math.min(1.0, 8.5 * dt);
-        attr.steerAngle += (targetSteerAngle - attr.steerAngle) * Math.min(1.0, 10.0 * dt);
-
-        const baseYaw = Math.atan2(tangent.x, tangent.z);
-        const carYaw = baseYaw + attr.driftAngle;
-
-        // 車両ワールド座標の算出
-        const carPos = trackPt.clone().addScaledVector(normal, targetLateralOffset);
-        carPos.y = trackPt.y + 0.12;
+        // 車両ワールド座標の算出（滑らかなオフセット＋完全接地）
+        const carPos = trackPt.clone().addScaledVector(normal, attr.lateralOffset);
         if (typeof this.track.getRoadSurfaceY === 'function') {
             const roadY = this.track.getRoadSurfaceY(carPos, t);
             if (roadY !== null && !isNaN(roadY)) {
-                carPos.y = roadY + 0.04;
+                carPos.y = roadY;
             }
         }
 
-        // 勾配（ピッチ）
-        const pitch = Math.atan2(-tangent.y, Math.sqrt(tangent.x * tangent.x + tangent.z * tangent.z));
+        // ★【3次元アスファルト平面完全接地ジオメトリ】
+        // 車体が進行方向に対して斜め（ドリフト姿勢）の時でも、
+        // 縦勾配（ピッチ）と横カント（バンク）を車体ローカル軸に正確に3次元投影！
+        // 斜め進入時でもタイヤが宙に浮く現象を100%排除し、4輪すべてがアスファルトに密着！
+        const baseYaw = Math.atan2(tangent.x, tangent.z);
+        const carYaw = baseYaw + attr.driftAngle;
 
-        // playerPhysicsのプロパティ（レンダリング・エフェクト用）
+        const pitchRoad = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
+        const bankAngle = trackInfo.bankAngle || 0;
+        const dAngle = attr.driftAngle;
+
+        const carPitch = pitchRoad * Math.cos(dAngle) + bankAngle * Math.sin(dAngle);
+        const carRoll = bankAngle * Math.cos(dAngle) - pitchRoad * Math.sin(dAngle);
+
+        // playerPhysicsのプロパティ同期
         this.playerPhysics.position.copy(carPos);
         this.playerPhysics.yaw = carYaw;
         this.playerPhysics.speed = attr.speedKmh;
@@ -708,13 +741,18 @@ class Game {
         this.playerPhysics.driftAngle = attr.driftAngle;
         this.playerPhysics.isDrifting = attr.isDrifting;
         this.playerPhysics.steerAngle = attr.steerAngle;
-        this.playerPhysics.pitch = pitch;
-        this.playerPhysics.throttle = inCorner ? 0.95 : 1.0;
-        this.playerPhysics.brake = 0.0;
+        this.playerPhysics.pitch = carPitch;
+        this.playerPhysics.throttle = attr.isDrifting ? 0.95 : 1.0;
         this.playerPhysics.trackT = t;
+        this.playerPhysics.trackInfo = {
+            ...trackInfo,
+            bankAngle: carRoll
+        };
 
-        // 速度ベクトル（タイヤスモークの基底 = コース進行方向 tangent）
-        this.playerPhysics.velocity.copy(tangent).multiplyScalar(this.playerPhysics.speedMs);
+        // 速度ベクトル（進行方向とノーズ方向の自然な合成）
+        const forward = new THREE.Vector3(Math.sin(carYaw), 0, Math.cos(carYaw));
+        const velDir = tangent.clone().lerp(forward, 0.25).normalize();
+        this.playerPhysics.velocity.copy(velDir).multiplyScalar(this.playerPhysics.speedMs);
 
         // カメラディレクターのタイマー更新（4.8秒ごとにアングルカット切り替え）
         attr.shotTimer += dt;
@@ -725,20 +763,21 @@ class Game {
 
             // ショット1（ヘアピン頂点定点TVカメラ）切り替え時に次のエイペックス位置を補足
             if (attr.shotIndex === 1) {
-                const aheadApexT = Math.min(range.endT, t + 0.012);
+                const aheadApexT = Math.min(range.endT, t + 0.015);
                 const apexPt = this.track.getPointAt(aheadApexT);
-                const apexTan = this.track.curve.getTangentAt(aheadApexT).normalize();
-                const apexNorm = new THREE.Vector3(-apexTan.z, 0, apexTan.x).normalize();
-                attr.apexCamPos.copy(apexPt).addScaledVector(apexNorm, turnDir * 2.8);
-                attr.apexCamPos.y = apexPt.y + 0.72; // 地面すれすれの迫力ローアングル
+                const apexInfo = this.track.getSmoothTrackInfo(apexPt, aheadApexT);
+                const apexNorm = apexInfo.normal;
+                const apexTurn = apexInfo.turnDir || 1;
+                const halfW = (this.track.roadWidth || 8.5) * 0.5;
+                const safeApexDist = Math.min(halfW - 0.45, 2.2);
+                attr.apexCamPos.copy(apexPt).addScaledVector(apexNorm, apexTurn * safeApexDist);
+                const surfY = typeof this.track.getRoadSurfaceY === 'function' ? this.track.getRoadSurfaceY(attr.apexCamPos, aheadApexT) : apexPt.y;
+                attr.apexCamPos.y = (surfY !== null && !isNaN(surfY) ? surfY : apexPt.y) + 0.85;
             }
         }
     }
 
-    /**
-     * アトラクト走行のエフェクト更新（リアルタイムパーティクル）
-     */
-    updateTitleEffects(dt) {
+        updateTitleEffects(dt) {
         if (!this.particles) return;
 
         if (this.playerPhysics.isDrifting && this.playerCar) {
@@ -1099,86 +1138,88 @@ class Game {
                 this.titleSpotLight.target.updateMatrixWorld();
             }
 
-            const attr = this.titleAttract || { shotIndex: 0, driftAngle: 0 };
+            const attr = this.titleAttract || { shotIndex: 0, driftAngle: 0, progressT: 0.274, camSideBias: 0 };
             const shot = attr.shotIndex || 0;
             let targetPos = new THREE.Vector3();
+            let targetLook = carPos.clone().add(new THREE.Vector3(0, 0.40, 0));
+            let fov = 46;
+            let minSafeHeight = 0.70;
+
+            // ★連続的サイドバイアス（Math.signによる4.8mの瞬間ジャンプを完全排除し、ドリフト角に滑らかに追従）
+            const targetSideBias = -Math.max(-1.75, Math.min(1.75, (attr.driftAngle || 0) * 3.2));
+            const biasAlpha = 1.0 - Math.exp(-5.0 * dt);
+            if (attr.camSideBias === undefined) attr.camSideBias = 0;
+            attr.camSideBias += (targetSideBias - attr.camSideBias) * biasAlpha;
 
             if (shot === 0) {
                 // 【Shot 0：ダイナミック・ドリフト追従カメラ】
                 // 車体斜め後方・低位置からドリフトスライドとカウンターステア前輪・スモークを捉える
-                const chaseDist = 5.6;
-                const chaseHeight = 1.35;
-                const sideBias = -Math.sign(attr.driftAngle || 1) * 2.4;
+                const chaseDist = 5.2;
+                const chaseHeight = 1.30;
                 targetPos = carPos.clone()
                     .addScaledVector(forward, -chaseDist)
-                    .addScaledVector(right, sideBias);
+                    .addScaledVector(right, attr.camSideBias);
                 targetPos.y = carPos.y + chaseHeight;
+                minSafeHeight = 0.85;
 
-                if (!this.titleCamInitialized) {
-                    this.camera.position.copy(targetPos);
-                    this.titleCamInitialized = true;
-                } else {
-                    this.camera.position.lerp(targetPos, Math.min(1.0, 9.0 * dt));
-                }
-                this.cameraLookTarget.copy(carPos).addScaledVector(forward, 0.5).add(new THREE.Vector3(0, 0.28, 0));
-                this.camera.lookAt(this.cameraLookTarget);
-                this.camera.fov = 46;
+                targetLook = carPos.clone().addScaledVector(forward, 0.4).add(new THREE.Vector3(0, 0.35, 0));
+                fov = 46;
             } else if (shot === 1) {
                 // 【Shot 1：ヘアピン頂点・定点TVカメラ】
                 // コーナーイン側に据え置かれた放送カメラ。迫り来るマシンが画面いっぱいに横滑りして通過！
                 if (attr.apexCamPos && attr.apexCamPos.lengthSq() > 10) {
                     targetPos.copy(attr.apexCamPos);
                 } else {
-                    targetPos = carPos.clone().addScaledVector(forward, 6.0).addScaledVector(right, 2.5);
-                    targetPos.y = carPos.y + 0.8;
+                    targetPos = carPos.clone().addScaledVector(forward, 5.5).addScaledVector(right, 1.8);
+                    targetPos.y = carPos.y + 0.85;
                 }
-                if (!this.titleCamInitialized) {
-                    this.camera.position.copy(targetPos);
-                    this.titleCamInitialized = true;
-                } else {
-                    this.camera.position.lerp(targetPos, Math.min(1.0, 4.0 * dt));
-                }
-                this.cameraLookTarget.copy(carPos).add(new THREE.Vector3(0, 0.45, 0));
-                this.camera.lookAt(this.cameraLookTarget);
-                this.camera.fov = 50;
+                minSafeHeight = 0.75;
+                targetLook = carPos.clone().add(new THREE.Vector3(0, 0.40, 0));
+                fov = 50;
             } else if (shot === 2) {
                 // 【Shot 2：ローアングル・フロントノーズ追従カメラ】
-                // 車体直前3.5mからリトラクタブルライトとフロントグリルを舐めるように捉える
-                const fwdDist = 3.6;
-                const sideBias = Math.sign(attr.driftAngle || 1) * 1.0;
+                // 車体直前3.7mからリトラクタブルライトとフロントグリルを舐めるように捉える
+                const frontBias = Math.max(-0.65, Math.min(0.65, (attr.driftAngle || 0) * 1.2));
                 targetPos = carPos.clone()
-                    .addScaledVector(forward, fwdDist)
-                    .addScaledVector(right, sideBias);
+                    .addScaledVector(forward, 3.7)
+                    .addScaledVector(right, frontBias);
                 targetPos.y = carPos.y + 0.65;
+                minSafeHeight = 0.55;
 
-                if (!this.titleCamInitialized) {
-                    this.camera.position.copy(targetPos);
-                    this.titleCamInitialized = true;
-                } else {
-                    this.camera.position.lerp(targetPos, Math.min(1.0, 11.0 * dt));
-                }
-                this.cameraLookTarget.copy(carPos).add(new THREE.Vector3(0, 0.45, 0));
-                this.camera.lookAt(this.cameraLookTarget);
-                this.camera.fov = 42;
+                targetLook = carPos.clone().add(new THREE.Vector3(0, 0.42, 0));
+                fov = 42;
             } else {
                 // 【Shot 3：秋名峠・パノラマ空撮ドローンカメラ】
-                // 峠のS字ヘアピン群を一望する雄大なシネマティックアングル
+                // 峠の道路コリドー上空からS字ヘアピン群を見下ろす（壁めり込み完全ゼロ！）
                 targetPos = carPos.clone()
-                    .addScaledVector(forward, -15.0)
-                    .addScaledVector(right, 10.0);
-                targetPos.y = carPos.y + 9.5;
+                    .addScaledVector(forward, -7.5);
+                targetPos.y = carPos.y + 4.8;
+                minSafeHeight = 3.2;
 
-                if (!this.titleCamInitialized) {
-                    this.camera.position.copy(targetPos);
-                    this.titleCamInitialized = true;
-                } else {
-                    this.camera.position.lerp(targetPos, Math.min(1.0, 3.5 * dt));
-                }
-                this.cameraLookTarget.copy(carPos).add(new THREE.Vector3(0, 0.4, 0));
-                this.camera.lookAt(this.cameraLookTarget);
-                this.camera.fov = 36;
+                targetLook = carPos.clone().addScaledVector(forward, 1.2).add(new THREE.Vector3(0, 0.35, 0));
+                fov = 40;
             }
 
+            // ターゲット座標の壁面・地面めり込み防止事前クランプ
+            this.clampTitleCamera(targetPos, attr.progressT, minSafeHeight);
+
+            // ★完全なスムーズカメラ補間（カクつき・急変のない流麗なアーケードカメラワーク）
+            if (!this.titleCamInitialized) {
+                this.camera.position.copy(targetPos);
+                this.cameraLookTarget.copy(targetLook);
+                this.titleCamInitialized = true;
+            } else {
+                const posLerp = 1.0 - Math.exp(-7.5 * dt);
+                const lookLerp = 1.0 - Math.exp(-9.0 * dt);
+                this.camera.position.lerp(targetPos, posLerp);
+                this.cameraLookTarget.lerp(targetLook, lookLerp);
+            }
+
+            // ★実カメラ座標の最終安全保証クランプ（補間途中でも壁・ガードレール・地面を絶対に貫通させない）
+            this.clampTitleCamera(this.camera.position, attr.progressT, 0.55);
+
+            this.camera.lookAt(this.cameraLookTarget);
+            this.camera.fov = fov;
             this.camera.updateProjectionMatrix();
             return;
         }
