@@ -91,6 +91,12 @@ class Game {
 
         this.track = new TougeTrack(this.scene, this.currentCourse);
         this.playerPhysics = new CarPhysics(this.track, true);
+        // ★タイトル画面専用ストリートランプ照明（愛車のボディとディテールを美しく照らす）
+        this.titleSpotLight = new THREE.SpotLight(0xfff5e6, 3.2, 28, Math.PI / 3.5, 0.45, 1.2);
+        this.titleSpotLight.position.set(0, 10, 0);
+        this.scene.add(this.titleSpotLight);
+        this.scene.add(this.titleSpotLight.target);
+
         this.playerCar = new PlayerCar(this.scene, this.playerPhysics, 'ae86');
         this.playerPhysics.resetToTrack(0.003, -1.8);
         this.playerCar.update(0);
@@ -445,6 +451,7 @@ class Game {
     }
 
     startRace() {
+        if (this.titleSpotLight) this.titleSpotLight.visible = false;
         this.audio.init();
         this.audio.resume();
         this.audio.startEngineLoop();
@@ -809,22 +816,33 @@ class Game {
                 Math.cos(this.playerPhysics.yaw)
             );
 
+            const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
+
+            // ★タイトル専用ストリートランプ（自車上部からドラマチックに照光）
+            if (this.titleSpotLight) {
+                this.titleSpotLight.visible = true;
+                this.titleSpotLight.position.set(carPos.x + forward.x * 0.8 - right.x * 1.5, carPos.y + 4.8, carPos.z + forward.z * 0.8 - right.z * 1.5);
+                this.titleSpotLight.target.position.set(carPos.x, carPos.y + 0.5, carPos.z);
+                this.titleSpotLight.target.updateMatrixWorld();
+            }
+
+            // ★映画的フロント3/4ヒーローアングル（車体全景・ポップアップライト・峠の遠景を完璧に収める）
             const angle = this.titleCamAngle;
-            const radius = 5.2 + Math.sin(angle * 0.7) * 0.45;
-            const height = 1.35 + Math.sin(angle * 0.5) * 0.25;
+            const fwdDist = 4.8 + Math.cos(angle * 0.3) * 0.4;
+            const sideDist = 1.5 + Math.sin(angle * 0.4) * 0.9;
+            const height = 1.12 + Math.sin(angle * 0.5) * 0.08;
 
-            const camX = carPos.x + Math.sin(angle) * (radius * 0.9) + forward.x * 2.6;
-            const camY = carPos.y + height;
-            const camZ = carPos.z + Math.cos(angle) * (radius * 0.9) + forward.z * 2.6;
+            const targetCamPos = carPos.clone()
+                .addScaledVector(forward, fwdDist)
+                .addScaledVector(right, sideDist);
+            targetCamPos.y = carPos.y + height;
 
-            this.camera.position.set(camX, camY, camZ);
-            this.cameraLookTarget.set(
-                carPos.x + forward.x * 0.4,
-                carPos.y + 0.75,
-                carPos.z + forward.z * 0.4
-            );
+            this.camera.position.copy(targetCamPos);
+            this.cameraLookTarget.copy(carPos)
+                .addScaledVector(forward, 0.15)
+                .add(new THREE.Vector3(0, 0.60, 0));
             this.camera.lookAt(this.cameraLookTarget);
-            this.camera.fov = 50;
+            this.camera.fov = 40;
             this.camera.updateProjectionMatrix();
             return;
         }

@@ -392,124 +392,111 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    /* 映画的で深みのある透過ヴィネット（背後の3D車体・ヘッドライト・山道が主役！） */
-    background: 
-        radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0.08) 0%, rgba(4, 8, 16, 0.45) 60%, rgba(1, 2, 6, 0.88) 100%),
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.08) 50%);
-    background-size: 100% 100%, 100% 2px;
+    /* 映画的で深みのある透過ヴィネット（背後の3D車体・ヘッドライト・山道が100%主役！） */
+    background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.0) 0%, rgba(2, 4, 10, 0.35) 60%, rgba(1, 2, 6, 0.82) 100%);
     z-index: 100;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 24px 12px 24px;
+    padding: 12px 24px 14px 24px;
     box-sizing: border-box;
     overflow: hidden;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
 }
 
 /* ==========================================================================
-   1. アーケード筐体トップマーキー（実機SEGAステータスバー）
+   1. 最上部：浮動式アーケードHUD（Webヘッダーボックス完全廃止）
    ========================================================================== */
-.arcade-marquee-header {
+.arcade-hud-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
     max-width: 1280px;
-    padding: 4px 14px;
-    background: rgba(6, 10, 18, 0.88);
-    border: 1px solid rgba(0, 220, 255, 0.35);
-    border-radius: 4px;
-    box-shadow: 0 0 16px rgba(0, 180, 255, 0.12);
-    font-family: 'Share Tech Mono', monospace, sans-serif;
-    font-size: 11.5px;
-    letter-spacing: 1px;
-    color: #88aacc;
+    padding: 0 4px;
     box-sizing: border-box;
+    user-select: none;
 }
 
-.sega-badge {
+.hud-top-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.arcade-brand-sega {
     background: #0050b3;
     color: #fff;
-    font-weight: 900;
-    font-size: 10px;
-    padding: 1px 6px;
+    font-weight: 950;
+    font-size: 11px;
+    padding: 2px 7px;
     border-radius: 2px;
-    letter-spacing: 1.5px;
-    box-shadow: 0 0 6px rgba(0, 120, 255, 0.6);
-}
-
-.marquee-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.marquee-divider {
-    color: rgba(255, 255, 255, 0.25);
-    font-size: 10px;
-}
-
-.marquee-aime {
-    color: #44ddaa;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.marquee-cab {
-    color: #88bbdd;
-    font-weight: 700;
-}
-
-.credit-badge {
-    background: rgba(255, 170, 0, 0.15);
-    border: 1px solid rgba(255, 200, 0, 0.5);
-    border-radius: 3px;
-    padding: 1px 8px;
-}
-
-.credit-pulse {
-    color: #ffea00;
-    font-weight: 900;
     letter-spacing: 2px;
-    animation: creditFlash 2s infinite ease-in-out;
+    box-shadow: 0 0 10px rgba(0, 120, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-@keyframes creditFlash {
-    0%, 100% { color: #ffea00; text-shadow: 0 0 8px #ffbb00; }
-    50% { color: #ffffff; text-shadow: 0 0 4px #ffea00; }
+.arcade-aime-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0, 40, 30, 0.65);
+    border: 1px solid rgba(0, 255, 170, 0.4);
+    border-radius: 12px;
+    padding: 1px 8px;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #44ddaa;
 }
 
-.freeplay-tag {
-    font-size: 9.5px;
-    font-weight: 900;
-    color: #00e5ff;
-    background: rgba(0, 229, 255, 0.15);
-    padding: 1px 6px;
-    border-radius: 2px;
-    letter-spacing: 1px;
-}
-
-.marquee-audio {
-    color: #ff9944;
-    font-weight: 700;
-}
-
-.audio-led {
-    display: inline-block;
+.aime-sensor-ring {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #ff7700;
-    box-shadow: 0 0 6px #ff7700;
-    margin-right: 3px;
+    background: #00ffaa;
+    box-shadow: 0 0 6px #00ffaa;
+    animation: sensorBlink 1.5s infinite ease-in-out;
 }
 
-.marquee-clock {
+@keyframes sensorBlink {
+    0%, 100% { opacity: 1; filter: drop-shadow(0 0 4px #00ffaa); }
+    50% { opacity: 0.35; }
+}
+
+.cabinet-id {
+    font-family: 'Share Tech Mono', monospace, sans-serif;
+    font-size: 11px;
+    color: #7090b0;
+    letter-spacing: 1px;
+}
+
+.hud-top-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Share Tech Mono', monospace, sans-serif;
+    font-size: 11px;
+}
+
+.net-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00ff66;
+    box-shadow: 0 0 6px #00ff66;
+}
+
+.net-status-text {
+    color: #77ddaa;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.hud-top-sep {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+.arcade-digital-clock {
     color: #ffdd44;
     font-weight: 900;
     letter-spacing: 1.5px;
@@ -529,76 +516,72 @@ body, html {
 }
 
 .arcade-logo-container {
-    filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.9));
-    transition: transform 0.2s ease-out;
+    filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.95));
 }
 
 .arcade-logo-svg {
     max-width: 90vw;
     height: auto;
-    max-height: 190px;
+    max-height: 195px;
 }
 
 .title-stage-sub {
     font-size: 13.5px;
-    color: #aaddff;
+    color: #00ddff;
     letter-spacing: 2px;
-    font-weight: 800;
+    font-weight: 900;
     font-style: italic;
-    margin-top: 4px;
-    margin-bottom: 12px;
-    text-shadow: 0 0 10px rgba(0, 200, 255, 0.6);
+    margin-top: 10px;
+    margin-bottom: 22px;
+    text-shadow: 0 0 12px rgba(0, 220, 255, 0.7);
 }
 
-/* PUSH START BUTTON アトラクトコールアウト（アーケード筐体の心臓部） */
+/* PUSH START BUTTON（浮動式アーケードネオン：泥色ボックス完全撤廃） */
 .arcade-press-start-prompt {
     position: relative;
     cursor: pointer;
-    padding: 8px 36px;
-    background: linear-gradient(90deg, rgba(255, 50, 0, 0.15) 0%, rgba(255, 170, 0, 0.35) 50%, rgba(255, 50, 0, 0.15) 100%);
-    border-top: 1px solid rgba(255, 200, 0, 0.5);
-    border-bottom: 1px solid rgba(255, 200, 0, 0.5);
-    border-radius: 4px;
-    transition: transform 0.15s ease-out;
-    margin-bottom: 10px;
+    padding: 6px 24px;
+    margin-bottom: 12px;
+    transition: transform 0.12s ease-out;
 }
 
 .arcade-press-start-prompt:hover {
-    transform: scale(1.04);
+    transform: scale(1.05);
 }
 
 .press-start-text {
     font-family: 'Arial Black', 'Impact', sans-serif;
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 950;
     font-style: italic;
-    letter-spacing: 5px;
+    letter-spacing: 6px;
     color: #ffffff;
-    animation: attractPulse 1.8s infinite ease-in-out;
+    animation: neonArcadePulse 1.8s infinite ease-in-out;
     text-shadow: 
-        0 0 10px rgba(255, 230, 0, 0.8),
-        0 0 25px rgba(255, 80, 0, 0.9);
+        0 0 8px rgba(255, 230, 0, 0.9),
+        0 0 20px rgba(255, 120, 0, 0.9),
+        0 0 35px rgba(255, 50, 0, 0.8);
 }
 
-@keyframes attractPulse {
+@keyframes neonArcadePulse {
     0%, 100% {
         color: #ffffff;
-        text-shadow: 0 0 10px rgba(255, 230, 0, 0.8), 0 0 30px rgba(255, 80, 0, 0.9);
+        text-shadow: 0 0 10px rgba(255, 240, 50, 0.95), 0 0 25px rgba(255, 140, 0, 0.95), 0 0 45px rgba(255, 50, 0, 0.85);
         opacity: 1;
     }
     50% {
-        color: #ffcc00;
-        text-shadow: 0 0 4px rgba(255, 150, 0, 0.5), 0 0 15px rgba(255, 40, 0, 0.5);
-        opacity: 0.75;
+        color: #ffe680;
+        text-shadow: 0 0 4px rgba(255, 180, 0, 0.6), 0 0 12px rgba(255, 80, 0, 0.6);
+        opacity: 0.82;
     }
 }
 
 .press-start-sub {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 800;
-    letter-spacing: 2px;
-    color: #ffe0aa;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    letter-spacing: 2.5px;
+    color: #ffd899;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
     margin-top: 2px;
 }
 
@@ -607,23 +590,24 @@ body, html {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(10, 16, 26, 0.75);
+    background: rgba(6, 12, 22, 0.65);
     border: 1px solid rgba(0, 200, 255, 0.3);
     border-radius: 20px;
     padding: 3px 14px;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 800;
+    backdrop-filter: blur(4px);
 }
 
 .setup-pill.stage { color: #00ddff; }
 .setup-pill.car { color: #ffea00; }
 .setup-pill.cond { color: #b0c4de; }
-.setup-pill-dot { color: rgba(255, 255, 255, 0.3); font-size: 9px; }
+.setup-pill-dot { color: rgba(255, 255, 255, 0.3); font-size: 8px; }
 
 /* ==========================================================================
-   3. 下部：アーケード アクションデッキ（4大メニューリボン）
+   3. 下部：洗練されたアーケード操作リボン ＆ 法的表記
    ========================================================================== */
-.arcade-action-deck {
+.arcade-bottom-deck {
     width: 100%;
     max-width: 1280px;
     display: flex;
@@ -632,119 +616,144 @@ body, html {
     gap: 8px;
 }
 
-.deck-ribbon {
+.arcade-action-ribbon {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
 }
 
-.deck-btn {
+.ribbon-btn {
     position: relative;
     flex: 1;
-    height: 52px;
-    background: linear-gradient(135deg, rgba(20, 28, 42, 0.92) 0%, rgba(10, 15, 24, 0.96) 100%);
-    border: 1px solid rgba(80, 120, 170, 0.5);
+    height: 48px;
+    background: linear-gradient(135deg, rgba(14, 20, 32, 0.85) 0%, rgba(6, 10, 18, 0.92) 100%);
+    border: 1px solid rgba(80, 120, 170, 0.45);
     border-radius: 6px;
     color: #fff;
     cursor: pointer;
     display: flex;
     align-items: center;
-    padding: 0 16px;
-    gap: 12px;
-    transition: all 0.15s ease-out;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
+    justify-content: center;
+    padding: 0 14px;
+    gap: 8px;
+    transition: all 0.14s ease-out;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
 }
 
-.deck-btn:hover {
+.ribbon-btn:hover {
     transform: translateY(-2px);
     border-color: #00ddff;
     box-shadow: 0 6px 20px rgba(0, 180, 255, 0.4);
 }
 
-.deck-btn-icon {
-    font-size: 22px;
+.ribbon-btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
 
-.deck-btn-content {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    line-height: 1.15;
-}
-
-.deck-btn-main {
-    font-size: 14.5px;
+.ribbon-btn-label {
+    font-size: 13.5px;
     font-weight: 900;
     font-style: italic;
     letter-spacing: 1px;
     color: #ffffff;
+    white-space: nowrap;
 }
 
-.deck-btn-sub {
-    font-size: 10px;
-    font-weight: 700;
-    color: #99aabb;
-    letter-spacing: 0.5px;
-}
-
-/* プライマリボタン：START BATTLE（特大発光） */
-.deck-btn-primary {
-    flex: 1.35;
-    background: linear-gradient(90deg, #cc1111 0%, #ee4400 40%, #ff8800 80%, #cc1111 100%);
+/* プライマリボタン：START BATTLE */
+.ribbon-btn-battle {
+    flex: 1.25;
+    background: linear-gradient(90deg, #dd1111 0%, #ee4400 40%, #ff8800 80%, #dd1111 100%);
     background-size: 200% 100%;
     border: 2px solid #ffe600;
     box-shadow: 
         0 0 24px rgba(255, 60, 0, 0.7),
         inset 0 1px 2px rgba(255, 255, 255, 0.5);
-    animation: startShimmer 4s infinite linear, deckPulse 2s infinite ease-in-out;
+    animation: ribbonShimmer 4s infinite linear, ribbonPulse 2s infinite ease-in-out;
 }
 
-@keyframes startShimmer {
+@keyframes ribbonShimmer {
     0% { background-position: 0% 50%; }
     100% { background-position: 200% 50%; }
 }
 
-@keyframes deckPulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 50, 0, 0.7); }
-    50% { box-shadow: 0 0 36px rgba(255, 120, 0, 0.95); }
+@keyframes ribbonPulse {
+    0%, 100% { box-shadow: 0 0 18px rgba(255, 50, 0, 0.7); }
+    50% { box-shadow: 0 0 32px rgba(255, 120, 0, 0.95); }
 }
 
-.deck-btn-primary .deck-btn-main {
-    font-size: 18px;
-    letter-spacing: 2px;
-    color: #fff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 255, 200, 0.8);
+.ribbon-btn-battle .ribbon-btn-label {
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 12px rgba(255, 255, 200, 0.8);
 }
 
-.deck-btn-primary .deck-btn-sub {
-    color: #ffe6aa;
-}
-
-/* ガレージボタン */
-.deck-btn-garage {
-    background: linear-gradient(135deg, rgba(0, 70, 160, 0.9) 0%, rgba(0, 40, 100, 0.95) 100%);
-    border-color: #00aaff;
-}
-
-.deck-btn-garage:hover {
-    border-color: #00ddff;
-    box-shadow: 0 6px 20px rgba(0, 160, 255, 0.5);
-}
-
-/* 法的表記ストリップ */
-.arcade-legal-strip {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 10px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.45);
+.ribbon-btn-tag {
+    font-size: 9.5px;
+    font-weight: 900;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 230, 0, 0.5);
+    color: #ffea00;
+    padding: 1px 5px;
+    border-radius: 3px;
     letter-spacing: 1px;
 }
 
-.legal-sep {
+/* フッターメタ情報 */
+.arcade-footer-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0 4px;
+    box-sizing: border-box;
+}
+
+.arcade-credit-counter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Share Tech Mono', monospace, sans-serif;
+    font-size: 11px;
+}
+
+.credit-label {
+    color: #7090b0;
+    font-weight: 700;
+}
+
+.credit-digit {
+    color: #ffea00;
+    font-weight: 900;
+    font-size: 13px;
+    text-shadow: 0 0 6px #ffea00;
+}
+
+.freeplay-badge {
+    background: rgba(0, 220, 255, 0.15);
+    border: 1px solid rgba(0, 220, 255, 0.4);
+    color: #00ddff;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 1px 5px;
+    border-radius: 2px;
+}
+
+.arcade-legal-notice {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Yu Gothic', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.meta-sep {
     color: rgba(255, 255, 255, 0.2);
 }
 
@@ -771,9 +780,9 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(4, 7, 14, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(4, 7, 14, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .modal-window {

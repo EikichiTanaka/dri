@@ -83,29 +83,28 @@
 
     <!-- スタート画面 / アーケード筐体オーバーレイ -->
     <div id="start-overlay">
-        <!-- 1. 最上部：SEGA実機アーケード ステータスマーキー -->
-        <header class="arcade-marquee-header">
-            <div class="marquee-item left">
-                <span class="sega-badge">SEGA</span>
-                <span class="marquee-aime"><span class="aime-icon"></span> Aime / ALL.Net ONLINE</span>
-                <span class="marquee-divider">|</span>
-                <span class="marquee-cab">CABINET #01 [TWIN LINK]</span>
+        <!-- 1. 最上部：浮動式アーケードステータス（Webヘッダー枠を完全廃止） -->
+        <div class="arcade-hud-top">
+            <div class="hud-top-left">
+                <span class="arcade-brand-sega">SEGA</span>
+                <span class="arcade-aime-pill">
+                    <span class="aime-sensor-ring"></span>
+                    <span class="aime-text">Aime / ALL.Net</span>
+                </span>
+                <span class="cabinet-id">CABINET #01 [TWIN LINK]</span>
             </div>
-            <div class="marquee-item center">
-                <span class="credit-badge"><span class="credit-pulse">CREDIT(S) 1</span></span>
-                <span class="freeplay-tag">FREE PLAY</span>
+            <div class="hud-top-right">
+                <span class="net-status-dot"></span>
+                <span class="net-status-text">NETWORK ONLINE</span>
+                <span class="hud-top-sep">|</span>
+                <span id="arcade-clock" class="arcade-digital-clock">--:--:-- JST</span>
             </div>
-            <div class="marquee-item right">
-                <span class="marquee-audio"><span class="audio-led"></span> EUROBEAT SOUND ACTIVE</span>
-                <span class="marquee-divider">|</span>
-                <span id="arcade-clock" class="marquee-clock">--:--:-- JST</span>
-            </div>
-        </header>
+        </div>
 
         <!-- 2. 中央：公式レタリング準拠 頭文字D ARCADE STAGE 巨大ベクターエンブレム -->
         <div class="arcade-hero-center">
             <div class="arcade-logo-container">
-                <svg class="arcade-logo-svg" viewBox="0 0 460 160" width="540" height="188" xmlns="http://www.w3.org/2000/svg">
+                <svg class="arcade-logo-svg" viewBox="0 0 460 160" width="560" height="195" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="dRedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ff3b3b"/>
@@ -161,74 +160,77 @@
             </div>
             <div id="course-title-sub" class="title-stage-sub">ARCADE STAGE : AKINA DOWNHILL (7,552m・原作公式完全再現)</div>
 
-            <!-- アーケード象徴：PUSH START BUTTON アトラクトコールアウト -->
+            <!-- 本物のアーケード象徴：浮動式ネオン PUSH START BUTTON -->
             <div class="arcade-press-start-prompt" id="btn-callout-start">
-                <div class="press-start-shimmer"></div>
+                <div class="press-start-glow"></div>
                 <div class="press-start-text">PUSH START BUTTON</div>
-                <div class="press-start-sub">PRESS [ENTER] KEY OR TOUCH TO LAUNCH BATTLE</div>
+                <div class="press-start-sub">INSERT COIN &bull; PRESS [ENTER] OR TOUCH TO PLAY</div>
             </div>
 
-            <!-- 現在セッティングのクイック確認バー -->
+            <!-- 現在セッティングのクイック確認ピル -->
             <div class="attract-current-setup">
                 <span class="setup-pill stage" id="attract-stage-badge">秋名 下り (7,552m)</span>
-                <span class="setup-pill-dot">•</span>
+                <span class="setup-pill-dot">&bull;</span>
                 <span class="setup-pill car" id="attract-car-badge">AE86 TRUENO [藤原拓海]</span>
-                <span class="setup-pill-dot">•</span>
+                <span class="setup-pill-dot">&bull;</span>
                 <span class="setup-pill cond" id="attract-cond-badge">MIDNIGHT / DRY / AT</span>
             </div>
         </div>
 
-        <!-- 3. 下部：アーケード コントロールデッキ（洗練された4大メニューリボン） -->
-        <footer class="arcade-action-deck">
-            <div class="deck-ribbon">
+        <!-- 3. 下部：洗練されたアーケード操作リボン ＆ 法的クレジット -->
+        <div class="arcade-bottom-deck">
+            <div class="arcade-action-ribbon">
                 <!-- START BATTLE -->
-                <button id="btn-start" class="deck-btn deck-btn-primary start-btn">
-                    <span class="btn-shimmer"></span>
-                    <span class="btn-glow-bar"></span>
-                    <span class="deck-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#ffdd00" stroke="#ff9900" stroke-width="1.5"/></svg></span>
-                    <div class="deck-btn-content">
-                        <span class="deck-btn-main">START BATTLE</span>
-                        <span class="deck-btn-sub">即時出撃 [ENTER]</span>
-                    </div>
+                <button id="btn-start" class="ribbon-btn ribbon-btn-battle start-btn">
+                    <span class="ribbon-btn-glow"></span>
+                    <span class="ribbon-btn-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#ffea00" stroke="#ff8800" stroke-width="1.5"/></svg>
+                    </span>
+                    <span class="ribbon-btn-label">START BATTLE</span>
+                    <span class="ribbon-btn-tag">[ENTER]</span>
                 </button>
 
                 <!-- COURSE & RACE SETUP -->
-                <button id="btn-open-setup" class="deck-btn deck-btn-setup">
-                    <span class="deck-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 2V22M4 4H20L17 9L20 14H4" stroke="#00ddff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                    <div class="deck-btn-content">
-                        <span class="deck-btn-main">COURSE &amp; RACE SETUP</span>
-                        <span class="deck-btn-sub">全8大名峠＆環境設定</span>
-                    </div>
+                <button id="btn-open-setup" class="ribbon-btn ribbon-btn-setup">
+                    <span class="ribbon-btn-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 2V22M4 4H20L17 9L20 14H4" stroke="#00ddff" stroke-width="2" stroke-linecap="round"/></svg>
+                    </span>
+                    <span class="ribbon-btn-label">COURSE &amp; CONDITIONS</span>
                 </button>
 
                 <!-- MACHINE GARAGE -->
-                <button id="btn-open-garage" class="deck-btn deck-btn-garage garage-btn">
-                    <span class="deck-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13L5 6H19L21 13M3 13V18H6M3 13H21M21 13V18H18M6 18H18M6 18C6 16.8954 6.89543 16 8 16C9.10457 16 10 16.8954 10 18M18 18C18 16.8954 17.1046 16 16 16C14.8954 16 14 16.8954 14 18" stroke="#00ccff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                    <div class="deck-btn-content">
-                        <span class="deck-btn-main">MACHINE GARAGE</span>
-                        <span class="deck-btn-sub">マシン変更＆3D鑑賞</span>
-                    </div>
+                <button id="btn-open-garage" class="ribbon-btn ribbon-btn-garage garage-btn">
+                    <span class="ribbon-btn-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 13L5 6H19L21 13M3 13V18H6M3 13H21M21 13V18H18M6 18H18" stroke="#00ccff" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </span>
+                    <span class="ribbon-btn-label">MACHINE GARAGE</span>
                 </button>
 
-                <!-- HOW TO PLAY / CONTROLS -->
-                <button id="btn-open-guide" class="deck-btn deck-btn-guide">
-                    <span class="deck-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="6" width="20" height="12" rx="4" stroke="#a080ff" stroke-width="2"/><path d="M6 12H10M8 10V14M15 11H15.01M17 13H17.01" stroke="#a080ff" stroke-width="2" stroke-linecap="round"/></svg></span>
-                    <div class="deck-btn-content">
-                        <span class="deck-btn-main">HOW TO PLAY</span>
-                        <span class="deck-btn-sub">操作方法＆走法ガイド</span>
-                    </div>
+                <!-- HOW TO PLAY -->
+                <button id="btn-open-guide" class="ribbon-btn ribbon-btn-guide">
+                    <span class="ribbon-btn-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="4" stroke="#a080ff" stroke-width="2"/><path d="M6 12H10M8 10V14M15 11H15.01M17 13H17.01" stroke="#a080ff" stroke-width="2" stroke-linecap="round"/></svg>
+                    </span>
+                    <span class="ribbon-btn-label">HOW TO PLAY</span>
                 </button>
             </div>
 
-            <!-- 法的クレジット＆SEGAアーケード表記 -->
-            <div class="arcade-legal-strip">
-                <span>&copy; しげの秀一 / 講談社 &nbsp;&copy; SEGA &nbsp; ALL RIGHTS RESERVED.</span>
-                <span class="legal-sep">|</span>
-                <span>ALL.Net AMUSEMENT IC NETWORK SYSTEM</span>
+            <!-- コーナーコインクレジット ＆ 法的表記 -->
+            <div class="arcade-footer-meta">
+                <div class="arcade-credit-counter">
+                    <span class="credit-label">CREDIT(S)</span>
+                    <span class="credit-digit">1</span>
+                    <span class="freeplay-badge">FREE PLAY</span>
+                </div>
+                <div class="arcade-legal-notice">
+                    <span>(C) しげの秀一 / 講談社 &nbsp;&nbsp;(C) SEGA &nbsp;&nbsp; ALL RIGHTS RESERVED.</span>
+                    <span class="meta-sep">|</span>
+                    <span>ALL.Net AMUSEMENT IC SYSTEM</span>
+                </div>
             </div>
-        </footer>
+        </div>
 
-        <!-- 4. モーダル1：コース＆レース設定 アーケードスクリーン（COURSE & RACE SETUP押下時に展開） -->
+        <!-- 4. モーダル1：コース＆レース設定 アーケードスクリーン（COURSE & CONDITIONS押下時に展開） -->
         <div id="arcade-course-modal" class="arcade-sub-modal" style="display: none;">
             <div class="modal-backdrop"></div>
             <div class="modal-window">
