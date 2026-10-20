@@ -9,6 +9,7 @@ class RivalCar {
         this.track = track;
         this.playerPhysics = playerPhysics;
         this.meshGroup = new THREE.Group();
+        this.meshGroup.rotation.order = 'YXZ';
 
         // 状態変数
         this.progressT = 0.005; // スタート位置（プレイヤーの少し前）
@@ -403,7 +404,6 @@ class RivalCar {
 
         // 1. 車体位置（路面完全接地＆立体カント追従）
         this.position.copy(point).add(normal.clone().multiplyScalar(this.lateralOffset));
-        this.position.y += (Math.sin(bank) * this.lateralOffset) + 0.01;
 
         // 2. 滑らかな車体基本アングル（Yaw）の慣性補間（カクカク直代入の廃止！）
         const targetRoadYaw = Math.atan2(tangent.x, tangent.z);
@@ -419,6 +419,43 @@ class RivalCar {
             targetDrift = turnDir * driftMagnitude;
         }
         this.driftAngle += (targetDrift - this.driftAngle) * Math.min(1.0, 4.0 * dt);
+
+        this.yaw = this.baseYaw + this.driftAngle;
+        const sinYaw = Math.sin(this.yaw);
+        const cosYaw = Math.cos(this.yaw);
+
+        // ★【ライバル車・4輪アクスル直下実路面標高サンプリング（坂道下り・ドリフトめり込み根絶）】
+        let groundCenterY = point.y + (Math.sin(bank) * this.lateralOffset);
+        let surfacePitch = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
+        let surfaceRoll = bank;
+
+        if (typeof this.track.getRoadSurfaceY === 'function') {
+            const fPosX = this.position.x + sinYaw * 1.25;
+            const fPosZ = this.position.z + cosYaw * 1.25;
+            const rPosX = this.position.x - sinYaw * 1.25;
+            const rPosZ = this.position.z - cosYaw * 1.25;
+
+            const yF = this.track.getRoadSurfaceY(new THREE.Vector3(fPosX, this.position.y, fPosZ), this.progressT);
+            const yR = this.track.getRoadSurfaceY(new THREE.Vector3(rPosX, this.position.y, rPosZ), this.progressT);
+
+            if (yF !== null && yR !== null && !isNaN(yF) && !isNaN(yR)) {
+                surfacePitch = -Math.atan2(yF - yR, 2.50);
+                groundCenterY = (yF + yR) * 0.5;
+            }
+
+            const lPosX = this.position.x - cosYaw * 0.79;
+            const lPosZ = this.position.z + sinYaw * 0.79;
+            const rtPosX = this.position.x + cosYaw * 0.79;
+            const rtPosZ = this.position.z - sinYaw * 0.79;
+
+            const yL = this.track.getRoadSurfaceY(new THREE.Vector3(lPosX, this.position.y, lPosZ), this.progressT);
+            const yRt = this.track.getRoadSurfaceY(new THREE.Vector3(rtPosX, this.position.y, rtPosZ), this.progressT);
+
+            if (yL !== null && yRt !== null && !isNaN(yL) && !isNaN(yRt)) {
+                surfaceRoll = Math.atan2(yRt - yL, 1.58);
+            }
+        }
+        this.position.y = groundCenterY + 0.016;
 
         // 4. 人間らしい前輪ステアリング＆カウンターステア（逆ハン）
         let targetSteer = 0;
@@ -448,15 +485,14 @@ class RivalCar {
         }
 
         // 5. 車体サスペンションの動的ロール＆ピッチ（立体カント＋遠心力ロール）
-        const targetRoll = bank - (turnDir * (this.speed / 160) * Math.min(1.0, curvature * 22.0) * 0.08);
+        const targetRoll = surfaceRoll - (turnDir * (this.speed / 160) * Math.min(1.0, curvature * 22.0) * 0.08);
         this.roll += (targetRoll - this.roll) * Math.min(1.0, 8.0 * dt);
 
         // 勾配ピッチ＋加減速ピッチ（ブレーキでノーズダイブ、加速でリア沈み込み）
-        const trackPitch = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
         const targetSuspPitch = (this.accel > 0 ? -0.010 : 0.018);
         if (this.currentSuspPitch === undefined) this.currentSuspPitch = 0;
         this.currentSuspPitch += (targetSuspPitch - this.currentSuspPitch) * Math.min(1.0, 10.0 * dt);
-        this.pitch = trackPitch + this.currentSuspPitch;
+        this.pitch = surfacePitch + this.currentSuspPitch;
 
         // ホイールの接地補正（ブレーキ時沈み込みでもタイヤがめり込まない）
         const sinSuspPitch = Math.sin(this.currentSuspPitch);
@@ -469,7 +505,6 @@ class RivalCar {
         }
 
         // 6. 車体メッシュへの反映（Euler YXZ で姿勢合成）
-        this.yaw = this.baseYaw + this.driftAngle;
         this.meshGroup.position.copy(this.position);
         this.meshGroup.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
     }

@@ -45,6 +45,62 @@
         </div>
     </div>
 
+    <!-- ★【頭文字D ARCADE STAGE バトル出撃ローディング / ステージブリーフィング画面】 -->
+    <div id="race-match-loading-screen" class="race-match-loading" style="display: none;">
+        <div class="match-screen-inner">
+            <div class="match-top-banner">
+                <div class="match-mode-tag">1P BATTLE // 乱入対戦出撃</div>
+                <div class="match-stage-title" id="match-stage-name">STAGE 01: 秋名 / 往路 (AKINA DOWNHILL)</div>
+                <div class="match-condition-tags">
+                    <span id="match-tag-length">LENGTH: 7,552m</span>
+                    <span id="match-tag-time">TIME: NIGHT</span>
+                    <span id="match-tag-weather">WEATHER: DRY</span>
+                </div>
+            </div>
+
+            <div class="match-vs-arena">
+                <!-- 1P Challenger Card -->
+                <div class="match-card match-card-1p">
+                    <div class="match-player-badge">1P CHALLENGER</div>
+                    <div class="match-driver-name" id="match-1p-driver">藤原 拓海</div>
+                    <div class="match-car-title" id="match-1p-car">SPRINTER TRUENO GT-APEX</div>
+                    <div class="match-car-code" id="match-1p-code">[AE86]</div>
+                    <div class="match-car-specs" id="match-1p-specs">FR / 4A-GEU 改 / 150ps / 925kg</div>
+                </div>
+
+                <!-- Center VS Flare Badge -->
+                <div class="match-vs-center">
+                    <div class="match-vs-flare"></div>
+                    <div class="match-vs-text">VS</div>
+                    <div class="match-vs-sub">BATTLE</div>
+                </div>
+
+                <!-- Rival Card -->
+                <div class="match-card match-card-rival">
+                    <div class="match-player-badge badge-rival">RIVAL MACHINE</div>
+                    <div class="match-driver-name" id="match-rival-driver">高橋 啓介</div>
+                    <div class="match-car-title" id="match-rival-car">ɛ̃fini RX-7 Type R</div>
+                    <div class="match-car-code" id="match-rival-code">[FD3S]</div>
+                    <div class="match-car-specs" id="match-rival-specs">FR / 13B-REW ツインターボ / 350ps / 赤城レッドサンズ</div>
+                </div>
+            </div>
+
+            <!-- Warmup & Telemetry Loader -->
+            <div class="match-bottom-telemetry">
+                <div class="telemetry-status-row">
+                    <span class="telemetry-label" id="match-telemetry-text">WARMING UP TIRES &amp; TURBO BOOST...</span>
+                    <span class="telemetry-pct" id="match-telemetry-pct">0%</span>
+                </div>
+                <div class="telemetry-bar-outer">
+                    <div class="telemetry-bar-fill" id="match-telemetry-fill"></div>
+                </div>
+                <div class="match-footer-tips">
+                    <span>STAGE BATTLE IN PROGRESS &bull; PRESS SHIFT [W/S] FOR MANUAL TRANSMISSION &bull; SPACE FOR DRIFT BRAKE</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 3D WebGL レンダリングキャンバス -->
     <div id="canvas-container"></div>
 
@@ -851,12 +907,122 @@
                 }, 350);
             }, 180);
 
+            // ★【頭文字D ARCADE STAGE バトル出撃ローディングシーケンス（出撃時カクつき完全解消）】
+            let isRaceLaunching = false;
+            window.launchRaceWithTransition = function() {
+                if (isRaceLaunching) return;
+                isRaceLaunching = true;
+
+                const matchScreen = document.getElementById('race-match-loading-screen');
+                const startOverlay = document.getElementById('start-overlay');
+                const modalSetup = document.getElementById('arcade-course-modal');
+                const modalGuide = document.getElementById('arcade-controls-modal');
+                const resultOverlay = document.getElementById('result-overlay');
+
+                if (modalSetup) modalSetup.style.display = 'none';
+                if (modalGuide) modalGuide.style.display = 'none';
+                if (resultOverlay) resultOverlay.style.display = 'none';
+
+                // 出撃ステージ＆搭乗マシン情報の設定
+                const courseId = (window.game && window.game.currentCourse) || 'akina';
+                const courseNames = {
+                    akina: 'STAGE 01: 秋名 / 往路 (AKINA DOWNHILL)',
+                    akina_uphill: 'STAGE 02: 秋名 / 復路 (AKINA UPHILL)',
+                    myogi: 'STAGE 03: 妙義 / 下り (MYOGI DOWNHILL)',
+                    usui: 'STAGE 04: 碓氷 / 往路 (USUI TOUGE)',
+                    akagi: 'STAGE 05: 赤城 / 下り (AKAGI DOWNHILL)',
+                    irohazaka: 'STAGE 06: いろは坂 / 下り (IROHAZAKA DOWNHILL)',
+                    happo: 'STAGE 07: 八方ヶ原 / 往路 (HAPPOGAHARA)',
+                    tsubaki: 'STAGE 08: 椿ライン / 下り (TSUBAKI LINE)'
+                };
+                const courseLens = {
+                    akina: '7,552m', akina_uphill: '7,552m', myogi: '5,820m',
+                    usui: '6,450m', akagi: '8,210m', irohazaka: '5,100m',
+                    happo: '6,200m', tsubaki: '9,400m'
+                };
+
+                const elStageName = document.getElementById('match-stage-name');
+                if (elStageName) elStageName.textContent = courseNames[courseId] || ('STAGE: ' + courseId.toUpperCase());
+                const elTagLen = document.getElementById('match-tag-length');
+                if (elTagLen) elTagLen.textContent = 'LENGTH: ' + (courseLens[courseId] || '7,552m');
+
+                // 1P Challenger 車両・ドライバー情報
+                const carKey = (window.game && window.game.currentCarKey) || 'ae86';
+                const carData = (window.CAR_DATABASE && window.CAR_DATABASE[carKey]) || null;
+                if (carData) {
+                    const el1pDrv = document.getElementById('match-1p-driver');
+                    if (el1pDrv) el1pDrv.textContent = carData.driver || '藤原 拓海';
+                    const el1pCar = document.getElementById('match-1p-car');
+                    if (el1pCar) el1pCar.textContent = carData.name;
+                    const el1pCode = document.getElementById('match-1p-code');
+                    if (el1pCode) el1pCode.textContent = '[' + carData.modelCode + ']';
+                    const el1pSpc = document.getElementById('match-1p-specs');
+                    if (el1pSpc) el1pSpc.textContent = carData.drivetrain + ' / ' + carData.engineName + ' / ' + carData.power + ' / ' + carData.weight;
+                }
+
+                // マッチ画面を表示し、タイトル画面を非表示
+                if (matchScreen) {
+                    matchScreen.classList.remove('fade-out');
+                    matchScreen.style.display = 'flex';
+                }
+                if (startOverlay) startOverlay.style.display = 'none';
+
+                // オーディオ再開
+                if (window.game && window.game.audio) {
+                    window.game.audio.resume();
+                }
+
+                // レース準備とWebGLシェーダー先行ウォームアップ実行（出撃時のカクつきを100%遮断）
+                if (window.game && typeof window.game.prepareRace === 'function') {
+                    window.game.prepareRace();
+                }
+
+                // テレメトリローディングバーアニメーション（約600ms）
+                const fillBar = document.getElementById('match-telemetry-fill');
+                const pctText = document.getElementById('match-telemetry-pct');
+                const statText = document.getElementById('match-telemetry-text');
+                const steps = [
+                    { pct: 28, txt: 'INITIALIZING 3D TOUGE TRACK GEOMETRY...' },
+                    { pct: 58, txt: 'PRE-COMPILING WEBGL SHADERS & LIGHT MAPS...' },
+                    { pct: 88, txt: 'WARMING UP TIRES & TURBO BOOST CHARGE...' },
+                    { pct: 100, txt: 'READY TO ATTACK THE TOUGE!!' }
+                ];
+
+                let stepIdx = 0;
+                const interval = setInterval(() => {
+                    if (stepIdx < steps.length) {
+                        const s = steps[stepIdx];
+                        if (fillBar) fillBar.style.width = s.pct + '%';
+                        if (pctText) pctText.textContent = s.pct + '%';
+                        if (statText) statText.textContent = s.txt;
+                        stepIdx++;
+                    } else {
+                        clearInterval(interval);
+                        // 100%到達：スムーズフェードアウト開始＆スタートカウントダウン始動！
+                        setTimeout(() => {
+                            if (matchScreen) matchScreen.classList.add('fade-out');
+                            if (window.game) {
+                                window.game.startRace(true); // skipPrepare = true
+                            }
+                            setTimeout(() => {
+                                if (matchScreen) matchScreen.style.display = 'none';
+                                isRaceLaunching = false;
+                            }, 320);
+                        }, 120);
+                    }
+                }, 130);
+            };
+
             // 【最重要】メイン出撃ボタン (1P START / 乱入出撃) 即時バインド
             const btnStart = document.getElementById('btn-start');
             if (btnStart) {
                 btnStart.addEventListener('click', () => {
-                    if (game.audio) game.audio.resume();
-                    game.startRace();
+                    if (window.launchRaceWithTransition) {
+                        window.launchRaceWithTransition();
+                    } else {
+                        if (game.audio) game.audio.resume();
+                        game.startRace();
+                    }
                 });
             }
 
@@ -1563,7 +1729,11 @@
                     game.hud.currentTime = 0;
                     game.hud.isFinished = false;
                     document.getElementById('result-overlay').style.display = 'none';
-                    game.startRace();
+                    if (window.launchRaceWithTransition) {
+                        window.launchRaceWithTransition();
+                    } else {
+                        game.startRace();
+                    }
                 });
             }
 

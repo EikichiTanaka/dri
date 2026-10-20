@@ -2889,3 +2889,237 @@ body, html {
     color: #ffffff;
     letter-spacing: 1px;
 }
+
+/* ==========================================================================
+   ★ SEGA Initial D Arcade Stage バトル出撃ローディング画面 (Race Match Loading)
+   ========================================================================== */
+#race-match-loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #06090e;
+    background-image: 
+        radial-gradient(circle at 50% 50%, rgba(14, 24, 38, 0.96) 0%, rgba(4, 7, 12, 0.99) 75%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 4px);
+    z-index: 999990;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 40px;
+    box-sizing: border-box;
+    opacity: 1;
+    transition: opacity 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), transform 0.3s ease-out;
+    pointer-events: all;
+    user-select: none;
+}
+
+#race-match-loading-screen.fade-out {
+    opacity: 0;
+    transform: scale(1.02);
+    pointer-events: none;
+}
+
+.match-screen-inner {
+    width: 92%;
+    max-width: 960px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+}
+
+/* 上部ステージバナー */
+.match-top-banner {
+    text-align: center;
+    border-bottom: 2px solid rgba(0, 229, 255, 0.4);
+    padding-bottom: 12px;
+    width: 100%;
+}
+
+.match-mode-tag {
+    color: #ffaa00;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 3px;
+    font-size: 13px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+}
+
+.match-stage-title {
+    font-size: 26px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    font-style: italic;
+    text-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+    margin: 6px 0;
+}
+
+.match-condition-tags {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 13px;
+    color: #9cb8d0;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+/* VS アリーナ */
+.match-vs-arena {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 20px;
+    margin: 8px 0;
+}
+
+.match-card {
+    flex: 1;
+    background: linear-gradient(135deg, rgba(14, 25, 42, 0.90) 0%, rgba(6, 12, 22, 0.95) 100%);
+    border: 1.5px solid rgba(0, 229, 255, 0.4);
+    border-radius: 8px;
+    padding: 18px 22px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 229, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.match-card-rival {
+    border-color: rgba(255, 51, 68, 0.45);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(255, 51, 68, 0.08);
+}
+
+.match-player-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #00e5ff;
+    color: #040810;
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.match-player-badge.badge-rival {
+    background: #ff3344;
+    color: #fff;
+}
+
+.match-driver-name {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.match-car-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #00e5ff;
+    margin-top: 4px;
+}
+
+.match-card-rival .match-car-title {
+    color: #ffcc00;
+}
+
+.match-car-code {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 6px;
+}
+
+.match-car-specs {
+    font-size: 12px;
+    color: #8fa8bf;
+    font-family: monospace;
+    line-height: 1.4;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 6px;
+}
+
+/* 中央 VS エンブレム */
+.match-vs-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 90px;
+}
+
+.match-vs-text {
+    font-size: 48px;
+    font-weight: 900;
+    font-style: italic;
+    color: #fff;
+    text-shadow: 0 0 20px #ff0055, 0 0 40px #ff3300;
+    transform: skewX(-8deg);
+    animation: vsPulse 1.2s infinite alternate ease-in-out;
+}
+
+.match-vs-sub {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #ff5577;
+    text-transform: uppercase;
+    margin-top: -6px;
+}
+
+/* 下部テレメトリ＆ウォームアップローダー */
+.match-bottom-telemetry {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.telemetry-status-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+    color: #00e5ff;
+    font-family: 'Rajdhani', monospace;
+    letter-spacing: 1px;
+}
+
+.telemetry-bar-outer {
+    width: 100%;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1.5px solid rgba(0, 229, 255, 0.4);
+    border-radius: 5px;
+    overflow: hidden;
+    padding: 1px;
+    box-sizing: border-box;
+}
+
+.telemetry-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #0077ff 0%, #00e5ff 60%, #ffff00 100%);
+    border-radius: 3px;
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+    transition: width 0.12s linear;
+}
+
+.match-footer-tips {
+    text-align: center;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 600;
+    letter-spacing: 1px;
+}

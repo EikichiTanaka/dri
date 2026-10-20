@@ -550,14 +550,14 @@ class Game {
         }
     }
 
-    startRace() {
+    prepareRace() {
         if (this.titleSpotLight) this.titleSpotLight.visible = false;
         this.titleCamInitialized = false;
         this.titleAttract = null;
-        this.audio.init();
-        this.audio.resume();
-        this.audio.startEngineLoop();
-        this.audio.startEurobeatBGM();
+        if (this.audio) {
+            this.audio.init();
+            this.audio.resume();
+        }
 
         this.applyEnvironment();
         this.playerPhysics.resetToTrack(0.003, -1.8);
@@ -568,12 +568,6 @@ class Game {
             this.particles.clearSkidMarks();
         }
 
-        this.state = 'COUNTDOWN';
-        this.countdownStep = 3;
-        this.countdownTimer = 1.0;
-        this.hud.showCountdown(3, '3');
-        this.audio.playCountdownBeep(false);
-
         this.passedSections = new Set();
         if (this.hud) {
             this.hud.currentTime = 0;
@@ -583,11 +577,40 @@ class Game {
             }
         }
 
+        // カメラをスタートライン後方に配置
+        this.updateCamera(0.016);
+        // WebGLシェーダー・シャドウ・ジオメトリバッファの先行ウォームアップ描画（出撃時のカクつき完全解消）
+        if (this.renderer && this.scene && this.camera) {
+            this.renderer.render(this.scene, this.camera);
+        }
+    }
+
+    startRace(skipPrepare = false) {
+        if (!skipPrepare) {
+            this.prepareRace();
+        }
+        if (this.audio) {
+            this.audio.startEngineLoop();
+            this.audio.startEurobeatBGM();
+        }
+
+        this.state = 'COUNTDOWN';
+        this.countdownStep = 3;
+        this.countdownTimer = 1.0;
+        if (this.hud) {
+            this.hud.showCountdown(3, '3');
+        }
+        if (this.audio) {
+            this.audio.playCountdownBeep(false);
+        }
+
         const resultOverlay = document.getElementById('result-overlay');
         if (resultOverlay) resultOverlay.style.display = 'none';
 
-        document.getElementById('start-overlay').style.display = 'none';
-        document.getElementById('hud-container').style.display = 'block';
+        const startOverlay = document.getElementById('start-overlay');
+        if (startOverlay) startOverlay.style.display = 'none';
+        const hudContainer = document.getElementById('hud-container');
+        if (hudContainer) hudContainer.style.display = 'block';
     }
 
     /**
@@ -712,26 +735,39 @@ class Game {
 
         // 車両ワールド座標の算出（滑らかなオフセット＋完全接地）
         const carPos = trackPt.clone().addScaledVector(normal, attr.lateralOffset);
-        if (typeof this.track.getRoadSurfaceY === 'function') {
-            const roadY = this.track.getRoadSurfaceY(carPos, t);
-            if (roadY !== null && !isNaN(roadY)) {
-                carPos.y = roadY;
-            }
-        }
-
-        // ★【3次元アスファルト平面完全接地ジオメトリ】
-        // 車体が進行方向に対して斜め（ドリフト姿勢）の時でも、
-        // 縦勾配（ピッチ）と横カント（バンク）を車体ローカル軸に正確に3次元投影！
-        // 斜め進入時でもタイヤが宙に浮く現象を100%排除し、4輪すべてがアスファルトに密着！
         const baseYaw = Math.atan2(tangent.x, tangent.z);
         const carYaw = baseYaw + attr.driftAngle;
+        const forward = new THREE.Vector3(Math.sin(carYaw), 0, Math.cos(carYaw));
+        const carRight = new THREE.Vector3(Math.cos(carYaw), 0, -Math.sin(carYaw));
 
-        const pitchRoad = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
-        const bankAngle = trackInfo.bankAngle || 0;
-        const dAngle = attr.driftAngle;
+        // ★【3次元実路面アクスルサンプリング（下り坂・ドリフトタイヤめり込み100%根絶）】
+        let groundY = trackPt.y;
+        let carPitch = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
+        let carRoll = trackInfo.bankAngle || 0;
 
-        const carPitch = pitchRoad * Math.cos(dAngle) + bankAngle * Math.sin(dAngle);
-        const carRoll = bankAngle * Math.cos(dAngle) - pitchRoad * Math.sin(dAngle);
+        if (typeof this.track.getRoadSurfaceY === 'function') {
+            const fPos = carPos.clone().addScaledVector(forward, 1.20);
+            const rPos = carPos.clone().addScaledVector(forward, -1.20);
+            const yF = this.track.getRoadSurfaceY(fPos, t);
+            const yR = this.track.getRoadSurfaceY(rPos, t);
+
+            if (yF !== null && yR !== null && !isNaN(yF) && !isNaN(yR)) {
+                carPitch = -Math.atan2(yF - yR, 2.40);
+                groundY = (yF + yR) * 0.5;
+            } else {
+                const roadY = this.track.getRoadSurfaceY(carPos, t);
+                if (roadY !== null && !isNaN(roadY)) groundY = roadY;
+            }
+
+            const lPos = carPos.clone().addScaledVector(carRight, -0.79);
+            const rtPos = carPos.clone().addScaledVector(carRight, 0.79);
+            const yL = this.track.getRoadSurfaceY(lPos, t);
+            const yRt = this.track.getRoadSurfaceY(rtPos, t);
+            if (yL !== null && yRt !== null && !isNaN(yL) && !isNaN(yRt)) {
+                carRoll = Math.atan2(yRt - yL, 1.58);
+            }
+        }
+        carPos.y = groundY;
 
         // playerPhysicsのプロパティ同期
         this.playerPhysics.position.copy(carPos);
@@ -750,7 +786,6 @@ class Game {
         };
 
         // 速度ベクトル（進行方向とノーズ方向の自然な合成）
-        const forward = new THREE.Vector3(Math.sin(carYaw), 0, Math.cos(carYaw));
         const velDir = tangent.clone().lerp(forward, 0.25).normalize();
         this.playerPhysics.velocity.copy(velDir).multiplyScalar(this.playerPhysics.speedMs);
 

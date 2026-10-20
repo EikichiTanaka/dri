@@ -11,6 +11,7 @@ class PlayerCar {
         this.colorIndex = 0;
 
         this.meshGroup = new THREE.Group();
+        this.meshGroup.rotation.order = 'YXZ';
         this.wheels = [];
         this.frontWheelL = null;
         this.frontWheelR = null;
@@ -95,17 +96,57 @@ class PlayerCar {
     }
 
     update(dt) {
-        this.meshGroup.position.copy(this.physics.position);
-        this.meshGroup.rotation.y = this.physics.yaw;
+        const trackRef = this.physics ? this.physics.track : null;
+        let groundCenterY = this.physics.position.y;
+        let surfacePitch = this.physics.pitch;
+        let surfaceRoll = (this.physics.trackInfo ? (this.physics.trackInfo.bankAngle || 0) : 0);
 
-        // 勾配（ピッチ）とロール・立体カントを滑らかに合成
-        const bankRoll = (this.physics.trackInfo ? (this.physics.trackInfo.bankAngle || 0) : 0);
+        // ★【4輪アクスル直下・3次元実路面標高サンプリング（下り坂・ドリフトタイヤめり込み完全根絶）】
+        // 車体が横向き（ドリフト）や勾配変化点に進入しても、前後軸および左右輪の直下標高を直接計測し、
+        // 厳密な路面勾配ピッチ・ロールおよび基準標高をミリ単位で算出！
+        if (trackRef && typeof trackRef.getRoadSurfaceY === 'function') {
+            const yaw = this.physics.yaw;
+            const tHint = this.physics.trackT || null;
+            const sinYaw = Math.sin(yaw);
+            const cosYaw = Math.cos(yaw);
+
+            // 前後アクスル直下（ホイールベース 2.40m: 前+1.20m, 後-1.20m）
+            const fPosX = this.physics.position.x + sinYaw * 1.20;
+            const fPosZ = this.physics.position.z + cosYaw * 1.20;
+            const rPosX = this.physics.position.x - sinYaw * 1.20;
+            const rPosZ = this.physics.position.z - cosYaw * 1.20;
+
+            const yF = trackRef.getRoadSurfaceY(new THREE.Vector3(fPosX, this.physics.position.y, fPosZ), tHint);
+            const yR = trackRef.getRoadSurfaceY(new THREE.Vector3(rPosX, this.physics.position.y, rPosZ), tHint);
+
+            if (yF !== null && yR !== null && !isNaN(yF) && !isNaN(yR)) {
+                surfacePitch = -Math.atan2(yF - yR, 2.40);
+                groundCenterY = (yF + yR) * 0.5;
+            }
+
+            // 左右トレッド直下（トレッド幅 1.58m: 左-0.79m, 右+0.79m）
+            const lPosX = this.physics.position.x - cosYaw * 0.79;
+            const lPosZ = this.physics.position.z + sinYaw * 0.79;
+            const rtPosX = this.physics.position.x + cosYaw * 0.79;
+            const rtPosZ = this.physics.position.z - sinYaw * 0.79;
+
+            const yL = trackRef.getRoadSurfaceY(new THREE.Vector3(lPosX, this.physics.position.y, lPosZ), tHint);
+            const yRt = trackRef.getRoadSurfaceY(new THREE.Vector3(rtPosX, this.physics.position.y, rtPosZ), tHint);
+
+            if (yL !== null && yRt !== null && !isNaN(yL) && !isNaN(yRt)) {
+                surfaceRoll = Math.atan2(yRt - yL, 1.58);
+            }
+        }
+
+        // 接地座標（路面アスファルトとのZファイティング・めり込みを100%防止する+0.016m安全クリアランス）
+        this.meshGroup.position.x = this.physics.position.x;
+        this.meshGroup.position.z = this.physics.position.z;
+        this.meshGroup.position.y = groundCenterY + 0.016 + (this.physics.gutterDropY || 0);
+
         const rollAmount = -this.physics.steerAngle * (this.physics.speed / 180) * 0.12;
-        this.meshGroup.rotation.z = rollAmount + bankRoll + (this.physics.gutterRoll || 0);
+        const totalRoll = surfaceRoll + rollAmount + (this.physics.gutterRoll || 0);
 
         // ★【ブレーキ・加減速ノーズダイブ＆タイヤ完全接地補正】
-        // ブレーキ時に車体（ボディ）が自然にノーズダイブするリアルなサスペンション沈み込みを再現しつつ、
-        // タイヤの接地パッチ（contact patch）が路面アスファルトへめり込む現象を100%防止！
         const rawBrakePitch = (this.physics.brake * 0.022); // 正値 = ノーズダイブ（前下がり）
         const rawEngineBrake = ((this.physics.engineBrakeForce || 0) / 7.2) * 0.012;
         const rawAccelPitch = -(this.physics.throttle * 0.012); // 負値 = リアスクワット（前上がり）
@@ -114,10 +155,12 @@ class PlayerCar {
         if (this.currentSuspensionPitch === undefined) this.currentSuspensionPitch = 0;
         this.currentSuspensionPitch += (targetSuspensionPitch - this.currentSuspensionPitch) * Math.min(1.0, 10.0 * dt);
 
-        this.meshGroup.rotation.x = this.physics.pitch + this.currentSuspensionPitch;
+        const totalPitch = surfacePitch + this.currentSuspensionPitch;
+
+        // ★Euler 'YXZ' 姿勢合成（Yaw -> Pitch -> Roll）
+        this.meshGroup.rotation.set(totalPitch, this.physics.yaw, totalRoll, 'YXZ');
 
         // ★各ホイールのサスペンション幾何補正（タイヤ底面が路面高さ y=0 に完全固定）
-        // ボディが前傾しても前輪はアスファルトにめり込まず、フェンダーがタイヤに被る実車サスストロークを実現！
         const sinSuspPitch = Math.sin(this.currentSuspensionPitch);
         if (this.wheels) {
             this.wheels.forEach(w => {
