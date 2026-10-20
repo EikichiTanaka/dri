@@ -92,6 +92,12 @@ class Game {
         this.track = new TougeTrack(this.scene, this.currentCourse);
         this.playerPhysics = new CarPhysics(this.track, true);
         this.playerCar = new PlayerCar(this.scene, this.playerPhysics, 'ae86');
+        this.playerPhysics.resetToTrack(0.003, -1.8);
+        this.playerCar.update(0);
+        if (this.playerCar) {
+            this.playerCar.lightsOn = true;
+            this.playerCar.applyLightState(true);
+        }
         this.rivalCar = new RivalCar(this.scene, this.track, this.playerPhysics);
         this.particles = new ParticleSystem(this.scene);
         this.input = new InputManager();
@@ -126,6 +132,18 @@ class Game {
             this.playerCar.setCar(carId, colorIndex);
             if (this.audio) {
                 this.audio.setEngineSoundType(carData.physics.engineSoundType);
+            }
+            const carNameBadge = document.getElementById('title-entry-car-name');
+            if (carNameBadge) {
+                carNameBadge.textContent = carData.name + ' [' + carData.modelCode + ']';
+            }
+            const carDriverBadge = document.getElementById('title-entry-driver');
+            if (carDriverBadge) {
+                carDriverBadge.textContent = carData.driver || 'PRIMA DRIVER';
+            }
+            const carSpecsBadge = document.getElementById('title-entry-specs');
+            if (carSpecsBadge) {
+                carSpecsBadge.textContent = carData.drivetrain + ' / ' + carData.engineName + ' / ' + carData.power + ' / ' + carData.weight;
             }
         }
     }
@@ -771,6 +789,46 @@ class Game {
     }
 
     updateCamera(dt) {
+        // ★【タイトル画面：頭文字D ARCADE STAGE アトラクト・オービットカメラ】
+        if (this.state === 'TITLE') {
+            if (this.playerCar && this.playerCar.meshGroup) {
+                this.playerCar.meshGroup.visible = true;
+                this.playerCar.meshGroup.traverse((child) => {
+                    if (child.isMesh) child.visible = true;
+                });
+            }
+            this.camera.up.set(0, 1, 0);
+
+            if (!this.titleCamAngle) this.titleCamAngle = 0.85;
+            this.titleCamAngle += dt * 0.16;
+
+            const carPos = this.playerPhysics.position;
+            const forward = new THREE.Vector3(
+                Math.sin(this.playerPhysics.yaw),
+                0,
+                Math.cos(this.playerPhysics.yaw)
+            );
+
+            const angle = this.titleCamAngle;
+            const radius = 5.2 + Math.sin(angle * 0.7) * 0.45;
+            const height = 1.35 + Math.sin(angle * 0.5) * 0.25;
+
+            const camX = carPos.x + Math.sin(angle) * (radius * 0.9) + forward.x * 2.6;
+            const camY = carPos.y + height;
+            const camZ = carPos.z + Math.cos(angle) * (radius * 0.9) + forward.z * 2.6;
+
+            this.camera.position.set(camX, camY, camZ);
+            this.cameraLookTarget.set(
+                carPos.x + forward.x * 0.4,
+                carPos.y + 0.75,
+                carPos.z + forward.z * 0.4
+            );
+            this.camera.lookAt(this.cameraLookTarget);
+            this.camera.fov = 50;
+            this.camera.updateProjectionMatrix();
+            return;
+        }
+
         // ★頭文字D ARCADE STAGE 仕様：
         // 親グループ(meshGroup)は常に visible = true に保ち、内蔵されたヘッドライト(SpotLight/PointLight)を100%点灯維持！
         // 一人称視点(cameraMode === 3)の時のみ、ポリゴンメッシュ(child.isMesh)だけを非表示にすることで、
