@@ -83,16 +83,17 @@
 
     <!-- スタート画面 / アーケード筐体オーバーレイ -->
     <div id="start-overlay">
-        <!-- 1. トップ：アーケード筐体ステータスマーカー -->
+        <!-- 1. 最上部：SEGA実機アーケード ステータスマーキー -->
         <header class="arcade-marquee-header">
             <div class="marquee-item left">
-                <span class="marquee-network"><span class="led-blink green">●</span> Aime / ALL.Net ONLINE</span>
+                <span class="sega-badge">SEGA</span>
+                <span class="marquee-aime"><span class="aime-icon"></span> Aime / ALL.Net ONLINE</span>
                 <span class="marquee-divider">|</span>
                 <span class="marquee-cab">CABINET #01 [TWIN LINK]</span>
             </div>
             <div class="marquee-item center">
                 <span class="credit-badge"><span class="credit-pulse">CREDIT(S) 1</span></span>
-                <span class="freeplay-tag">FREE PLAY MODE</span>
+                <span class="freeplay-tag">FREE PLAY</span>
             </div>
             <div class="marquee-item right">
                 <span class="marquee-audio"><span class="audio-led"></span> EUROBEAT SOUND ACTIVE</span>
@@ -101,53 +102,162 @@
             </div>
         </header>
 
-        <!-- 2. タイトルロゴ：SEGA『頭文字D ARCADE STAGE』3Dクローム extruded 巨大ロゴ -->
-        <div class="arcade-title-hero">
-            <div class="title-kanji-wrap">
-                <span class="kanji-crest">峠</span>
-                <span class="title-kanji">頭文字［イニシャル］Ｄ</span>
-                <span class="kanji-crest">走</span>
-            </div>
-            <h1 class="title-main-huge">
-                <span class="title-glow-back">INITIAL D</span>
-                <span class="title-front">INITIAL D</span>
-            </h1>
-            <div class="title-winged-banner">
-                <span class="wing-side wing-left"></span>
-                <div class="wing-center">
-                    <span class="arcade-stage-text">ARCADE STAGE</span>
-                    <span class="spec-ver-pill">ZERO &amp; ∞ SPEC</span>
-                </div>
-                <span class="wing-side wing-right"></span>
+        <!-- 2. 中央：公式レタリング準拠 頭文字D ARCADE STAGE 巨大ベクターエンブレム -->
+        <div class="arcade-hero-center">
+            <div class="arcade-logo-container">
+                <svg class="arcade-logo-svg" viewBox="0 0 460 160" width="540" height="188" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dRedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff3b3b"/>
+      <stop offset="35%" stop-color="#ee0011"/>
+      <stop offset="85%" stop-color="#aa0000"/>
+      <stop offset="100%" stop-color="#4a0000"/>
+    </linearGradient>
+    <linearGradient id="chromeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#e8f0f8"/>
+      <stop offset="50%" stop-color="#8098b0"/>
+      <stop offset="55%" stop-color="#405568"/>
+      <stop offset="80%" stop-color="#b0c8dc"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="logoGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#ff2200" flood-opacity="0.65"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.9"/>
+    </filter>
+    <filter id="dDropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="5" dy="8" stdDeviation="5" flood-color="#000000" flood-opacity="0.9"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#ff2200" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+  <g transform="translate(18, 5) skewX(-9)">
+    <g filter="url(#logoGlow)">
+      <text x="10" y="86" font-family="'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', 'Meiryo', sans-serif" font-weight="900" font-size="68" fill="#000" stroke="#000" stroke-width="12" stroke-linejoin="round">頭文字</text>
+      <text x="10" y="86" font-family="'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', 'Meiryo', sans-serif" font-weight="900" font-size="68" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round">頭文字</text>
+      <text x="10" y="86" font-family="'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', 'Meiryo', sans-serif" font-weight="900" font-size="68" fill="url(#chromeGrad)">頭文字</text>
+    </g>
+    <g>
+      <text x="18" y="28" font-family="'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', 'Meiryo', sans-serif" font-weight="900" font-size="14.5" fill="#ff4444" letter-spacing="3" stroke="#000" stroke-width="2.5" paint-order="stroke fill">［ イ ニ シ ャ ル ］</text>
+    </g>
+    <g filter="url(#dDropShadow)" transform="translate(230, 0)">
+      <path d="M 15 12 L 72 12 C 140 12 172 40 166 82 C 158 124 116 150 50 150 L -6 150 Z" fill="#000" stroke="#000" stroke-width="14" stroke-linejoin="round"/>
+      <path d="M 15 12 L 72 12 C 140 12 172 40 166 82 C 158 124 116 150 50 150 L -6 150 Z" fill="#fff" stroke="#fff" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M 15 12 L 72 12 C 140 12 172 40 166 82 C 158 124 116 150 50 150 L -6 150 Z" fill="url(#dRedGrad)"/>
+      <path d="M 46 44 L 70 44 C 102 44 116 60 112 82 C 108 104 86 118 54 118 L 32 118 Z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M 46 44 L 70 44 C 102 44 116 60 112 82 C 108 104 86 118 54 118 L 32 118 Z" fill="#060a12"/>
+      <polygon points="10,78 160,54 152,65 4,88" fill="#ffffff" opacity="0.8"/>
+      <polygon points="0,96 148,72 142,79 -4,102" fill="#ffdd66" opacity="0.65"/>
+    </g>
+    <g transform="translate(0, 114)">
+      <polygon points="10,0 410,0 395,34 0,34" fill="#08101c" stroke="#00d4ff" stroke-width="2.5"/>
+      <line x1="-15" y1="17" x2="6" y2="17" stroke="#00d4ff" stroke-width="3"/>
+      <line x1="-28" y1="17" x2="-20" y2="17" stroke="#00d4ff" stroke-width="2"/>
+      <text x="24" y="24" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-style="italic" font-size="23.5" fill="#ffffff" letter-spacing="2">ARCADE STAGE</text>
+      <polygon points="268,4 390,4 382,30 260,30" fill="url(#dRedGrad)" stroke="#ffaa00" stroke-width="1.5"/>
+      <text x="274" y="23" font-family="'Arial Black', sans-serif" font-weight="900" font-style="italic" font-size="14.5" fill="#ffffff" letter-spacing="1">ZERO &amp; ∞</text>
+    </g>
+  </g>
+</svg>
             </div>
             <div id="course-title-sub" class="title-stage-sub">ARCADE STAGE : AKINA DOWNHILL (7,552m・原作公式完全再現)</div>
+
+            <!-- アーケード象徴：PUSH START BUTTON アトラクトコールアウト -->
+            <div class="arcade-press-start-prompt" id="btn-callout-start">
+                <div class="press-start-shimmer"></div>
+                <div class="press-start-text">PUSH START BUTTON</div>
+                <div class="press-start-sub">PRESS [ENTER] KEY OR TOUCH TO LAUNCH BATTLE</div>
+            </div>
+
+            <!-- 現在セッティングのクイック確認バー -->
+            <div class="attract-current-setup">
+                <span class="setup-pill stage" id="attract-stage-badge">秋名 下り (7,552m)</span>
+                <span class="setup-pill-dot">•</span>
+                <span class="setup-pill car" id="attract-car-badge">AE86 TRUENO [藤原拓海]</span>
+                <span class="setup-pill-dot">•</span>
+                <span class="setup-pill cond" id="attract-cond-badge">MIDNIGHT / DRY / AT</span>
+            </div>
         </div>
 
-        <!-- 3. ワイドスケール アーケードコンソール -->
-        <div class="arcade-main-console">
-            <div class="console-body">
-                <!-- 左カラム：8大名峠コースセレクター ＆ 峠ブリーフィング -->
-                <div class="console-col left-col">
-                    <div class="col-section-header">
-                        <div class="header-left">
-                            <span class="header-led-badge">STAGE SELECT</span>
-                            <span class="header-title-text">TOUGE COURSE BATTLEFIELD</span>
-                        </div>
-                        <span class="course-badge-total">全8大名峠 完全収録</span>
+        <!-- 3. 下部：アーケード コントロールデッキ（洗練された4大メニューリボン） -->
+        <footer class="arcade-action-deck">
+            <div class="deck-ribbon">
+                <!-- START BATTLE -->
+                <button id="btn-start" class="deck-btn deck-btn-primary start-btn">
+                    <span class="btn-shimmer"></span>
+                    <span class="btn-glow-bar"></span>
+                    <span class="deck-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#ffdd00" stroke="#ff9900" stroke-width="1.5"/></svg></span>
+                    <div class="deck-btn-content">
+                        <span class="deck-btn-main">START BATTLE</span>
+                        <span class="deck-btn-sub">即時出撃 [ENTER]</span>
                     </div>
+                </button>
 
-                    <!-- エリア別 コースカードグリッド -->
-                    <div class="course-selector-grid">
-                        <!-- 群馬エリア -->
-                        <div class="course-area-section">
-                            <div class="area-banner gunma-banner">
-                                <span class="area-tag-badge">群馬エリア</span>
-                                <span class="area-sub-badge">GUNMA 5 COURSES</span>
-                            </div>
-                            <div class="stage-cards-row">
-                                <button id="btn-akina" class="stage-card-btn toggle-btn course-toggle-btn active" data-course="akina">
-                                    <div class="stage-card-glow"></div>
-                                    <div class="stage-card-content">
+                <!-- COURSE & RACE SETUP -->
+                <button id="btn-open-setup" class="deck-btn deck-btn-setup">
+                    <span class="deck-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 2V22M4 4H20L17 9L20 14H4" stroke="#00ddff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <div class="deck-btn-content">
+                        <span class="deck-btn-main">COURSE &amp; RACE SETUP</span>
+                        <span class="deck-btn-sub">全8大名峠＆環境設定</span>
+                    </div>
+                </button>
+
+                <!-- MACHINE GARAGE -->
+                <button id="btn-open-garage" class="deck-btn deck-btn-garage garage-btn">
+                    <span class="deck-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13L5 6H19L21 13M3 13V18H6M3 13H21M21 13V18H18M6 18H18M6 18C6 16.8954 6.89543 16 8 16C9.10457 16 10 16.8954 10 18M18 18C18 16.8954 17.1046 16 16 16C14.8954 16 14 16.8954 14 18" stroke="#00ccff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <div class="deck-btn-content">
+                        <span class="deck-btn-main">MACHINE GARAGE</span>
+                        <span class="deck-btn-sub">マシン変更＆3D鑑賞</span>
+                    </div>
+                </button>
+
+                <!-- HOW TO PLAY / CONTROLS -->
+                <button id="btn-open-guide" class="deck-btn deck-btn-guide">
+                    <span class="deck-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="6" width="20" height="12" rx="4" stroke="#a080ff" stroke-width="2"/><path d="M6 12H10M8 10V14M15 11H15.01M17 13H17.01" stroke="#a080ff" stroke-width="2" stroke-linecap="round"/></svg></span>
+                    <div class="deck-btn-content">
+                        <span class="deck-btn-main">HOW TO PLAY</span>
+                        <span class="deck-btn-sub">操作方法＆走法ガイド</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- 法的クレジット＆SEGAアーケード表記 -->
+            <div class="arcade-legal-strip">
+                <span>&copy; しげの秀一 / 講談社 &nbsp;&copy; SEGA &nbsp; ALL RIGHTS RESERVED.</span>
+                <span class="legal-sep">|</span>
+                <span>ALL.Net AMUSEMENT IC NETWORK SYSTEM</span>
+            </div>
+        </footer>
+
+        <!-- 4. モーダル1：コース＆レース設定 アーケードスクリーン（COURSE & RACE SETUP押下時に展開） -->
+        <div id="arcade-course-modal" class="arcade-sub-modal" style="display: none;">
+            <div class="modal-backdrop"></div>
+            <div class="modal-window">
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <span class="modal-badge">STAGE SELECT</span>
+                        <span class="modal-title">TOUGE COURSE BATTLEFIELD &amp; CONDITIONS</span>
+                    </div>
+                    <button id="btn-close-setup" class="modal-close-btn">✕ CLOSE [ESC]</button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- 左列：8大名峠コースセレクター ＆ 峠ブリーフィング -->
+                    <div class="modal-col modal-col-left">
+                        <div class="col-section-header">
+                            <span class="header-led-badge">COURSES</span>
+                            <span class="header-title-text">SELECT TOUGE PASS</span>
+                            <span class="course-badge-total">全8大名峠 収録</span>
+                        </div>
+
+                        <div class="course-selector-grid">
+                            <!-- 群馬エリア -->
+                            <div class="course-area-section">
+                                <div class="area-banner gunma-banner">
+                                    <span class="area-tag-badge">群馬エリア</span>
+                                    <span class="area-sub-badge">GUNMA 5 COURSES</span>
+                                </div>
+                                <div class="stage-cards-row">
+                                    <button id="btn-akina" class="stage-card-btn toggle-btn course-toggle-btn active" data-course="akina">
                                         <div class="stage-name-row">
                                             <span class="stage-jp-name">秋名 下り</span>
                                             <span class="stage-stars">★★★★☆</span>
@@ -156,11 +266,8 @@
                                             <span class="stage-dist">7,552m</span>
                                             <span class="stage-tag">5連ヘアピン・溝落とし</span>
                                         </div>
-                                    </div>
-                                </button>
-                                <button id="btn-akina-uphill" class="stage-card-btn toggle-btn course-toggle-btn" data-course="akina_uphill">
-                                    <div class="stage-card-glow"></div>
-                                    <div class="stage-card-content">
+                                    </button>
+                                    <button id="btn-akina-uphill" class="stage-card-btn toggle-btn course-toggle-btn" data-course="akina_uphill">
                                         <div class="stage-name-row">
                                             <span class="stage-jp-name">秋名 上り</span>
                                             <span class="stage-stars">★★★★★</span>
@@ -169,24 +276,18 @@
                                             <span class="stage-dist">7,552m</span>
                                             <span class="stage-tag">標高差+490m 全開登坂</span>
                                         </div>
-                                    </div>
-                                </button>
-                                <button id="btn-myogi" class="stage-card-btn toggle-btn course-toggle-btn" data-course="myogi">
-                                    <div class="stage-card-glow"></div>
-                                    <div class="stage-card-content">
+                                    </button>
+                                    <button id="btn-myogi" class="stage-card-btn toggle-btn course-toggle-btn" data-course="myogi">
                                         <div class="stage-name-row">
                                             <span class="stage-jp-name">妙義</span>
                                             <span class="stage-stars">★★★☆☆</span>
                                         </div>
                                         <div class="stage-specs-row">
                                             <span class="stage-dist">7,068m</span>
-                                            <span class="stage-tag">高速G・ワインディング</span>
+                                            <span class="stage-tag">高速G・中低速ワインディング</span>
                                         </div>
-                                    </div>
-                                </button>
-                                <button id="btn-usui" class="stage-card-btn toggle-btn course-toggle-btn" data-course="usui">
-                                    <div class="stage-card-glow"></div>
-                                    <div class="stage-card-content">
+                                    </button>
+                                    <button id="btn-usui" class="stage-card-btn toggle-btn course-toggle-btn" data-course="usui">
                                         <div class="stage-name-row">
                                             <span class="stage-jp-name">碓氷</span>
                                             <span class="stage-stars">★★★★☆</span>
@@ -195,11 +296,8 @@
                                             <span class="stage-dist">4.8km</span>
                                             <span class="stage-tag">めがね橋・極狭C-121</span>
                                         </div>
-                                    </div>
-                                </button>
-                                <button id="btn-akagi" class="stage-card-btn toggle-btn course-toggle-btn" data-course="akagi">
-                                    <div class="stage-card-glow"></div>
-                                    <div class="stage-card-content">
+                                    </button>
+                                    <button id="btn-akagi" class="stage-card-btn toggle-btn course-toggle-btn" data-course="akagi">
                                         <div class="stage-name-row">
                                             <span class="stage-jp-name">赤城</span>
                                             <span class="stage-stars">★★★★☆</span>
@@ -208,21 +306,18 @@
                                             <span class="stage-dist">6.2km</span>
                                             <span class="stage-tag">大鳥居・白樺・悪魔のV字</span>
                                         </div>
-                                    </div>
-                                </button>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- 遠征・関東エリア -->
-                        <div class="course-area-section">
-                            <div class="area-banner kanto-banner">
-                                <span class="area-tag-badge">遠征・関東エリア</span>
-                                <span class="area-sub-badge">KANTO 3 COURSES</span>
-                            </div>
-                            <div class="stage-cards-row">
-                                <button id="btn-iroha" class="stage-card-btn toggle-btn course-toggle-btn" data-course="irohazaka">
-                                    <div class="stage-card-glow"></div>
-                                    <div class="stage-card-content">
+                            <!-- 遠征・関東エリア -->
+                            <div class="course-area-section">
+                                <div class="area-banner kanto-banner">
+                                    <span class="area-tag-badge">遠征・関東エリア</span>
+                                    <span class="area-sub-badge">KANTO 3 COURSES</span>
+                                </div>
+                                <div class="stage-cards-row">
+                                    <button id="btn-iroha" class="stage-card-btn toggle-btn course-toggle-btn" data-course="irohazaka">
                                         <div class="stage-name-row">
                                             <span class="stage-jp-name">いろは坂</span>
                                             <span class="stage-stars">★★★★★</span>
@@ -231,11 +326,8 @@
                                             <span class="stage-dist">5,116m</span>
                                             <span class="stage-tag">インベタ空挺ジャンプ</span>
                                         </div>
-                                    </div>
-                                </button>
-                                <button id="btn-happo" class="stage-card-btn toggle-btn course-toggle-btn" data-course="happo">
-                                    <div class="stage-card-glow"></div>
-                                    <div class="stage-card-content">
+                                    </button>
+                                    <button id="btn-happo" class="stage-card-btn toggle-btn course-toggle-btn" data-course="happo">
                                         <div class="stage-name-row">
                                             <span class="stage-jp-name">八方ヶ原</span>
                                             <span class="stage-stars">★★★★★</span>
@@ -244,11 +336,8 @@
                                             <span class="stage-dist">5,754m</span>
                                             <span class="stage-tag">東堂塾ホーム・2大トラス橋</span>
                                         </div>
-                                    </div>
-                                </button>
-                                <button id="btn-tsubaki" class="stage-card-btn toggle-btn course-toggle-btn" data-course="tsubaki">
-                                    <div class="stage-card-glow"></div>
-                                    <div class="stage-card-content">
+                                    </button>
+                                    <button id="btn-tsubaki" class="stage-card-btn toggle-btn course-toggle-btn" data-course="tsubaki">
                                         <div class="stage-name-row">
                                             <span class="stage-jp-name">椿ライン</span>
                                             <span class="stage-stars">★★★★★</span>
@@ -257,143 +346,145 @@
                                             <span class="stage-dist">7,312m</span>
                                             <span class="stage-tag">標高差-730m 神奈川最終決戦</span>
                                         </div>
-                                    </div>
-                                </button>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="course-briefing-wrap">
+                            <div class="briefing-tag">TACTICAL INTEL</div>
+                            <div id="course-desc-box" class="course-desc-box">
+                                【秋名山 下り フルコース 7,552m】画像公式レイアウトゼロから完全再構築！山頂スタート〜給水塔〜急降下ダウンヒル〜伝説の5連ヘアピン溝落とし〜伊香保ゴール！
                             </div>
                         </div>
                     </div>
 
-                    <!-- コース解説 ホログラムブリーフィングボックス -->
-                    <div class="course-briefing-wrap">
-                        <div class="briefing-tag">TACTICAL INTEL</div>
-                        <div id="course-desc-box" class="course-desc-box">
-                            【秋名山 下り フルコース 7,552m】画像公式レイアウトゼロから完全再構築！山頂スタート〜給水塔〜急降下ダウンヒル〜伝説の5連ヘアピン溝落とし〜伊香保ゴール！
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 右カラム：搭乗車両スペック ＆ アーケードロッカースイッチ ＆ 操作盤 -->
-                <div class="console-col right-col">
-                    <!-- 搭乗マシン ショーケースカード -->
-                    <div class="entry-machine-card">
-                        <div class="machine-card-header">
-                            <span class="machine-tag">ENTRY MACHINE</span>
-                            <span class="machine-ready-led"><span class="led-blink orange">●</span> TUNED &amp; READY</span>
-                        </div>
-                        <div class="machine-card-body">
-                            <div class="machine-title-row">
+                    <!-- 右列：コンディション設定 ＆ 搭乗マシン確認 -->
+                    <div class="modal-col modal-col-right">
+                        <!-- 搭乗マシン確認 -->
+                        <div class="entry-machine-card">
+                            <div class="machine-card-header">
+                                <span class="machine-tag">ENTRY MACHINE</span>
+                                <span class="machine-ready-led"><span class="led-blink orange">●</span> TUNED &amp; READY</span>
+                            </div>
+                            <div class="machine-card-body">
                                 <div id="title-entry-car-name" class="machine-car-name">TOYOTA SPRINTER TRUENO GT-APEX [AE86]</div>
-                            </div>
-                            <div class="machine-info-grid">
-                                <div class="machine-info-item">
-                                    <span class="info-k">DRIVER</span>
-                                    <span id="title-entry-driver" class="info-v">藤原 拓海 (秋名スピードスターズ)</span>
+                                <div class="machine-info-grid">
+                                    <div class="machine-info-item">
+                                        <span class="info-k">DRIVER</span>
+                                        <span id="title-entry-driver" class="info-v">藤原 拓海 (秋名スピードスターズ)</span>
+                                    </div>
+                                    <div class="machine-info-item">
+                                        <span class="info-k">SPEC</span>
+                                        <span id="title-entry-specs" class="info-v">FR / 1.6L 4A-GEU / 210PS / 950kg</span>
+                                    </div>
                                 </div>
-                                <div class="machine-info-item">
-                                    <span class="info-k">SPECIFICATION</span>
-                                    <span id="title-entry-specs" class="info-v">FR / 1.6L 4A-GEU / 210PS / 950kg</span>
-                                </div>
-                            </div>
-                            <button id="btn-open-garage" class="arcade-garage-btn garage-btn">
-                                <span class="btn-garage-icon">🏎️</span>
-                                <span class="btn-garage-text">GARAGE (マシン変更 &amp; 3Dショールーム)</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- アーケード環境＆バトルセッティング ロッカースイッチ -->
-                    <div class="arcade-settings-console">
-                        <!-- 天候選択 -->
-                        <div class="setting-rocker-row">
-                            <span class="rocker-label"><span class="rocker-icon">🌦️</span> WEATHER</span>
-                            <div class="rocker-btn-group">
-                                <button id="btn-weather-dry" class="rocker-btn toggle-btn active"><span class="btn-led"></span>DRY (晴天)</button>
-                                <button id="btn-weather-rain" class="rocker-btn toggle-btn"><span class="btn-led"></span>RAIN (雨滴)</button>
-                                <button id="btn-weather-fog" class="rocker-btn toggle-btn"><span class="btn-led"></span>FOG (濃霧)</button>
                             </div>
                         </div>
 
-                        <!-- 時間帯選択 -->
-                        <div class="setting-rocker-row">
-                            <span class="rocker-label"><span class="rocker-icon">🌙</span> TIME</span>
-                            <div class="rocker-btn-group">
-                                <button id="btn-time-midnight" class="rocker-btn toggle-btn active"><span class="btn-led"></span>MIDNIGHT</button>
-                                <button id="btn-time-sunset" class="rocker-btn toggle-btn"><span class="btn-led"></span>SUNSET</button>
-                                <button id="btn-time-daylight" class="rocker-btn toggle-btn"><span class="btn-led"></span>DAY</button>
-                            </div>
-                        </div>
-
-                        <!-- ミッション & ユーロビート -->
-                        <div class="setting-rocker-split">
-                            <div class="setting-rocker-half">
-                                <span class="rocker-label-sub">TRANSMISSION</span>
+                        <!-- アーケード環境設定 -->
+                        <div class="arcade-settings-console">
+                            <div class="setting-rocker-row">
+                                <span class="rocker-label">WEATHER</span>
                                 <div class="rocker-btn-group">
-                                    <button id="btn-at" class="rocker-btn toggle-btn active"><span class="btn-led"></span>AT</button>
-                                    <button id="btn-mt" class="rocker-btn toggle-btn"><span class="btn-led"></span>MT</button>
+                                    <button id="btn-weather-dry" class="rocker-btn toggle-btn active"><span class="btn-led"></span>DRY (晴天)</button>
+                                    <button id="btn-weather-rain" class="rocker-btn toggle-btn"><span class="btn-led"></span>RAIN (雨滴)</button>
+                                    <button id="btn-weather-fog" class="rocker-btn toggle-btn"><span class="btn-led"></span>FOG (濃霧)</button>
                                 </div>
                             </div>
-                            <div class="setting-rocker-half">
-                                <span class="rocker-label-sub">EUROBEAT BGM</span>
+
+                            <div class="setting-rocker-row">
+                                <span class="rocker-label">TIME</span>
                                 <div class="rocker-btn-group">
-                                    <button id="btn-bgm-on" class="rocker-btn toggle-btn active"><span class="btn-led"></span>ON</button>
-                                    <button id="btn-bgm-off" class="rocker-btn toggle-btn"><span class="btn-led"></span>OFF</button>
+                                    <button id="btn-time-midnight" class="rocker-btn toggle-btn active"><span class="btn-led"></span>MIDNIGHT</button>
+                                    <button id="btn-time-sunset" class="rocker-btn toggle-btn"><span class="btn-led"></span>SUNSET</button>
+                                    <button id="btn-time-daylight" class="rocker-btn toggle-btn"><span class="btn-led"></span>DAY</button>
+                                </div>
+                            </div>
+
+                            <div class="setting-rocker-split">
+                                <div class="setting-rocker-half">
+                                    <span class="rocker-label-sub">TRANSMISSION</span>
+                                    <div class="rocker-btn-group">
+                                        <button id="btn-at" class="rocker-btn toggle-btn active"><span class="btn-led"></span>AT</button>
+                                        <button id="btn-mt" class="rocker-btn toggle-btn"><span class="btn-led"></span>MT</button>
+                                    </div>
+                                </div>
+                                <div class="setting-rocker-half">
+                                    <span class="rocker-label-sub">EUROBEAT BGM</span>
+                                    <div class="rocker-btn-group">
+                                        <button id="btn-bgm-on" class="rocker-btn toggle-btn active"><span class="btn-led"></span>ON</button>
+                                        <button id="btn-bgm-off" class="rocker-btn toggle-btn"><span class="btn-led"></span>OFF</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-rocker-split">
+                                <div class="setting-rocker-half">
+                                    <span class="rocker-label-sub">DIFFICULTY</span>
+                                    <div class="rocker-btn-group">
+                                        <button id="btn-diff-easy" class="rocker-btn toggle-btn"><span class="btn-led"></span>EASY</button>
+                                        <button id="btn-diff-normal" class="rocker-btn toggle-btn active"><span class="btn-led"></span>NORM</button>
+                                        <button id="btn-diff-hard" class="rocker-btn toggle-btn"><span class="btn-led"></span>HARD</button>
+                                    </div>
+                                </div>
+                                <div class="setting-rocker-half">
+                                    <span class="rocker-label-sub">CORNER ASSIST</span>
+                                    <div class="rocker-btn-group">
+                                        <button id="btn-assist-weak" class="rocker-btn toggle-btn active"><span class="btn-led"></span>弱 (リアル)</button>
+                                        <button id="btn-assist-strong" class="rocker-btn toggle-btn"><span class="btn-led"></span>強 (超旋回)</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 難易度 & コーナーアシスト -->
-                        <div class="setting-rocker-split">
-                            <div class="setting-rocker-half">
-                                <span class="rocker-label-sub">DIFFICULTY</span>
-                                <div class="rocker-btn-group">
-                                    <button id="btn-diff-easy" class="rocker-btn toggle-btn"><span class="btn-led"></span>EASY</button>
-                                    <button id="btn-diff-normal" class="rocker-btn toggle-btn active"><span class="btn-led"></span>NORM</button>
-                                    <button id="btn-diff-hard" class="rocker-btn toggle-btn"><span class="btn-led"></span>HARD</button>
-                                </div>
-                            </div>
-                            <div class="setting-rocker-half">
-                                <span class="rocker-label-sub">CORNER ASSIST</span>
-                                <div class="rocker-btn-group">
-                                    <button id="btn-assist-weak" class="rocker-btn toggle-btn active"><span class="btn-led"></span>弱 (標準)</button>
-                                    <button id="btn-assist-strong" class="rocker-btn toggle-btn"><span class="btn-led"></span>強 (超旋回)</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- アーケード コントロールプレート -->
-                    <div class="arcade-controls-plate">
-                        <div class="plate-title">CABINET CONTROLS GUIDE</div>
-                        <div class="plate-grid">
-                            <div class="plate-row">
-                                <span class="plate-tag drive">DRIVE</span>
-                                <span class="plate-desc">ステア: <kbd>A</kbd> / <kbd>D</kbd>　アクセル: <kbd>W</kbd> / <kbd>↑</kbd>　ブレーキ: <kbd>S</kbd> / <kbd>↓</kbd>　サイド: <kbd>SPACE</kbd></span>
-                            </div>
-                            <div class="plate-row">
-                                <span class="plate-tag system">SYSTEM</span>
-                                <span class="plate-desc">シフト: <kbd>←</kbd> / <kbd>→</kbd>　視点: <kbd>C</kbd> (一人称/三人称)　アシスト: <kbd>T</kbd>　ライト: <kbd>L</kbd>　リトライ: <kbd>R</kbd></span>
-                            </div>
-                        </div>
-                        <div class="plate-hint">
-                            ⚡ 減速＆ドリフト: ブレーキやサイド(<kbd>SPACE</kbd>)でテールを振り、側溝で掟破りのインベタ溝落とし！
-                        </div>
+                        <!-- モーダル内決定ボタン -->
+                        <button id="btn-modal-confirm-start" class="modal-start-btn">
+                            <span>⚡ CONFIRM &amp; START BATTLE [ENTER]</span>
+                        </button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- 4. ボトム：巨大アーケード イグニッション スタートボタン -->
-            <div class="arcade-start-deck">
-                <button id="btn-start" class="giant-arcade-start-btn start-btn">
-                    <div class="start-btn-lighting"></div>
-                    <div class="start-btn-body">
-                        <span class="start-btn-icon">⚡</span>
-                        <div class="start-btn-labels">
-                            <span class="start-btn-main">INSERT COIN &amp; START BATTLE</span>
-                            <span class="start-btn-sub">PRESS [ENTER] KEY OR TOUCH TO LAUNCH TOUGE ATTACK</span>
-                        </div>
-                        <span class="start-btn-arrow">▶▶</span>
+        <!-- 5. モーダル2：操作方法＆走法ガイド -->
+        <div id="arcade-controls-modal" class="arcade-sub-modal" style="display: none;">
+            <div class="modal-backdrop"></div>
+            <div class="modal-window guide-window">
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <span class="modal-badge">HOW TO PLAY</span>
+                        <span class="modal-title">CABINET CONTROLS &amp; TOUGE TECHNIQUES</span>
                     </div>
-                </button>
+                    <button id="btn-close-guide" class="modal-close-btn">✕ CLOSE [ESC]</button>
+                </div>
+                <div class="modal-body guide-body">
+                    <div class="guide-grid">
+                        <div class="guide-card">
+                            <div class="guide-card-title">基本走行操作 (DRIVE)</div>
+                            <div class="guide-key-row"><span class="key-name">ステア (Steering)</span><span class="key-val"><kbd>A</kbd> / <kbd>D</kbd></span></div>
+                            <div class="guide-key-row"><span class="key-name">アクセル (Throttle)</span><span class="key-val"><kbd>W</kbd> / <kbd>↑</kbd></span></div>
+                            <div class="guide-key-row"><span class="key-name">フットブレーキ (Brake)</span><span class="key-val"><kbd>S</kbd> / <kbd>↓</kbd></span></div>
+                            <div class="guide-key-row"><span class="key-name">サイドブレーキ (E-Brake)</span><span class="key-val"><kbd>SPACE</kbd></span></div>
+                            <div class="guide-key-row"><span class="key-name">シフトチェンジ (MT)</span><span class="key-val"><kbd>←</kbd> (シフトダウン) / <kbd>→</kbd> (シフトアップ)</span></div>
+                        </div>
+                        <div class="guide-card">
+                            <div class="guide-card-title">システム＆視点操作 (SYSTEM)</div>
+                            <div class="guide-key-row"><span class="key-name">視点切替 (View)</span><span class="key-val"><kbd>C</kbd> (一人称 / 三人称3種)</span></div>
+                            <div class="guide-key-row"><span class="key-name">コーナーアシスト切替</span><span class="key-val"><kbd>T</kbd> (弱 / 強)</span></div>
+                            <div class="guide-key-row"><span class="key-name">ヘッドライト (Lights)</span><span class="key-val"><kbd>L</kbd> (点灯 / 消灯)</span></div>
+                            <div class="guide-key-row"><span class="key-name">クイックリトライ (Retry)</span><span class="key-val"><kbd>R</kbd> (即時再スタート)</span></div>
+                            <div class="guide-key-row"><span class="key-name">バトル開始 (Start)</span><span class="key-val"><kbd>ENTER</kbd></span></div>
+                        </div>
+                    </div>
+                    <div class="guide-pro-tips">
+                        <div class="pro-tip-title">★ 劇中秘伝 峠攻略テクニック</div>
+                        <div class="pro-tip-desc">
+                            ・<strong>フェイント＆ブレーキドリフト</strong>: コーナー直前にアウト側へ軽く振ってからインへ切り込み、ブレーキ(<kbd>S</kbd>)またはサイド(<kbd>SPACE</kbd>)を一瞬引いて荷重移動を起こす！<br>
+                            ・<strong>伝説のインベタ溝落とし</strong>: 秋名・妙義等の側溝（グレーチング）にイン側タイヤを落とし込むと、強烈なインベタ旋回Gを得てアクセル全開で脱出可能！
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -487,7 +578,77 @@
             window.__appInitialized = true;
             try {
                 const game = new Game();
-                window.game = game;
+    
+            // アーケードサブモーダル制御 (COURSE SETUP / HOW TO PLAY)
+            const btnOpenSetup = document.getElementById('btn-open-setup');
+            const modalSetup = document.getElementById('arcade-course-modal');
+            const btnCloseSetup = document.getElementById('btn-close-setup');
+            const btnModalConfirmStart = document.getElementById('btn-modal-confirm-start');
+
+            const btnOpenGuide = document.getElementById('btn-open-guide');
+            const modalGuide = document.getElementById('arcade-controls-modal');
+            const btnCloseGuide = document.getElementById('btn-close-guide');
+            const btnCalloutStart = document.getElementById('btn-callout-start');
+
+            if (btnOpenSetup && modalSetup) {
+                btnOpenSetup.addEventListener('click', () => { modalSetup.style.display = 'flex'; });
+            }
+            if (btnCloseSetup && modalSetup) {
+                btnCloseSetup.addEventListener('click', () => { modalSetup.style.display = 'none'; });
+            }
+            if (btnModalConfirmStart) {
+                btnModalConfirmStart.addEventListener('click', () => {
+                    if (modalSetup) modalSetup.style.display = 'none';
+                    btnStart.click();
+                });
+            }
+
+            if (btnOpenGuide && modalGuide) {
+                btnOpenGuide.addEventListener('click', () => { modalGuide.style.display = 'flex'; });
+            }
+            if (btnCloseGuide && modalGuide) {
+                btnCloseGuide.addEventListener('click', () => { modalGuide.style.display = 'none'; });
+            }
+            if (btnCalloutStart) {
+                btnCalloutStart.addEventListener('click', () => { btnStart.click(); });
+            }
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (modalSetup && modalSetup.style.display !== 'none') modalSetup.style.display = 'none';
+                    if (modalGuide && modalGuide.style.display !== 'none') modalGuide.style.display = 'none';
+                }
+            });
+
+            // クイックセッティングピル更新
+            function updateAttractPills() {
+                const stageBadge = document.getElementById('attract-stage-badge');
+                const condBadge = document.getElementById('attract-cond-badge');
+                if (stageBadge && game) {
+                    const cKey = game.currentCourse || 'akina';
+                    const names = {
+                        'akina': '秋名 下り (7,552m)',
+                        'akina_uphill': '秋名 上り (7,552m)',
+                        'myogi': '妙義 (7,068m)',
+                        'usui': '碓氷 (4.8km)',
+                        'akagi': '赤城 (6.2km)',
+                        'irohazaka': 'いろは坂 (5,116m)',
+                        'happo': '八方ヶ原 (5,754m)',
+                        'tsubaki': '椿ライン (7,312m)'
+                    };
+                    stageBadge.textContent = names[cKey] || cKey.toUpperCase();
+                }
+                if (condBadge && game) {
+                    const w = (game.currentWeather || 'dry').toUpperCase();
+                    const t = (game.currentTimeOfDay || 'midnight').toUpperCase();
+                    const m = (game.playerPhysics && game.playerPhysics.isAutomatic) ? 'AT' : 'MT';
+                    condBadge.textContent = `${t} / ${w} / ${m}`;
+                }
+            }
+            setInterval(updateAttractPills, 500);
+            updateAttractPills();
+
+            window.game = game;
             } catch (err) {
                 console.error('initApp Error:', err);
                 window.__lastErr = err.toString() + '\\n' + err.stack;

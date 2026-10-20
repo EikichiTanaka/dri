@@ -392,42 +392,53 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    /* 透過グラデーション＋微細なアーケードスキャンライン：背後の3D山道・ヘッドライト・車両オービットが美しく透過！ */
+    /* 映画的で深みのある透過ヴィネット（背後の3D車体・ヘッドライト・山道が主役！） */
     background: 
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%),
-        radial-gradient(ellipse at 50% 32%, rgba(10, 18, 30, 0.40) 0%, rgba(4, 7, 12, 0.78) 70%, rgba(1, 2, 6, 0.92) 100%);
-    background-size: 100% 4px, 100% 100%;
+        radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0.08) 0%, rgba(4, 8, 16, 0.45) 60%, rgba(1, 2, 6, 0.88) 100%),
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.08) 50%);
+    background-size: 100% 100%, 100% 2px;
     z-index: 100;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    padding: 6px 14px 10px 14px;
+    justify-content: space-between;
+    padding: 8px 24px 12px 24px;
     box-sizing: border-box;
-    overflow-y: auto;
-    overflow-x: hidden;
-    backdrop-filter: blur(2.5px);
-    -webkit-backdrop-filter: blur(2.5px);
+    overflow: hidden;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
 }
 
-/* 1. アーケード筐体トップマーキー */
+/* ==========================================================================
+   1. アーケード筐体トップマーキー（実機SEGAステータスバー）
+   ========================================================================== */
 .arcade-marquee-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    max-width: 1240px;
-    padding: 3px 12px;
-    background: rgba(6, 10, 18, 0.85);
+    max-width: 1280px;
+    padding: 4px 14px;
+    background: rgba(6, 10, 18, 0.88);
     border: 1px solid rgba(0, 220, 255, 0.35);
     border-radius: 4px;
     box-shadow: 0 0 16px rgba(0, 180, 255, 0.12);
-    margin-bottom: 3px;
     font-family: 'Share Tech Mono', monospace, sans-serif;
     font-size: 11.5px;
     letter-spacing: 1px;
     color: #88aacc;
     box-sizing: border-box;
+}
+
+.sega-badge {
+    background: #0050b3;
+    color: #fff;
+    font-weight: 900;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    letter-spacing: 1.5px;
+    box-shadow: 0 0 6px rgba(0, 120, 255, 0.6);
 }
 
 .marquee-item {
@@ -441,39 +452,17 @@ body, html {
     font-size: 10px;
 }
 
-.marquee-network {
+.marquee-aime {
     color: #44ddaa;
     font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .marquee-cab {
     color: #88bbdd;
     font-weight: 700;
-}
-
-.led-blink {
-    display: inline-block;
-    margin-right: 2px;
-}
-
-.led-blink.green {
-    color: #00ff66;
-    animation: ledPulseGreen 1.2s infinite ease-in-out;
-}
-
-.led-blink.orange {
-    color: #ffaa00;
-    animation: ledPulseOrange 1.4s infinite ease-in-out;
-}
-
-@keyframes ledPulseGreen {
-    0%, 100% { opacity: 1; filter: drop-shadow(0 0 4px #00ff66); }
-    50% { opacity: 0.35; }
-}
-
-@keyframes ledPulseOrange {
-    0%, 100% { opacity: 1; filter: drop-shadow(0 0 4px #ffaa00); }
-    50% { opacity: 0.35; }
 }
 
 .credit-badge {
@@ -526,189 +515,362 @@ body, html {
     letter-spacing: 1.5px;
 }
 
-/* 2. 巨大3Dクローム extruded タイトルロゴ */
-.arcade-title-hero {
+/* ==========================================================================
+   2. 中央：公式レタリング準拠 頭文字D ARCADE STAGE 巨大ベクターエンブレム & PUSH START
+   ========================================================================== */
+.arcade-hero-center {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 0px;
-    margin-bottom: 4px;
-    text-align: center;
-}
-
-.title-kanji-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.kanji-crest {
-    display: inline-flex;
-    align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #dd1111 0%, #880000 100%);
-    border: 1px solid #ff7777;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 900;
-    box-shadow: 0 0 8px rgba(255, 30, 30, 0.6);
-}
-
-.title-kanji {
-    font-size: 15px;
-    font-weight: 900;
-    color: #ff2222;
-    letter-spacing: 8px;
-    text-shadow: 0 0 12px rgba(255, 50, 50, 0.8), 0 0 2px #fff;
-}
-
-.title-main-huge {
-    position: relative;
-    font-size: 62px;
-    font-weight: 950;
-    font-style: italic;
-    letter-spacing: 6px;
-    transform: skewX(-7deg);
-    margin: 0;
-    line-height: 0.95;
+    text-align: center;
+    margin: auto 0;
     user-select: none;
 }
 
-.title-glow-back {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    color: transparent;
-    -webkit-text-stroke: 4px rgba(255, 80, 0, 0.8);
-    filter: blur(10px);
-    z-index: 1;
+.arcade-logo-container {
+    filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.9));
+    transition: transform 0.2s ease-out;
 }
 
-.title-front {
-    position: relative;
-    z-index: 2;
-    background: linear-gradient(180deg, #ffffff 0%, #ffeaa7 22%, #ff9f1a 50%, #e71d36 82%, #7a0000 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 
-        0 1px 0 #d35400,
-        0 2px 0 #b03a2e,
-        0 3px 0 #78281f,
-        0 4px 0 #4a120b,
-        0 6px 12px rgba(0, 0, 0, 0.8),
-        0 0 35px rgba(255, 100, 0, 0.7);
-}
-
-.title-winged-banner {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 4px;
-}
-
-.wing-side {
-    width: 60px;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #00f0ff);
-}
-
-.wing-side.wing-right {
-    background: linear-gradient(90deg, #00f0ff, transparent);
-}
-
-.wing-center {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(0, 20, 35, 0.8);
-    border: 1px solid #00f0ff;
-    border-radius: 4px;
-    padding: 2px 12px;
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
-}
-
-.arcade-stage-text {
-    font-size: 13.5px;
-    font-weight: 900;
-    font-style: italic;
-    color: #00f0ff;
-    letter-spacing: 2px;
-    text-shadow: 0 0 8px rgba(0, 240, 255, 0.8);
-}
-
-.spec-ver-pill {
-    font-size: 10px;
-    font-weight: 900;
-    color: #fff;
-    background: linear-gradient(90deg, #ff3300, #ff8800);
-    padding: 1px 6px;
-    border-radius: 10px;
-    letter-spacing: 1px;
+.arcade-logo-svg {
+    max-width: 90vw;
+    height: auto;
+    max-height: 190px;
 }
 
 .title-stage-sub {
-    font-size: 13px;
+    font-size: 13.5px;
     color: #aaddff;
     letter-spacing: 2px;
     font-weight: 800;
     font-style: italic;
     margin-top: 4px;
-    text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+    margin-bottom: 12px;
+    text-shadow: 0 0 10px rgba(0, 200, 255, 0.6);
 }
 
-/* 3. ワイドスケール アーケードコンソール */
-.arcade-main-console {
-    background: rgba(10, 15, 24, 0.88);
-    border: 2px solid #ffaa00;
-    border-radius: 10px;
-    padding: 8px 12px;
-    width: 1240px;
-    max-width: 96vw;
-    box-shadow: 
-        0 0 35px rgba(255, 170, 0, 0.25),
-        inset 0 0 25px rgba(0, 180, 255, 0.08);
+/* PUSH START BUTTON アトラクトコールアウト（アーケード筐体の心臓部） */
+.arcade-press-start-prompt {
+    position: relative;
+    cursor: pointer;
+    padding: 8px 36px;
+    background: linear-gradient(90deg, rgba(255, 50, 0, 0.15) 0%, rgba(255, 170, 0, 0.35) 50%, rgba(255, 50, 0, 0.15) 100%);
+    border-top: 1px solid rgba(255, 200, 0, 0.5);
+    border-bottom: 1px solid rgba(255, 200, 0, 0.5);
+    border-radius: 4px;
+    transition: transform 0.15s ease-out;
+    margin-bottom: 10px;
+}
+
+.arcade-press-start-prompt:hover {
+    transform: scale(1.04);
+}
+
+.press-start-text {
+    font-family: 'Arial Black', 'Impact', sans-serif;
+    font-size: 32px;
+    font-weight: 950;
+    font-style: italic;
+    letter-spacing: 5px;
+    color: #ffffff;
+    animation: attractPulse 1.8s infinite ease-in-out;
+    text-shadow: 
+        0 0 10px rgba(255, 230, 0, 0.8),
+        0 0 25px rgba(255, 80, 0, 0.9);
+}
+
+@keyframes attractPulse {
+    0%, 100% {
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(255, 230, 0, 0.8), 0 0 30px rgba(255, 80, 0, 0.9);
+        opacity: 1;
+    }
+    50% {
+        color: #ffcc00;
+        text-shadow: 0 0 4px rgba(255, 150, 0, 0.5), 0 0 15px rgba(255, 40, 0, 0.5);
+        opacity: 0.75;
+    }
+}
+
+.press-start-sub {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #ffe0aa;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    margin-top: 2px;
+}
+
+/* クイックセッティング確認ピル */
+.attract-current-setup {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(10, 16, 26, 0.75);
+    border: 1px solid rgba(0, 200, 255, 0.3);
+    border-radius: 20px;
+    padding: 3px 14px;
+    font-size: 11.5px;
+    font-weight: 800;
+}
+
+.setup-pill.stage { color: #00ddff; }
+.setup-pill.car { color: #ffea00; }
+.setup-pill.cond { color: #b0c4de; }
+.setup-pill-dot { color: rgba(255, 255, 255, 0.3); font-size: 9px; }
+
+/* ==========================================================================
+   3. 下部：アーケード アクションデッキ（4大メニューリボン）
+   ========================================================================== */
+.arcade-action-deck {
+    width: 100%;
+    max-width: 1280px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    gap: 8px;
+}
+
+.deck-ribbon {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.deck-btn {
+    position: relative;
+    flex: 1;
+    height: 52px;
+    background: linear-gradient(135deg, rgba(20, 28, 42, 0.92) 0%, rgba(10, 15, 24, 0.96) 100%);
+    border: 1px solid rgba(80, 120, 170, 0.5);
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    transition: all 0.15s ease-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.deck-btn:hover {
+    transform: translateY(-2px);
+    border-color: #00ddff;
+    box-shadow: 0 6px 20px rgba(0, 180, 255, 0.4);
+}
+
+.deck-btn-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.deck-btn-content {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.15;
+}
+
+.deck-btn-main {
+    font-size: 14.5px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+.deck-btn-sub {
+    font-size: 10px;
+    font-weight: 700;
+    color: #99aabb;
+    letter-spacing: 0.5px;
+}
+
+/* プライマリボタン：START BATTLE（特大発光） */
+.deck-btn-primary {
+    flex: 1.35;
+    background: linear-gradient(90deg, #cc1111 0%, #ee4400 40%, #ff8800 80%, #cc1111 100%);
+    background-size: 200% 100%;
+    border: 2px solid #ffe600;
+    box-shadow: 
+        0 0 24px rgba(255, 60, 0, 0.7),
+        inset 0 1px 2px rgba(255, 255, 255, 0.5);
+    animation: startShimmer 4s infinite linear, deckPulse 2s infinite ease-in-out;
+}
+
+@keyframes startShimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+@keyframes deckPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 50, 0, 0.7); }
+    50% { box-shadow: 0 0 36px rgba(255, 120, 0, 0.95); }
+}
+
+.deck-btn-primary .deck-btn-main {
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 255, 200, 0.8);
+}
+
+.deck-btn-primary .deck-btn-sub {
+    color: #ffe6aa;
+}
+
+/* ガレージボタン */
+.deck-btn-garage {
+    background: linear-gradient(135deg, rgba(0, 70, 160, 0.9) 0%, rgba(0, 40, 100, 0.95) 100%);
+    border-color: #00aaff;
+}
+
+.deck-btn-garage:hover {
+    border-color: #00ddff;
+    box-shadow: 0 6px 20px rgba(0, 160, 255, 0.5);
+}
+
+/* 法的表記ストリップ */
+.arcade-legal-strip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 1px;
+}
+
+.legal-sep {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+   4. モーダル：アーケード コース＆レース設定スクリーン
+   ========================================================================== */
+.arcade-sub-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
     box-sizing: border-box;
 }
 
-.console-body {
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(4, 7, 14, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-window {
+    position: relative;
+    z-index: 2;
+    width: 1220px;
+    max-width: 96vw;
+    max-height: 94vh;
+    background: rgba(10, 15, 24, 0.94);
+    border: 2px solid #ffaa00;
+    border-radius: 10px;
+    box-shadow: 
+        0 0 45px rgba(255, 170, 0, 0.3),
+        inset 0 0 25px rgba(0, 180, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    padding: 14px 18px;
+    gap: 10px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(80, 120, 170, 0.35);
+    padding-bottom: 8px;
+}
+
+.modal-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-badge {
+    background: #0055aa;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(0, 140, 255, 0.5);
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    color: #fff;
+}
+
+.modal-close-btn {
+    background: rgba(255, 50, 50, 0.15);
+    border: 1px solid rgba(255, 80, 80, 0.5);
+    color: #ff8888;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-weight: 900;
+    font-size: 11.5px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+}
+
+.modal-close-btn:hover {
+    background: #dd2222;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(255, 50, 50, 0.6);
+}
+
+.modal-body {
     display: flex;
     gap: 16px;
     width: 100%;
-    align-items: stretch;
 }
 
-.console-col {
+.modal-col-left {
+    flex: 1.25;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.console-col.left-col {
-    flex: 1.25;
-}
-
-.console-col.right-col {
+.modal-col-right {
     flex: 0.95;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-/* コース選択セクションヘッダー */
 .col-section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .header-led-badge {
@@ -741,11 +903,10 @@ body, html {
     box-shadow: 0 0 10px rgba(255, 80, 0, 0.5);
 }
 
-/* コースカードグリッド */
 .course-selector-grid {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     background: rgba(6, 10, 16, 0.7);
     border: 1px solid rgba(80, 120, 170, 0.35);
     border-radius: 8px;
@@ -796,7 +957,6 @@ body, html {
     gap: 6px;
 }
 
-/* ステージカードボタン（アーケード筐体カードスタイル） */
 .stage-card-btn {
     position: relative;
     flex: 1 1 calc(50% - 6px);
@@ -877,7 +1037,6 @@ body, html {
     color: #ffe0aa;
 }
 
-/* ホログラムブリーフィングボックス */
 .course-briefing-wrap {
     display: flex;
     flex-direction: column;
@@ -902,7 +1061,7 @@ body, html {
     box-shadow: inset 0 0 15px rgba(0, 180, 255, 0.1);
 }
 
-/* 4. 右カラム：搭乗車両カード & ロッカースイッチ */
+/* 右列：搭乗マシン確認 & 環境設定 */
 .entry-machine-card {
     background: linear-gradient(135deg, rgba(16, 24, 38, 0.95) 0%, rgba(10, 15, 24, 0.95) 100%);
     border: 1px solid rgba(0, 200, 255, 0.4);
@@ -910,7 +1069,7 @@ body, html {
     padding: 8px 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
 }
 
 .machine-card-header {
@@ -930,13 +1089,6 @@ body, html {
     font-size: 10.5px;
     font-weight: 800;
     color: #ffaa00;
-    letter-spacing: 0.5px;
-}
-
-.machine-card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
 }
 
 .machine-car-name {
@@ -967,9 +1119,9 @@ body, html {
 .machine-info-item .info-k {
     font-weight: 900;
     color: #7799bb;
-    width: 90px;
+    width: 65px;
     flex-shrink: 0;
-    font-size: 10.5px;
+    font-size: 10px;
 }
 
 .machine-info-item .info-v {
@@ -980,29 +1132,6 @@ body, html {
     text-overflow: ellipsis;
 }
 
-.arcade-garage-btn {
-    width: 100%;
-    padding: 8px;
-    font-size: 13.5px;
-    font-weight: 900;
-    font-style: italic;
-    letter-spacing: 1px;
-    background: linear-gradient(90deg, #0055cc 0%, #0099ee 100%);
-    border: 1px solid #00ddff;
-    border-radius: 4px;
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 0 0 14px rgba(0, 160, 240, 0.35);
-    transition: all 0.15s ease-out;
-    margin-top: 2px;
-}
-
-.arcade-garage-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 0 22px rgba(0, 200, 255, 0.6);
-}
-
-/* ロッカースイッチコンソール */
 .arcade-settings-console {
     display: flex;
     flex-direction: column;
@@ -1097,170 +1226,96 @@ body, html {
     box-shadow: 0 0 6px #fff;
 }
 
-/* 操作盤プレート */
-.arcade-controls-plate {
-    background: rgba(0, 0, 0, 0.65);
-    border: 1px solid #334455;
+.modal-start-btn {
+    width: 100%;
+    height: 46px;
+    background: linear-gradient(90deg, #dd1111 0%, #ee4400 50%, #ff8800 100%);
+    border: 2px solid #ffe600;
     border-radius: 6px;
-    padding: 6px 10px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(255, 60, 0, 0.6);
+    transition: transform 0.12s;
+    margin-top: 4px;
+}
+
+.modal-start-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 30px rgba(255, 100, 0, 0.9);
+}
+
+/* ==========================================================================
+   5. 操作方法＆走法ガイド モーダル
+   ========================================================================== */
+.guide-window {
+    width: 820px;
+}
+
+.guide-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.guide-grid {
+    display: flex;
+    gap: 14px;
+}
+
+.guide-card {
+    flex: 1;
+    background: rgba(6, 10, 16, 0.7);
+    border: 1px solid rgba(80, 120, 170, 0.35);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.guide-card-title {
+    font-size: 13px;
+    font-weight: 900;
+    color: #00ddff;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(0, 220, 255, 0.3);
+    padding-bottom: 4px;
+    margin-bottom: 2px;
+}
+
+.guide-key-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #c0d0e0;
+}
+
+.guide-pro-tips {
+    background: rgba(255, 150, 0, 0.1);
+    border: 1px solid rgba(255, 180, 0, 0.4);
+    border-radius: 6px;
+    padding: 10px 14px;
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.plate-title {
-    font-size: 10px;
+.pro-tip-title {
+    font-size: 12.5px;
     font-weight: 900;
-    color: #00ddff;
+    color: #ffcc00;
     letter-spacing: 1px;
 }
 
-.plate-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.plate-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-}
-
-.plate-tag {
-    font-size: 9.5px;
-    font-weight: 900;
-    padding: 1px 5px;
-    border-radius: 3px;
-    letter-spacing: 1px;
-    color: #fff;
-}
-
-.plate-tag.drive {
-    background: #0066cc;
-}
-
-.plate-tag.system {
-    background: #7722aa;
-}
-
-.plate-desc {
-    color: #b0c0d0;
-}
-
-kbd {
-    display: inline-block;
-    background: #253344;
-    color: #ffea00;
-    padding: 1px 5px;
-    border-radius: 3px;
-    font-family: inherit;
-    font-size: 10.5px;
-    font-weight: 900;
-    border: 1px solid #446688;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.5);
-}
-
-.plate-hint {
-    font-size: 10.5px;
-    color: #ffcc66;
-    border-top: 1px dashed rgba(255, 255, 255, 0.15);
-    padding-top: 3px;
-}
-
-/* 5. 巨大アーケード イグニッション スタートボタン */
-.arcade-start-deck {
-    width: 100%;
-    margin-top: 2px;
-}
-
-.giant-arcade-start-btn {
-    position: relative;
-    width: 100%;
-    height: 48px;
-    background: linear-gradient(90deg, #dd1111 0%, #ee4400 35%, #ff8800 65%, #dd1111 100%);
-    background-size: 200% 100%;
-    border: 2px solid #ffe600;
-    border-radius: 8px;
-    cursor: pointer;
-    overflow: hidden;
-    box-shadow: 
-        0 0 28px rgba(255, 60, 0, 0.75),
-        inset 0 2px 2px rgba(255, 255, 255, 0.45);
-    animation: startShimmer 4s infinite linear, startPulse 2s infinite ease-in-out;
-    transition: transform 0.1s ease-out, box-shadow 0.15s ease-out;
-}
-
-@keyframes startShimmer {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
-}
-
-@keyframes startPulse {
-    0%, 100% {
-        box-shadow: 0 0 24px rgba(255, 50, 0, 0.7), inset 0 2px 2px rgba(255, 255, 255, 0.4);
-    }
-    50% {
-        box-shadow: 0 0 45px rgba(255, 120, 0, 0.95), inset 0 2px 4px rgba(255, 255, 255, 0.7);
-    }
-}
-
-.giant-arcade-start-btn:hover {
-    transform: scale(1.015);
-    box-shadow: 0 0 50px rgba(255, 100, 0, 1.0);
-}
-
-.giant-arcade-start-btn:active {
-    transform: scale(0.985);
-}
-
-.start-btn-body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    height: 100%;
-}
-
-.start-btn-icon {
-    font-size: 26px;
-    filter: drop-shadow(0 0 6px #ffea00);
-}
-
-.start-btn-labels {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 1.1;
-}
-
-.start-btn-main {
-    font-size: 22px;
-    font-weight: 950;
-    font-style: italic;
-    letter-spacing: 2.5px;
-    color: #fff;
-    text-shadow: 
-        0 2px 4px rgba(0, 0, 0, 0.7),
-        0 0 16px rgba(255, 255, 200, 0.9);
-}
-
-.start-btn-sub {
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-    color: #ffe6aa;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-}
-
-.start-btn-arrow {
-    font-size: 20px;
-    font-weight: 900;
-    font-style: italic;
-    color: #ffea00;
-    letter-spacing: -2px;
-    filter: drop-shadow(0 0 6px #ffea00);
+.pro-tip-desc {
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #e0d0b0;
 }
 /* ==========================================================================
    ガレージ＆3Dショールーム スタイル
