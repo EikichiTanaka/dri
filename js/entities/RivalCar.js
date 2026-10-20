@@ -424,38 +424,55 @@ class RivalCar {
         const sinYaw = Math.sin(this.yaw);
         const cosYaw = Math.cos(this.yaw);
 
-        // ★【ライバル車・4輪アクスル直下実路面標高サンプリング（坂道下り・ドリフトめり込み根絶）】
-        let groundCenterY = point.y + (Math.sin(bank) * this.lateralOffset);
-        let surfacePitch = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
-        let surfaceRoll = bank;
+        // ★【ライバル車・幾何学的3次元路面法線プロジェクション＆ダンパー（坂道ガタつき＆タイヤめり込み完全根絶）】
+        const cosBank = Math.cos(bank);
+        const sinBank = Math.sin(bank);
+        const cantedNormX = normal.x * cosBank;
+        const cantedNormY = sinBank;
+        const cantedNormZ = normal.z * cosBank;
 
-        if (typeof this.track.getRoadSurfaceY === 'function') {
-            const fPosX = this.position.x + sinYaw * 1.25;
-            const fPosZ = this.position.z + cosYaw * 1.25;
-            const rPosX = this.position.x - sinYaw * 1.25;
-            const rPosZ = this.position.z - cosYaw * 1.25;
+        // 路面法線ベクトル Up = cantedNormal x tangent (外積)
+        let upX = cantedNormY * tangent.z - cantedNormZ * tangent.y;
+        let upY = cantedNormZ * tangent.x - cantedNormX * tangent.z;
+        let upZ = cantedNormX * tangent.y - cantedNormY * tangent.x;
+        const upLen = Math.hypot(upX, upY, upZ) || 1.0;
+        upX /= upLen;
+        upY /= upLen;
+        upZ /= upLen;
 
-            const yF = this.track.getRoadSurfaceY(new THREE.Vector3(fPosX, this.position.y, fPosZ), this.progressT);
-            const yR = this.track.getRoadSurfaceY(new THREE.Vector3(rPosX, this.position.y, rPosZ), this.progressT);
+        // 車両前後ベクトル (XZ平面) と 左右ベクトル (XZ平面)
+        const fwdX = sinYaw;
+        const fwdZ = cosYaw;
+        const rgtX = fwdZ;
+        const rgtZ = -fwdX;
 
-            if (yF !== null && yR !== null && !isNaN(yF) && !isNaN(yR)) {
-                surfacePitch = -Math.atan2(yF - yR, 2.50);
-                groundCenterY = (yF + yR) * 0.5;
-            }
+        // 車体前後軸が路面となすピッチ角 (前下がりが正)
+        const fwdDotUp = fwdX * upX + fwdZ * upZ;
+        const targetSurfacePitch = -Math.asin(Math.max(-0.85, Math.min(0.85, fwdDotUp)));
 
-            const lPosX = this.position.x - cosYaw * 0.79;
-            const lPosZ = this.position.z + sinYaw * 0.79;
-            const rtPosX = this.position.x + cosYaw * 0.79;
-            const rtPosZ = this.position.z - sinYaw * 0.79;
+        // 車体左右軸が路面となすロール角 (右下がりが正)
+        const rgtDotUp = rgtX * upX + rgtZ * upZ;
+        const targetSurfaceRoll = Math.asin(Math.max(-0.85, Math.min(0.85, rgtDotUp)));
 
-            const yL = this.track.getRoadSurfaceY(new THREE.Vector3(lPosX, this.position.y, lPosZ), this.progressT);
-            const yRt = this.track.getRoadSurfaceY(new THREE.Vector3(rtPosX, this.position.y, rtPosZ), this.progressT);
+        // 道路中心線＋立体カントオフセットによる正確な基準標高
+        const targetGroundY = point.y + (sinBank * this.lateralOffset);
 
-            if (yL !== null && yRt !== null && !isNaN(yL) && !isNaN(yRt)) {
-                surfaceRoll = Math.atan2(yRt - yL, 1.58);
-            }
+        // ★【路面追従ダンパー】：スプライン離散境界による微細振動・ジッターを100%遮断
+        if (this.smoothSurfacePitch === undefined || isNaN(this.smoothSurfacePitch)) this.smoothSurfacePitch = targetSurfacePitch;
+        if (this.smoothSurfaceRoll === undefined || isNaN(this.smoothSurfaceRoll)) this.smoothSurfaceRoll = targetSurfaceRoll;
+        if (this.smoothGroundY === undefined || isNaN(this.smoothGroundY) || Math.abs(targetGroundY - this.smoothGroundY) > 2.0) {
+            this.smoothGroundY = targetGroundY;
         }
-        this.position.y = groundCenterY + 0.016;
+
+        const pitchLerp = Math.min(1.0, 22.0 * dt);
+        const rollLerp = Math.min(1.0, 22.0 * dt);
+        const yLerp = Math.min(1.0, 24.0 * dt);
+
+        this.smoothSurfacePitch += (targetSurfacePitch - this.smoothSurfacePitch) * pitchLerp;
+        this.smoothSurfaceRoll += (targetSurfaceRoll - this.smoothSurfaceRoll) * rollLerp;
+        this.smoothGroundY += (targetGroundY - this.smoothGroundY) * yLerp;
+
+        this.position.y = this.smoothGroundY + 0.016;
 
         // 4. 人間らしい前輪ステアリング＆カウンターステア（逆ハン）
         let targetSteer = 0;
@@ -485,14 +502,14 @@ class RivalCar {
         }
 
         // 5. 車体サスペンションの動的ロール＆ピッチ（立体カント＋遠心力ロール）
-        const targetRoll = surfaceRoll - (turnDir * (this.speed / 160) * Math.min(1.0, curvature * 22.0) * 0.08);
+        const targetRoll = this.smoothSurfaceRoll - (turnDir * (this.speed / 160) * Math.min(1.0, curvature * 22.0) * 0.08);
         this.roll += (targetRoll - this.roll) * Math.min(1.0, 8.0 * dt);
 
         // 勾配ピッチ＋加減速ピッチ（ブレーキでノーズダイブ、加速でリア沈み込み）
         const targetSuspPitch = (this.accel > 0 ? -0.010 : 0.018);
         if (this.currentSuspPitch === undefined) this.currentSuspPitch = 0;
         this.currentSuspPitch += (targetSuspPitch - this.currentSuspPitch) * Math.min(1.0, 10.0 * dt);
-        this.pitch = surfacePitch + this.currentSuspPitch;
+        this.pitch = this.smoothSurfacePitch + this.currentSuspPitch;
 
         // ホイールの接地補正（ブレーキ時沈み込みでもタイヤがめり込まない）
         const sinSuspPitch = Math.sin(this.currentSuspPitch);

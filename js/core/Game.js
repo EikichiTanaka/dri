@@ -740,33 +740,28 @@ class Game {
         const forward = new THREE.Vector3(Math.sin(carYaw), 0, Math.cos(carYaw));
         const carRight = new THREE.Vector3(Math.cos(carYaw), 0, -Math.sin(carYaw));
 
-        // ★【3次元実路面アクスルサンプリング（下り坂・ドリフトタイヤめり込み100%根絶）】
-        let groundY = trackPt.y;
-        let carPitch = -Math.asin(Math.max(-0.99, Math.min(0.99, tangent.y)));
-        let carRoll = trackInfo.bankAngle || 0;
+        // ★【幾何学的路面法線プロジェクション（坂道ガタつき完全根絶＆タイヤめり込み防止）】
+        const bank = trackInfo.bankAngle || 0;
+        const cosBank = Math.cos(bank);
+        const sinBank = Math.sin(bank);
+        const cantedNormX = normal.x * cosBank;
+        const cantedNormY = sinBank;
+        const cantedNormZ = normal.z * cosBank;
 
-        if (typeof this.track.getRoadSurfaceY === 'function') {
-            const fPos = carPos.clone().addScaledVector(forward, 1.20);
-            const rPos = carPos.clone().addScaledVector(forward, -1.20);
-            const yF = this.track.getRoadSurfaceY(fPos, t);
-            const yR = this.track.getRoadSurfaceY(rPos, t);
+        let upX = cantedNormY * tangent.z - cantedNormZ * tangent.y;
+        let upY = cantedNormZ * tangent.x - cantedNormX * tangent.z;
+        let upZ = cantedNormX * tangent.y - cantedNormY * tangent.x;
+        const upLen = Math.hypot(upX, upY, upZ) || 1.0;
+        upX /= upLen;
+        upY /= upLen;
+        upZ /= upLen;
 
-            if (yF !== null && yR !== null && !isNaN(yF) && !isNaN(yR)) {
-                carPitch = -Math.atan2(yF - yR, 2.40);
-                groundY = (yF + yR) * 0.5;
-            } else {
-                const roadY = this.track.getRoadSurfaceY(carPos, t);
-                if (roadY !== null && !isNaN(roadY)) groundY = roadY;
-            }
+        const fwdDotUp = forward.x * upX + forward.z * upZ;
+        const carPitch = -Math.asin(Math.max(-0.85, Math.min(0.85, fwdDotUp)));
+        const rgtDotUp = carRight.x * upX + carRight.z * upZ;
+        const carRoll = Math.asin(Math.max(-0.85, Math.min(0.85, rgtDotUp)));
 
-            const lPos = carPos.clone().addScaledVector(carRight, -0.79);
-            const rtPos = carPos.clone().addScaledVector(carRight, 0.79);
-            const yL = this.track.getRoadSurfaceY(lPos, t);
-            const yRt = this.track.getRoadSurfaceY(rtPos, t);
-            if (yL !== null && yRt !== null && !isNaN(yL) && !isNaN(yRt)) {
-                carRoll = Math.atan2(yRt - yL, 1.58);
-            }
-        }
+        const groundY = trackPt.y + (sinBank * attr.lateralOffset);
         carPos.y = groundY;
 
         // playerPhysicsのプロパティ同期
