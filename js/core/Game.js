@@ -564,6 +564,12 @@ class Game {
         this.applyEnvironment();
         // スタートライン（左グリッド: t = 0.003, offset = -1.8）へ完全初期化
         this.playerPhysics.resetToTrack(0.003, -1.8);
+        const startPoint = this.track.getPointAt(0.003);
+        const startTrackInfo = this.track.getSmoothTrackInfo(startPoint, 0.003);
+        this.playerPhysics.trackInfo = startTrackInfo;
+        const surfY = typeof this.track.getRoadSurfaceY === 'function' ? this.track.getRoadSurfaceY(this.playerPhysics.position, 0.003) : startPoint.y;
+        this.playerPhysics.position.y = (surfY !== null && !isNaN(surfY) ? surfY : startPoint.y) + 0.02;
+
         this.playerPhysics.isLocked = true; // カウントダウン中は完全ロック！
         this.playerPhysics.speed = 0;
         this.playerPhysics.speedMs = 0;
@@ -572,16 +578,31 @@ class Game {
 
         if (this.playerCar) {
             this.playerCar.currentVisualSteer = 0;
-            this.playerCar.smoothGroundY = undefined;
-            this.playerCar.smoothSurfacePitch = undefined;
-            this.playerCar.smoothSurfaceRoll = undefined;
+            this.playerCar.smoothGroundY = this.playerPhysics.trackInfo.centerPos.y;
+            this.playerCar.smoothSurfacePitch = 0;
+            this.playerCar.smoothSurfaceRoll = 0;
             this.playerCar.currentSuspensionPitch = 0;
+            if (this.playerCar.meshGroup) {
+                this.playerCar.meshGroup.visible = true;
+                this.playerCar.meshGroup.traverse((child) => {
+                    if (child.isMesh) child.visible = true;
+                });
+            }
             this.playerCar.update(0.016);
         }
 
         this.fpInitialized = false;
+        this.tpCamDir = null;
+        this.snapCameraToGrid = true;
+
         if (this.rivalCar) {
             this.rivalCar.resetPosition();
+            if (this.rivalCar.meshGroup) {
+                this.rivalCar.meshGroup.visible = true;
+                this.rivalCar.meshGroup.traverse((child) => {
+                    if (child.isMesh) child.visible = true;
+                });
+            }
         }
         if (this.particles && this.particles.clearSkidMarks) {
             this.particles.clearSkidMarks();
@@ -596,7 +617,7 @@ class Game {
             }
         }
 
-        // カメラをスタートライン後方に配置
+        // カメラをスタートライン後方へ即時スナップ配置
         this.updateCamera(0.016);
         // WebGLシェーダー・シャドウ・ジオメトリバッファの先行ウォームアップ描画（出撃時のカクつき完全解消）
         if (this.renderer && this.scene && this.camera) {
@@ -610,6 +631,12 @@ class Game {
         } else {
             // skipPrepareがtrueの場合（ロード画面経由等）でも、確実にスタートラインへ完全再配置！
             this.playerPhysics.resetToTrack(0.003, -1.8);
+            const startPoint = this.track.getPointAt(0.003);
+            const startTrackInfo = this.track.getSmoothTrackInfo(startPoint, 0.003);
+            this.playerPhysics.trackInfo = startTrackInfo;
+            const surfY = typeof this.track.getRoadSurfaceY === 'function' ? this.track.getRoadSurfaceY(this.playerPhysics.position, 0.003) : startPoint.y;
+            this.playerPhysics.position.y = (surfY !== null && !isNaN(surfY) ? surfY : startPoint.y) + 0.02;
+
             this.playerPhysics.isLocked = true;
             this.playerPhysics.speed = 0;
             this.playerPhysics.speedMs = 0;
@@ -617,17 +644,32 @@ class Game {
             this.playerPhysics.steerAngle = 0;
             if (this.playerCar) {
                 this.playerCar.currentVisualSteer = 0;
-                this.playerCar.smoothGroundY = undefined;
-                this.playerCar.smoothSurfacePitch = undefined;
-                this.playerCar.smoothSurfaceRoll = undefined;
+                this.playerCar.smoothGroundY = this.playerPhysics.trackInfo.centerPos.y;
+                this.playerCar.smoothSurfacePitch = 0;
+                this.playerCar.smoothSurfaceRoll = 0;
                 this.playerCar.currentSuspensionPitch = 0;
+                if (this.playerCar.meshGroup) {
+                    this.playerCar.meshGroup.visible = true;
+                    this.playerCar.meshGroup.traverse((child) => {
+                        if (child.isMesh) child.visible = true;
+                    });
+                }
                 this.playerCar.update(0.016);
             }
             if (this.rivalCar) {
                 this.rivalCar.resetPosition();
+                if (this.rivalCar.meshGroup) {
+                    this.rivalCar.meshGroup.visible = true;
+                    this.rivalCar.meshGroup.traverse((child) => {
+                        if (child.isMesh) child.visible = true;
+                    });
+                }
             }
             this.titleAttract = null;
             this.titleCamInitialized = false;
+            this.fpInitialized = false;
+            this.tpCamDir = null;
+            this.snapCameraToGrid = true;
             this.updateCamera(0.016);
         }
 
@@ -1502,7 +1544,7 @@ class Game {
                 }
             }
         }
-        if (!this.tpCamDir || this.tpCamDir.lengthSq() < 0.01) {
+        if (!this.tpCamDir || this.snapCameraToGrid || this.tpCamDir.lengthSq() < 0.01) {
             this.tpCamDir = rawCamDir.clone();
         } else {
             this.tpCamDir.lerp(rawCamDir, Math.min(1.0, 14.0 * dt));
@@ -1574,9 +1616,13 @@ class Game {
         }
         idealCamPos.y = Math.max(roadCenterY, idealCamTrack.centerPos.y) + baseHeight;
 
-        // 滑らかなカメラ位置補間（一定レートで自然に追従）
-        const lerpFactor = Math.min(1.0, 9.5 * dt);
-        this.camera.position.lerp(idealCamPos, lerpFactor);
+        // 滑らかなカメラ位置補間（出撃スナップ時は即座に理想位置へ完全吸着）
+        if (this.snapCameraToGrid) {
+            this.camera.position.copy(idealCamPos);
+        } else {
+            const lerpFactor = Math.min(1.0, 9.5 * dt);
+            this.camera.position.lerp(idealCamPos, lerpFactor);
+        }
 
         // 補間後の実カメラ座標に対しても直下路面プローブで壁面（halfRoad - 0.03m）＆路面高さを絶対保証クランプ
         const curGroundProbe = new THREE.Vector3(this.camera.position.x, carPos.y, this.camera.position.z);
@@ -1620,7 +1666,12 @@ class Game {
             }
         }
 
-        this.cameraLookTarget.lerp(idealLookTarget, Math.min(1.0, 12.0 * dt));
+        if (this.snapCameraToGrid) {
+            this.cameraLookTarget.copy(idealLookTarget);
+            this.snapCameraToGrid = false;
+        } else {
+            this.cameraLookTarget.lerp(idealLookTarget, Math.min(1.0, 12.0 * dt));
+        }
         this.camera.lookAt(this.cameraLookTarget);
 
         // 5. 速度に応じたダイナミックFOV＆スピード演出
