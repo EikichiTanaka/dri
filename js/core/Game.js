@@ -214,6 +214,19 @@ class Game {
         topLight.position.set(0, 8.5, 0);
         this.showroomGroup.add(topLight);
 
+        // Showroom side flood lights at wheel height for crisp PBR metallic luster and spoke highlights
+        const leftSideLight = new THREE.DirectionalLight(0xfff8ee, 1.25);
+        leftSideLight.position.set(-5.0, 0.8, 0);
+        this.showroomGroup.add(leftSideLight);
+
+        const rightSideLight = new THREE.DirectionalLight(0xfff8ee, 1.25);
+        rightSideLight.position.set(5.0, 0.8, 0);
+        this.showroomGroup.add(rightSideLight);
+
+        const frontSideLight = new THREE.DirectionalLight(0xffffff, 0.90);
+        frontSideLight.position.set(0, 0.8, 5.0);
+        this.showroomGroup.add(frontSideLight);
+
         this.scene.add(this.showroomGroup);
     }
 
