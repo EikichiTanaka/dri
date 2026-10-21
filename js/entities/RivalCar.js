@@ -161,25 +161,28 @@ class RivalCar {
             { x: 0.82, y: 0.32, z: -1.3, isFront: false, isLeft: false }
         ];
 
-        wheelPos.forEach((wp) => {
-            const pivot = new THREE.Group();
-            pivot.position.set(wp.x, wp.y, wp.z);
-
-            const wMesh = new THREE.Group();
-            const tire = new THREE.Mesh(tireGeom, tireMat);
-            tire.castShadow = true;
-            wMesh.add(tire);
-            const rim = new THREE.Mesh(rimGeom, goldRimMat);
-            wMesh.add(rim);
-
-            pivot.add(wMesh);
-            this.meshGroup.add(pivot);
-
-            this.wheels.push({ pivot, mesh: wMesh, isFront: wp.isFront, isLeft: wp.isLeft, defaultY: wp.y, defaultZ: wp.z });
-            if (wp.isFront) {
-                if (wp.isLeft) this.frontWheelL = pivot;
-                else this.frontWheelR = pivot;
-            }
+        const { wheels, frontWheelL, frontWheelR } = CarModelBuilder.createDetailedWheels(
+            this.meshGroup,
+            wheelPos,
+            goldRimMat,
+            tireMat,
+            'ms01',
+            wheelRadius,
+            wheelWidth,
+            0xd42020
+        );
+        this.frontWheelL = frontWheelL;
+        this.frontWheelR = frontWheelR;
+        wheels.forEach(w => {
+            const wp = wheelPos.find(p => p.isFront === w.isFront && p.isLeft === w.isLeft);
+            this.wheels.push({
+                pivot: w.pivot,
+                mesh: w.mesh,
+                isFront: w.isFront,
+                isLeft: w.isLeft,
+                defaultY: wp ? wp.y : 0.32,
+                defaultZ: wp ? wp.z : (w.isFront ? 1.3 : -1.3)
+            });
         });
 
         // 9. ヘッドライト照射（高光度ツインスポット＋フィルライト）
