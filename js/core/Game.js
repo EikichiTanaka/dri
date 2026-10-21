@@ -18,6 +18,7 @@ class Game {
         this.clock = new THREE.Clock();
 
         this.cameraMode = 0;
+        this.cameraModeChanged = false;
         this.cameraTargetPos = new THREE.Vector3();
         this.cameraLookTarget = new THREE.Vector3();
         this.cameraShakeTimer = 0;
@@ -966,6 +967,9 @@ class Game {
 
         if (this.input.changeView) {
             this.cameraMode = (this.cameraMode + 1) % 4;
+            this.cameraModeChanged = true;
+            this.tpCamDir = null;
+            this.fpInitialized = false;
             if (this.hud && this.hud.showPopup) {
                 const modeNames = [
                     'VIEW: STANDARD CHASE (標準三人称)',
@@ -1500,7 +1504,12 @@ class Game {
 
             // 視野角（IDAS一人称基準：60° -> 最大70°の歪みのない自然な遠近感とスピード感）
             const targetFov = 60 + speedRatio * 10 + Math.min(2.5, Math.abs(this.fpSlipSmooth) * 4.0);
-            this.camera.fov += (targetFov - this.camera.fov) * Math.min(1.0, 10.0 * dt);
+            if (this.cameraModeChanged) {
+                this.camera.fov = targetFov;
+                this.cameraModeChanged = false;
+            } else {
+                this.camera.fov += (targetFov - this.camera.fov) * Math.min(1.0, 10.0 * dt);
+            }
             this.camera.updateProjectionMatrix();
 
             // 高速走行時の微振動＆溝落とし衝撃
@@ -1544,7 +1553,7 @@ class Game {
                 }
             }
         }
-        if (!this.tpCamDir || this.snapCameraToGrid || this.tpCamDir.lengthSq() < 0.01) {
+        if (!this.tpCamDir || this.snapCameraToGrid || this.cameraModeChanged || this.tpCamDir.lengthSq() < 0.01) {
             this.tpCamDir = rawCamDir.clone();
         } else {
             this.tpCamDir.lerp(rawCamDir, Math.min(1.0, 14.0 * dt));
@@ -1616,8 +1625,8 @@ class Game {
         }
         idealCamPos.y = Math.max(roadCenterY, idealCamTrack.centerPos.y) + baseHeight;
 
-        // 滑らかなカメラ位置補間（出撃スナップ時は即座に理想位置へ完全吸着）
-        if (this.snapCameraToGrid) {
+        // 滑らかなカメラ位置補間（出撃スナップまたは視点切り替え時は即座に理想位置へ完全吸着）
+        if (this.snapCameraToGrid || this.cameraModeChanged) {
             this.camera.position.copy(idealCamPos);
         } else {
             const lerpFactor = Math.min(1.0, 9.5 * dt);
@@ -1666,9 +1675,8 @@ class Game {
             }
         }
 
-        if (this.snapCameraToGrid) {
+        if (this.snapCameraToGrid || this.cameraModeChanged) {
             this.cameraLookTarget.copy(idealLookTarget);
-            this.snapCameraToGrid = false;
         } else {
             this.cameraLookTarget.lerp(idealLookTarget, Math.min(1.0, 12.0 * dt));
         }
@@ -1686,7 +1694,13 @@ class Game {
             targetFov += Math.min(3, Math.abs(this.playerPhysics.driftAngle) * 5);
         }
 
-        this.camera.fov += (targetFov - this.camera.fov) * Math.min(1.0, 6.0 * dt);
+        if (this.snapCameraToGrid || this.cameraModeChanged) {
+            this.camera.fov = targetFov;
+            this.snapCameraToGrid = false;
+            this.cameraModeChanged = false;
+        } else {
+            this.camera.fov += (targetFov - this.camera.fov) * Math.min(1.0, 6.0 * dt);
+        }
         this.camera.updateProjectionMatrix();
 
         // 6. 高速時（140km/h以上）のリアルな風圧・路面トレモロ（カメラ微振動）
