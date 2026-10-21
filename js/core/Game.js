@@ -718,12 +718,20 @@ class Game {
         attr.isDrifting = (cornerIntensity > 0.18);
 
         // ターゲット値の連続算出（流麗なアウト・イン・アウトのレーシングライン）
-        // turnDir: +1 = 右コーナー, -1 = 左コーナー
-        // 右コーナー進入時はノーズをイン側右（正値）へ向け、アウト側左へテールスライド
-        const targetDriftAngle = turnDir * (cornerIntensity * 0.54);
-        const targetLateralOffset = -turnDir * (cornerIntensity * 1.35);
-        // カウンターステア舵角（右ドリフト時は左・負値へ逆ハンドル、左ドリフト時は右・正値へ逆ハンドル）
-        const targetSteerAngle = -turnDir * (cornerIntensity * 0.75);
+        // TougeTrack仕様: turnDir: -1 = 右コーナー, +1 = 左コーナー
+        // 右コーナー（turnDir = -1）進入時はノーズをイン側右（正値）へ向け、左コーナー時は左（負値）へ向ける
+        const targetDriftAngle = -turnDir * (cornerIntensity * 0.40);
+        const targetLateralOffset = -turnDir * (cornerIntensity * 1.10);
+
+        // ステアリング舵角（ドリフト時は進行方向を捉えるカウンターステア、通常時はイン側への自然な操舵）
+        let targetSteerAngle = 0;
+        if (attr.isDrifting) {
+            // カウンターステア（右ドリフト時は左・負値へ逆ハンドル、左ドリフト時は右・正値へ逆ハンドル）
+            targetSteerAngle = turnDir * (cornerIntensity * 0.45);
+        } else {
+            // 通常グリップ旋回（右コーナーは右・正値、左コーナーは左・負値）
+            targetSteerAngle = -turnDir * (cornerIntensity * 0.28);
+        }
         attr.speedKmh = 112 - cornerIntensity * 16;
         this.playerPhysics.brake = cornerIntensity > 0.3 ? 0.20 : 0.0;
 
@@ -779,10 +787,8 @@ class Game {
         this.playerPhysics.pitch = carPitch;
         this.playerPhysics.throttle = attr.isDrifting ? 0.95 : 1.0;
         this.playerPhysics.trackT = t;
-        this.playerPhysics.trackInfo = {
-            ...trackInfo,
-            bankAngle: carRoll
-        };
+        this.playerPhysics.roll = carRoll;
+        this.playerPhysics.trackInfo = trackInfo;
 
         // 速度ベクトル（進行方向とノーズ方向の自然な合成）
         const velDir = tangent.clone().lerp(forward, 0.25).normalize();

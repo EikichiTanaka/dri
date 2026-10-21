@@ -203,7 +203,7 @@ class PlayerCar {
         // 通常走行時はドライバーの入力ステア角にダイレクトに追従し、
         // ドリフト発生時はスリップ角（driftAngle）とセルフアライニング・トルクにより、
         // 前輪が進行方向（外側）へキリキリと逆ハンドル（フルカウンター）を切る実車の実舵角挙動を完全再現！
-        let targetVisualSteer = this.physics.steerAngle;
+        let targetVisualSteer = 0;
 
         const driftAngle = this.physics.driftAngle || 0;
         const absDriftAngle = Math.abs(driftAngle);
@@ -212,39 +212,47 @@ class PlayerCar {
         if (isDrifting) {
             // スリップ角に基づくキャスタートルクによる逆ハンドル量（進行方向を捉える実車自己整流）
             // 右ドリフト時（driftAngle < 0）は左へフルカウンター（負値）、左ドリフト時（driftAngle > 0）は右へフルカウンター（正値）
-            const casterCounter = driftAngle * 1.25;
+            const casterCounter = driftAngle * 0.95;
             // プレイヤーの能動的ステアリング修正（カウンター増し/戻し）の合成
-            const playerCorrection = this.physics.steerAngle * 0.40;
-            // 実車ドリフトの切れ角アップナックル仕様（約50.4度 = 0.88 rad でフェンダーからタイヤが大胆に露出！）
-            const maxLock = 0.88;
+            const playerCorrection = this.physics.steerAngle * 0.28;
+            // 実車ドリフトの適正最大切れ角（約39.0度 = 0.68 rad：フェンダー干渉のないリアルで程よい角度に調整）
+            const maxLock = 0.68;
             targetVisualSteer = Math.max(-maxLock, Math.min(maxLock, casterCounter + playerCorrection));
+        } else {
+            // 通常グリップ走行時も最大舵角を自然な31度（0.54 rad）に抑制
+            const maxGripLock = 0.54;
+            targetVisualSteer = Math.max(-maxGripLock, Math.min(maxGripLock, this.physics.steerAngle));
         }
 
-        // 素早く滑らかな実車ステア追従補間（lerp）
-        const steerLerpSpeed = isDrifting ? 18.0 : 20.0;
+        // 素早く滑らかな実車ステア追従補間（急変・ガタつきのない上質なステアフィール）
+        const steerLerpSpeed = isDrifting ? 15.0 : 18.0;
         this.currentVisualSteer += (targetVisualSteer - this.currentVisualSteer) * Math.min(1.0, steerLerpSpeed * dt);
 
-        // アッカーマン・ステアリング幾何（内側輪が外側輪より大きく切れる実車ジオメトリ）
+        // ★【アッカーマン・ステアリング幾何学】
+        // 旋回時、旋回中心に近い内輪の方が外輪よりも切れ角が大きくなる実車ジオメトリを再現
+        // 切れ角比率を控えめ（1.08x / 0.94x）にして左右タイヤの自然な開きを維持
         if (this.frontWheelL && this.frontWheelR) {
             let steerL = this.currentVisualSteer;
             let steerR = this.currentVisualSteer;
 
             if (this.currentVisualSteer > 0.02) {
-                // 右操舵（正値）：右前輪（イン側）が約12%大きく切れ、左前輪（アウト側）が約8%小さく切れる
-                steerR = this.currentVisualSteer * 1.12;
-                steerL = this.currentVisualSteer * 0.92;
+                // 右操舵（正値）：右前輪（イン側）が約8%大きく切れ、左前輪（アウト側）が約6%小さく切れる
+                steerR = this.currentVisualSteer * 1.08;
+                steerL = this.currentVisualSteer * 0.94;
             } else if (this.currentVisualSteer < -0.02) {
-                // 左操舵（負値）：左前輪（イン側）が約12%大きく切れ、右前輪（アウト側）が約8%小さく切れる
-                steerL = this.currentVisualSteer * 1.12;
-                steerR = this.currentVisualSteer * 0.92;
+                // 左操舵（負値）：左前輪（イン側）が約8%大きく切れ、右前輪（アウト側）が約6%小さく切れる
+                steerL = this.currentVisualSteer * 1.08;
+                steerR = this.currentVisualSteer * 0.94;
             }
 
             this.frontWheelL.rotation.y = steerL;
             this.frontWheelR.rotation.y = steerR;
 
-            // キャスターアクションによるネガティブキャンバーの傾き（カウンター時に前輪がグッと路面に踏ん張る実車アライメント：約6.8度）
-            this.frontWheelL.rotation.z = -this.currentVisualSteer * 0.12;
-            this.frontWheelR.rotation.z = -this.currentVisualSteer * 0.12;
+            // ★【動的ネガティブキャンバー変化】
+            // ステアリングを切ると、実車のキャスター角により外側にタイヤが自然に傾く（約4.5度）
+            const camberAngle = -this.currentVisualSteer * 0.08;
+            this.frontWheelL.rotation.z = camberAngle;
+            this.frontWheelR.rotation.z = camberAngle;
         }
 
         // ブレーキ時のテールランプ高輝度点灯＆路面照射
