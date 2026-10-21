@@ -551,6 +551,8 @@ class Game {
     }
 
     prepareRace() {
+        // ★【超重要】TITLE状態から即時脱出し、ローディング中のupdateTitleAttract再実行・位置上書きを完全遮断！
+        this.state = 'PREPARING';
         if (this.titleSpotLight) this.titleSpotLight.visible = false;
         this.titleCamInitialized = false;
         this.titleAttract = null;
@@ -560,10 +562,27 @@ class Game {
         }
 
         this.applyEnvironment();
+        // スタートライン（左グリッド: t = 0.003, offset = -1.8）へ完全初期化
         this.playerPhysics.resetToTrack(0.003, -1.8);
-        this.playerPhysics.isLocked = true; // ★カウントダウン中は完全ロック！
+        this.playerPhysics.isLocked = true; // カウントダウン中は完全ロック！
+        this.playerPhysics.speed = 0;
+        this.playerPhysics.speedMs = 0;
+        this.playerPhysics.driftAngle = 0;
+        this.playerPhysics.steerAngle = 0;
+
+        if (this.playerCar) {
+            this.playerCar.currentVisualSteer = 0;
+            this.playerCar.smoothGroundY = undefined;
+            this.playerCar.smoothSurfacePitch = undefined;
+            this.playerCar.smoothSurfaceRoll = undefined;
+            this.playerCar.currentSuspensionPitch = 0;
+            this.playerCar.update(0.016);
+        }
+
         this.fpInitialized = false;
-        this.rivalCar.resetPosition();
+        if (this.rivalCar) {
+            this.rivalCar.resetPosition();
+        }
         if (this.particles && this.particles.clearSkidMarks) {
             this.particles.clearSkidMarks();
         }
@@ -588,7 +607,30 @@ class Game {
     startRace(skipPrepare = false) {
         if (!skipPrepare) {
             this.prepareRace();
+        } else {
+            // skipPrepareがtrueの場合（ロード画面経由等）でも、確実にスタートラインへ完全再配置！
+            this.playerPhysics.resetToTrack(0.003, -1.8);
+            this.playerPhysics.isLocked = true;
+            this.playerPhysics.speed = 0;
+            this.playerPhysics.speedMs = 0;
+            this.playerPhysics.driftAngle = 0;
+            this.playerPhysics.steerAngle = 0;
+            if (this.playerCar) {
+                this.playerCar.currentVisualSteer = 0;
+                this.playerCar.smoothGroundY = undefined;
+                this.playerCar.smoothSurfacePitch = undefined;
+                this.playerCar.smoothSurfaceRoll = undefined;
+                this.playerCar.currentSuspensionPitch = 0;
+                this.playerCar.update(0.016);
+            }
+            if (this.rivalCar) {
+                this.rivalCar.resetPosition();
+            }
+            this.titleAttract = null;
+            this.titleCamInitialized = false;
+            this.updateCamera(0.016);
         }
+
         if (this.audio) {
             this.audio.startEngineLoop();
             this.audio.startEurobeatBGM();
@@ -853,6 +895,13 @@ class Game {
             this.updateTitleAttract(dt);
             this.playerCar.update(dt);
             this.updateTitleEffects(dt);
+            this.updateCamera(dt);
+            return;
+        }
+
+        // ★レース出撃ローディング待機中（スタートグリッド固定・アトラクト完全遮断）
+        if (this.state === 'PREPARING') {
+            this.playerCar.update(dt);
             this.updateCamera(dt);
             return;
         }
