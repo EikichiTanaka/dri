@@ -199,11 +199,11 @@ class PlayerCar {
             });
         }
 
-        // ★【視覚リアリズム】フロントタイヤのカウンターステア実舵角アニメーション
-        // 通常走行時はドライバーの入力ステア角に自然に追従し、
+        // ★【視覚リアリズム】フロントタイヤの「カウンターステア実舵角アニメーション」
+        // 通常走行時はドライバーの入力ステア角にダイレクトに追従し、
         // ドリフト発生時はスリップ角（driftAngle）とセルフアライニング・トルクにより、
-        // 前輪が進行方向を捉えて綺麗に逆ハンドル（フルカウンター）を切る実車の実舵角挙動を完全再現！
-        let targetVisualSteer = -this.physics.steerAngle;
+        // 前輪が進行方向（外側）へキリキリと逆ハンドル（フルカウンター）を切る実車の実舵角挙動を完全再現！
+        let targetVisualSteer = this.physics.steerAngle;
 
         const driftAngle = this.physics.driftAngle || 0;
         const absDriftAngle = Math.abs(driftAngle);
@@ -211,9 +211,10 @@ class PlayerCar {
 
         if (isDrifting) {
             // スリップ角に基づくキャスタートルクによる逆ハンドル量（進行方向を捉える実車自己整流）
-            const casterCounter = -driftAngle * 1.15;
+            // 右ドリフト時（driftAngle < 0）は左へフルカウンター（負値）、左ドリフト時（driftAngle > 0）は右へフルカウンター（正値）
+            const casterCounter = driftAngle * 1.25;
             // プレイヤーの能動的ステアリング修正（カウンター増し/戻し）の合成
-            const playerCorrection = -this.physics.steerAngle * 0.45;
+            const playerCorrection = this.physics.steerAngle * 0.40;
             // 実車ドリフトの切れ角アップナックル仕様（約50.4度 = 0.88 rad でフェンダーからタイヤが大胆に露出！）
             const maxLock = 0.88;
             targetVisualSteer = Math.max(-maxLock, Math.min(maxLock, casterCounter + playerCorrection));
@@ -229,13 +230,13 @@ class PlayerCar {
             let steerR = this.currentVisualSteer;
 
             if (this.currentVisualSteer > 0.02) {
-                // 左操舵：左前輪（イン側）が約12%大きく切れ、右前輪（アウト側）が約8%小さく切れる
-                steerL = this.currentVisualSteer * 1.12;
-                steerR = this.currentVisualSteer * 0.92;
-            } else if (this.currentVisualSteer < -0.02) {
-                // 右操舵：右前輪（イン側）が約12%大きく切れ、左前輪（アウト側）が約8%小さく切れる
+                // 右操舵（正値）：右前輪（イン側）が約12%大きく切れ、左前輪（アウト側）が約8%小さく切れる
                 steerR = this.currentVisualSteer * 1.12;
                 steerL = this.currentVisualSteer * 0.92;
+            } else if (this.currentVisualSteer < -0.02) {
+                // 左操舵（負値）：左前輪（イン側）が約12%大きく切れ、右前輪（アウト側）が約8%小さく切れる
+                steerL = this.currentVisualSteer * 1.12;
+                steerR = this.currentVisualSteer * 0.92;
             }
 
             this.frontWheelL.rotation.y = steerL;

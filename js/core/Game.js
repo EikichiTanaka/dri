@@ -718,9 +718,12 @@ class Game {
         attr.isDrifting = (cornerIntensity > 0.18);
 
         // ターゲット値の連続算出（流麗なアウト・イン・アウトのレーシングライン）
-        const targetDriftAngle = -turnDir * (cornerIntensity * 0.54);
+        // turnDir: +1 = 右コーナー, -1 = 左コーナー
+        // 右コーナー進入時はノーズをイン側右（正値）へ向け、アウト側左へテールスライド
+        const targetDriftAngle = turnDir * (cornerIntensity * 0.54);
         const targetLateralOffset = -turnDir * (cornerIntensity * 1.35);
-        const targetSteerAngle = -turnDir * (cornerIntensity * 0.68);
+        // カウンターステア舵角（右ドリフト時は左・負値へ逆ハンドル、左ドリフト時は右・正値へ逆ハンドル）
+        const targetSteerAngle = -turnDir * (cornerIntensity * 0.75);
         attr.speedKmh = 112 - cornerIntensity * 16;
         this.playerPhysics.brake = cornerIntensity > 0.3 ? 0.20 : 0.0;
 
@@ -769,7 +772,8 @@ class Game {
         this.playerPhysics.yaw = carYaw;
         this.playerPhysics.speed = attr.speedKmh;
         this.playerPhysics.speedMs = attr.speedKmh / 3.6;
-        this.playerPhysics.driftAngle = attr.driftAngle;
+        // スリップ角（進行方向velYaw - 車体ノーズ角carYaw = -attr.driftAngle）
+        this.playerPhysics.driftAngle = -attr.driftAngle;
         this.playerPhysics.isDrifting = attr.isDrifting;
         this.playerPhysics.steerAngle = attr.steerAngle;
         this.playerPhysics.pitch = carPitch;
