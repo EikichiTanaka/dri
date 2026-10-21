@@ -4915,11 +4915,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         let frontWheelR = null;
 
         // PBR High-Grip Sports Tire Material (authentic matte micro-textured rubber)
-        const realTireMat = (tireMat && tireMat.isMaterial) ? tireMat : new THREE.MeshStandardMaterial({
-            color: 0x1b1b1e,
-            roughness: 0.86,
-            metalness: 0.05
-        });
+        const realTireMat = (tireMat && tireMat.isMaterial) ? tireMat : new THREE.MeshStandardMaterial();
+        realTireMat.color.setHex(0x222226);
+        realTireMat.roughness = 0.82;
+        realTireMat.metalness = 0.08;
+        realTireMat.side = THREE.DoubleSide;
+
         // Dark Tread Groove Material
         const tireGrooveMat = new THREE.MeshStandardMaterial({
             color: 0x09090b,
@@ -4934,8 +4935,8 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         });
         // Dark Inner Rim Barrel Material (anodized structural aluminum)
         const stepBarrelMat = new THREE.MeshStandardMaterial({
-            color: 0x22252a,
-            roughness: 0.35,
+            color: 0x22242a,
+            roughness: 0.40,
             metalness: 0.50,
             side: THREE.DoubleSide
         });
@@ -4982,9 +4983,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             metalness: 0.52
         });
 
-        // Wheel aperture radius: 80% of tire radius for sports car stance
-        const rimHoleRadius = radius * 0.80;
+        // ★【黄金比率】実車・アーケード同様の存在感ある肉厚スポーツタイヤと深リムのプロポーション
+        // 13〜14インチ（ハチロク・ワークス）は65%、16〜18インチ（FD/R32/S15/スープラ等）は69%
+        const rimRatio = (style === 'watanabe' || style === 'works_dish') ? 0.65 : 0.69;
+        const rimHoleRadius = radius * rimRatio;
         const halfW = width * 0.5;
+        const tireHalfW = halfW + 0.008; // タイヤサイドウォールの逞しい丸み・リム保護膨らみ
 
         wheelPositions.forEach((wp) => {
             const pivot = new THREE.Group();
@@ -4994,7 +4998,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             // 1. Stationary Brake System (Stationary on pivot for realistic physics)
             // =====================================================================
             const brakeGroup = new THREE.Group();
-            const rotorRadius = radius * 0.65;
+            const rotorRadius = rimHoleRadius * 0.76;
             const rotorThick = 0.024;
 
             // Opposed Multi-Piston Racing Caliper
@@ -5103,24 +5107,36 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // 2.2 True Continuous Lathed Radial Tire (Organic curved sidewall bulge & hollow center)
             const tirePoints = [
-                new THREE.Vector2(halfW - 0.014, rimHoleRadius),
-                new THREE.Vector2(halfW - 0.007, rimHoleRadius + 0.006),
-                new THREE.Vector2(halfW, (radius + rimHoleRadius) * 0.50),
-                new THREE.Vector2(halfW - 0.008, radius - 0.010),
-                new THREE.Vector2(halfW - 0.018, radius),
+                new THREE.Vector2(-halfW + 0.010, rimHoleRadius),
+                new THREE.Vector2(-tireHalfW, rimHoleRadius + (radius - rimHoleRadius) * 0.28),
+                new THREE.Vector2(-tireHalfW - 0.004, rimHoleRadius + (radius - rimHoleRadius) * 0.55),
+                new THREE.Vector2(-halfW + 0.012, radius - 0.008),
+                new THREE.Vector2(-halfW * 0.5, radius),
                 new THREE.Vector2(0, radius + 0.002),
-                new THREE.Vector2(-halfW + 0.018, radius),
-                new THREE.Vector2(-halfW + 0.008, radius - 0.010),
-                new THREE.Vector2(-halfW, (radius + rimHoleRadius) * 0.50),
-                new THREE.Vector2(-halfW + 0.007, rimHoleRadius + 0.006),
-                new THREE.Vector2(-halfW + 0.014, rimHoleRadius)
+                new THREE.Vector2(halfW * 0.5, radius),
+                new THREE.Vector2(halfW - 0.012, radius - 0.008),
+                new THREE.Vector2(tireHalfW + 0.004, rimHoleRadius + (radius - rimHoleRadius) * 0.55),
+                new THREE.Vector2(tireHalfW, rimHoleRadius + (radius - rimHoleRadius) * 0.28),
+                new THREE.Vector2(halfW - 0.010, rimHoleRadius)
             ];
             const lathePoints = tirePoints.map(p => new THREE.Vector2(p.y, p.x));
             const tireGeom = new THREE.LatheGeometry(lathePoints, 48);
             tireGeom.rotateZ(Math.PI / 2);
+            tireGeom.computeVertexNormals();
             const tireMesh = new THREE.Mesh(tireGeom, realTireMat);
             tireMesh.castShadow = true;
             mesh.add(tireMesh);
+
+            // Raised Sidewall Branding / Accent Ring on outer tire face
+            const sidewallRingGeom = new THREE.TorusGeometry((radius + rimHoleRadius) * 0.50, 0.003, 8, 48);
+            sidewallRingGeom.rotateY(Math.PI / 2);
+            const sidewallRing = new THREE.Mesh(sidewallRingGeom, new THREE.MeshStandardMaterial({
+                color: 0x2b2b32,
+                roughness: 0.70,
+                metalness: 0.10
+            }));
+            sidewallRing.position.x = (wp.isLeft ? -1 : 1) * tireHalfW;
+            mesh.add(sidewallRing);
 
             // 3 Longitudinal Drainage Grooves on Tire Tread
             const grooveOffsets = [-width * 0.22, 0, width * 0.22];
@@ -5133,15 +5149,14 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             });
 
             // 2.3 Aluminum Wheel Barrel & Outer Rim Flange
-            // Cylindrical Inner Aluminum Barrel (clearly visible deep into the wheel well)
-            const activeBarrelMat = isModularLip ? stepBarrelMat : rimMat;
-            const barrelGeom = new THREE.CylinderGeometry(rimHoleRadius - 0.002, rimHoleRadius * 0.93, width * 0.95, 48, 1, true);
+            // Dark Anodized Structural Aluminum Inner Barrel
+            const barrelGeom = new THREE.CylinderGeometry(rimHoleRadius - 0.002, rimHoleRadius * 0.94, width * 0.90, 48, 1, true);
             barrelGeom.rotateZ(Math.PI / 2);
-            const barrel = new THREE.Mesh(barrelGeom, activeBarrelMat);
+            const barrel = new THREE.Mesh(barrelGeom, stepBarrelMat);
             mesh.add(barrel);
 
             // Outer Lip Flange: Tucked naturally inside tire sidewall (rimLipX is inset from tire outer bulge)
-            const rimLipX = (wp.isLeft ? -1 : 1) * (halfW - 0.012);
+            const rimLipX = (wp.isLeft ? -1 : 1) * (halfW - 0.014);
             const activeLipMat = isModularLip ? mirrorLipMat : rimMat;
             const lipFlangeGeom = new THREE.CylinderGeometry(rimHoleRadius, rimHoleRadius, 0.016, 48, 1, true);
             lipFlangeGeom.rotateZ(Math.PI / 2);
@@ -5150,7 +5165,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             mesh.add(lipFlange);
 
             // Outer Bead Curl Torus
-            const lipBeadGeom = new THREE.TorusGeometry(rimHoleRadius, 0.007, 16, 48);
+            const lipBeadGeom = new THREE.TorusGeometry(rimHoleRadius, 0.006, 16, 48);
             lipBeadGeom.rotateY(Math.PI / 2);
             const lipBead = new THREE.Mesh(lipBeadGeom, activeLipMat);
             lipBead.position.x = rimLipX;
@@ -5192,8 +5207,8 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
     static addWheelSpokes(mesh, style, rimMat, radius, width, isLeft, rimHoleRadius, rimLipX) {
         const spokeGroup = new THREE.Group();
         const inwardSign = isLeft ? 1 : -1;
-        // Wheel face starts seamlessly at the rim flange
-        const faceX = rimLipX - (isLeft ? -1 : 1) * 0.003;
+        // Wheel face starts seamlessly at the rim flange, tucked neatly inside the lip
+        const faceX = rimLipX + inwardSign * 0.002;
 
         // Shared High-Luster Chrome / Hardware Materials
         const chromeNutMat = new THREE.MeshStandardMaterial({
