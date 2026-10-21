@@ -4914,10 +4914,10 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         let frontWheelL = null;
         let frontWheelR = null;
 
-        // PBR High-Grip Sports Tire Material (authentic matte rubber)
+        // PBR High-Grip Sports Tire Material (authentic matte micro-textured rubber)
         const realTireMat = (tireMat && tireMat.isMaterial) ? tireMat : new THREE.MeshStandardMaterial({
-            color: 0x1a1a1c,
-            roughness: 0.88,
+            color: 0x1b1b1e,
+            roughness: 0.86,
             metalness: 0.05
         });
         // Dark Tread Groove Material
@@ -4929,7 +4929,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // Polished Mirror Lip Material (2P/3P modular outer step lip)
         const mirrorLipMat = new THREE.MeshStandardMaterial({
             color: 0xf8fafc,
-            roughness: 0.12,
+            roughness: 0.10,
             metalness: 0.65
         });
         // Dark Inner Rim Barrel Material (anodized structural aluminum)
@@ -4984,7 +4984,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
         // Wheel aperture radius: 80% of tire radius for sports car stance
         const rimHoleRadius = radius * 0.80;
-        const shoulderR = 0.012;
+        const halfW = width * 0.5;
 
         wheelPositions.forEach((wp) => {
             const pivot = new THREE.Group();
@@ -5041,7 +5041,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // 2.1 Ventilated Brake Rotor System
             // Two outer cast-iron friction discs with ventilation gap
-            const discThick = 0.007;
+            const discThick = 0.006;
             const discOffset = 0.006;
             for (let side of [-1, 1]) {
                 const discGeom = new THREE.CylinderGeometry(rotorRadius, rotorRadius, discThick, 32);
@@ -5071,7 +5071,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             for (let s = 0; s < 8; s++) {
                 const sAngle = (s / 8) * Math.PI * 2;
                 const slotMesh = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.003, rotorRadius * 0.35, 0.005),
+                    new THREE.BoxGeometry(0.003, rotorRadius * 0.35, 0.004),
                     new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.90, metalness: 0.30 })
                 );
                 slotMesh.position.set(
@@ -5101,41 +5101,31 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 mesh.add(bobbin);
             }
 
-            // 2.2 True Hollow Performance Tire (Center is 100% open and unobstructed)
-            // Tread Cylinder (openEnded = true)
-            const tireTreadGeom = new THREE.CylinderGeometry(radius, radius, width - shoulderR * 2, 32, 1, true);
-            tireTreadGeom.rotateZ(Math.PI / 2);
-            const tireTread = new THREE.Mesh(tireTreadGeom, realTireMat);
-            tireTread.castShadow = true;
-            mesh.add(tireTread);
-
-            // Annular Sidewalls on Left and Right (Only extends from rimHoleRadius to radius - shoulderR)
-            for (let side of [-1, 1]) {
-                const sidewallGeom = new THREE.RingGeometry(rimHoleRadius, radius - shoulderR, 32);
-                sidewallGeom.rotateY(side === 1 ? Math.PI / 2 : -Math.PI / 2);
-                const sidewall = new THREE.Mesh(sidewallGeom, realTireMat);
-                sidewall.position.x = side * (width * 0.5 - shoulderR);
-                mesh.add(sidewall);
-
-                // Rounded Outer Tire Shoulder
-                const shoulderGeom = new THREE.TorusGeometry(radius - shoulderR, shoulderR, 10, 32);
-                shoulderGeom.rotateY(Math.PI / 2);
-                const shoulder = new THREE.Mesh(shoulderGeom, realTireMat);
-                shoulder.position.x = side * (width * 0.5 - shoulderR);
-                mesh.add(shoulder);
-
-                // Rim-Protector Rubber Bead Lip right at rimHoleRadius
-                const beadGeom = new THREE.TorusGeometry(rimHoleRadius + 0.003, 0.004, 8, 32);
-                beadGeom.rotateY(Math.PI / 2);
-                const bead = new THREE.Mesh(beadGeom, realTireMat);
-                bead.position.x = side * (width * 0.5 - 0.004);
-                mesh.add(bead);
-            }
+            // 2.2 True Continuous Lathed Radial Tire (Organic curved sidewall bulge & hollow center)
+            const tirePoints = [
+                new THREE.Vector2(halfW - 0.014, rimHoleRadius),
+                new THREE.Vector2(halfW - 0.007, rimHoleRadius + 0.006),
+                new THREE.Vector2(halfW, (radius + rimHoleRadius) * 0.50),
+                new THREE.Vector2(halfW - 0.008, radius - 0.010),
+                new THREE.Vector2(halfW - 0.018, radius),
+                new THREE.Vector2(0, radius + 0.002),
+                new THREE.Vector2(-halfW + 0.018, radius),
+                new THREE.Vector2(-halfW + 0.008, radius - 0.010),
+                new THREE.Vector2(-halfW, (radius + rimHoleRadius) * 0.50),
+                new THREE.Vector2(-halfW + 0.007, rimHoleRadius + 0.006),
+                new THREE.Vector2(-halfW + 0.014, rimHoleRadius)
+            ];
+            const lathePoints = tirePoints.map(p => new THREE.Vector2(p.y, p.x));
+            const tireGeom = new THREE.LatheGeometry(lathePoints, 48);
+            tireGeom.rotateZ(Math.PI / 2);
+            const tireMesh = new THREE.Mesh(tireGeom, realTireMat);
+            tireMesh.castShadow = true;
+            mesh.add(tireMesh);
 
             // 3 Longitudinal Drainage Grooves on Tire Tread
             const grooveOffsets = [-width * 0.22, 0, width * 0.22];
             grooveOffsets.forEach(gz => {
-                const grooveGeom = new THREE.CylinderGeometry(radius - 0.001, radius - 0.001, width * 0.07, 32, 1, true);
+                const grooveGeom = new THREE.CylinderGeometry(radius - 0.0005, radius - 0.0005, width * 0.06, 48, 1, true);
                 grooveGeom.rotateZ(Math.PI / 2);
                 const grooveMesh = new THREE.Mesh(grooveGeom, tireGrooveMat);
                 grooveMesh.position.x = gz;
@@ -5145,25 +5135,25 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             // 2.3 Aluminum Wheel Barrel & Outer Rim Flange
             // Cylindrical Inner Aluminum Barrel (clearly visible deep into the wheel well)
             const activeBarrelMat = isModularLip ? stepBarrelMat : rimMat;
-            const barrelGeom = new THREE.CylinderGeometry(rimHoleRadius, rimHoleRadius * 0.94, width * 0.98, 32, 1, true);
+            const barrelGeom = new THREE.CylinderGeometry(rimHoleRadius - 0.002, rimHoleRadius * 0.93, width * 0.95, 48, 1, true);
             barrelGeom.rotateZ(Math.PI / 2);
             const barrel = new THREE.Mesh(barrelGeom, activeBarrelMat);
             mesh.add(barrel);
 
-            // Outer Lip Flange: 2P/3P gets polished mirror lip; 1P monoblock matches rim paint seamlessly
-            const faceOutX = (wp.isLeft ? -1 : 1) * (width * 0.495);
+            // Outer Lip Flange: Tucked naturally inside tire sidewall (rimLipX is inset from tire outer bulge)
+            const rimLipX = (wp.isLeft ? -1 : 1) * (halfW - 0.012);
             const activeLipMat = isModularLip ? mirrorLipMat : rimMat;
-            const lipFlangeGeom = new THREE.CylinderGeometry(rimHoleRadius, rimHoleRadius, 0.018, 32, 1, true);
+            const lipFlangeGeom = new THREE.CylinderGeometry(rimHoleRadius, rimHoleRadius, 0.016, 48, 1, true);
             lipFlangeGeom.rotateZ(Math.PI / 2);
             const lipFlange = new THREE.Mesh(lipFlangeGeom, activeLipMat);
-            lipFlange.position.x = faceOutX;
+            lipFlange.position.x = rimLipX;
             mesh.add(lipFlange);
 
             // Outer Bead Curl Torus
-            const lipBeadGeom = new THREE.TorusGeometry(rimHoleRadius, 0.007, 8, 32);
+            const lipBeadGeom = new THREE.TorusGeometry(rimHoleRadius, 0.007, 16, 48);
             lipBeadGeom.rotateY(Math.PI / 2);
             const lipBead = new THREE.Mesh(lipBeadGeom, activeLipMat);
-            lipBead.position.x = faceOutX;
+            lipBead.position.x = rimLipX;
             mesh.add(lipBead);
 
             // 3D Angled Metal Tire Air Valve Stem
@@ -5172,7 +5162,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 chromeNutMat
             );
             valveStem.position.set(
-                faceOutX - (wp.isLeft ? -0.006 : 0.006),
+                rimLipX - (wp.isLeft ? -0.006 : 0.006),
                 Math.cos(0.55) * (rimHoleRadius * 0.90),
                 Math.sin(0.55) * (rimHoleRadius * 0.90)
             );
@@ -5180,8 +5170,8 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             valveStem.rotation.z = wp.isLeft ? 0.35 : -0.35;
             mesh.add(valveStem);
 
-            // 2.4 Vehicle-Specific Sculpted Spokes, Center Hub & PCD Lug System
-            this.addWheelSpokes(mesh, style, rimMat, radius, width, wp.isLeft, rimHoleRadius);
+            // 2.4 Vehicle-Specific Sculpted Spokes, Recessed Center Hub & PCD Lug System
+            this.addWheelSpokes(mesh, style, rimMat, radius, width, wp.isLeft, rimHoleRadius, rimLipX);
 
             pivot.add(mesh);
             parentGroup.add(pivot);
@@ -5197,12 +5187,13 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
     }
 
     // =========================================================================
-    // Vehicle-Specific Sculpted 3D Spokes, Center Hub & Authentic Emblems
+    // Vehicle-Specific Sculpted 3D Spokes, Recessed Hub Bowl & Authentic Emblems
     // =========================================================================
-    static addWheelSpokes(mesh, style, rimMat, radius, width, isLeft, rimHoleRadius) {
+    static addWheelSpokes(mesh, style, rimMat, radius, width, isLeft, rimHoleRadius, rimLipX) {
         const spokeGroup = new THREE.Group();
-        const faceX = (isLeft ? -1 : 1) * (width * 0.485);
         const inwardSign = isLeft ? 1 : -1;
+        // Wheel face starts seamlessly at the rim flange
+        const faceX = rimLipX - (isLeft ? -1 : 1) * 0.003;
 
         // Shared High-Luster Chrome / Hardware Materials
         const chromeNutMat = new THREE.MeshStandardMaterial({
@@ -5217,39 +5208,39 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         });
 
         // PCD Lug Nut Pattern Generator with Deep Recessed Conical Pockets
-        const addLugNutPattern = (hubCenterDepth, pcdRadius, numLugs, nutColor = 0xffffff) => {
+        const addLugNutPattern = (bowlFloorX, pcdRadius, numLugs, nutColor = 0xffffff, startAngle = 0) => {
             const nutMat = (nutColor === 0xffffff) ? chromeNutMat : new THREE.MeshStandardMaterial({
                 color: nutColor,
                 roughness: 0.14,
                 metalness: 0.88
             });
             for (let i = 0; i < numLugs; i++) {
-                const angle = (i / numLugs) * Math.PI * 2 + (numLugs === 4 ? Math.PI / 4 : 0);
+                const angle = (i / numLugs) * Math.PI * 2 + startAngle;
                 const ly = Math.cos(angle) * pcdRadius;
                 const lz = Math.sin(angle) * pcdRadius;
 
-                // Deep Conical Lug Pocket (countersunk into hub face)
+                // Deep Conical Lug Pocket (countersunk into hub bowl floor)
                 const pocket = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.014, 0.011, 0.014, 12),
+                    new THREE.CylinderGeometry(0.012, 0.009, 0.012, 12),
                     darkPocketMat
                 );
                 pocket.rotateZ(Math.PI / 2);
-                pocket.position.set(faceX + inwardSign * (hubCenterDepth - 0.002), ly, lz);
+                pocket.position.set(bowlFloorX - inwardSign * 0.002, ly, lz);
                 spokeGroup.add(pocket);
 
                 // Precision Hexagonal Lug Nut
                 const nut = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.0085, 0.0085, 0.016, 6),
+                    new THREE.CylinderGeometry(0.0065, 0.0065, 0.014, 6),
                     nutMat
                 );
                 nut.rotateZ(Math.PI / 2);
-                nut.position.set(faceX + inwardSign * (hubCenterDepth + 0.003), ly, lz);
+                nut.position.set(bowlFloorX + inwardSign * 0.005, ly, lz);
                 spokeGroup.add(nut);
             }
         };
 
         // Multi-Piece Wheel Perimeter Assembly Bolts (Pierce Bolts)
-        const addPierceBolts = (circleRadius, boltCount, boltDepth) => {
+        const addPierceBolts = (circleRadius, boltCount, boltX) => {
             for (let b = 0; b < boltCount; b++) {
                 const bAngle = (b / boltCount) * Math.PI * 2;
                 const by = Math.cos(bAngle) * circleRadius;
@@ -5259,7 +5250,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                     chromeNutMat
                 );
                 bolt.rotateZ(Math.PI / 2);
-                bolt.position.set(faceX + inwardSign * boltDepth, by, bz);
+                bolt.position.set(boltX, by, bz);
                 spokeGroup.add(bolt);
             }
         };
@@ -5270,29 +5261,30 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         if (style === 'watanabe') {
             const spokeCount = 8;
             const dishDepth = 0.024;
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
-            // Deep Conical Center Hub Cup
-            const hubCupGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.32, rimHoleRadius * 0.22, dishDepth + 0.006, 24);
-            hubCupGeom.rotateZ(Math.PI / 2);
-            const hubCup = new THREE.Mesh(hubCupGeom, rimMat);
-            hubCup.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hubCup);
+            // Deep Conical Center Hub Bowl
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.32, rimHoleRadius * 0.20, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
+            spokeGroup.add(hubBowl);
 
             // Watanabe Center Falcon Emblem Disc
             const centerBadge = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.12, rimHoleRadius * 0.12, 0.004, 16),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.12, rimHoleRadius * 0.12, 0.006, 20),
                 new THREE.MeshStandardMaterial({ color: 0x161618, roughness: 0.30, metalness: 0.50 })
             );
             centerBadge.rotateZ(Math.PI / 2);
-            centerBadge.position.x = faceX + inwardSign * (dishDepth * 0.85);
+            centerBadge.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(centerBadge);
 
             const badgeRing = new THREE.Mesh(
-                new THREE.TorusGeometry(rimHoleRadius * 0.09, 0.003, 8, 16),
+                new THREE.TorusGeometry(rimHoleRadius * 0.09, 0.003, 8, 20),
                 new THREE.MeshStandardMaterial({ color: 0xd4b440, roughness: 0.20, metalness: 0.80 })
             );
             badgeRing.rotateY(Math.PI / 2);
-            badgeRing.position.x = faceX + inwardSign * (dishDepth * 0.85 + 0.002);
+            badgeRing.position.x = bowlFloorX + inwardSign * 0.002;
             spokeGroup.add(badgeRing);
 
             // 8 Organic Banana Spokes with Convex Profile
@@ -5304,7 +5296,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 const spLen = rimHoleRadius * 0.84;
                 // Oval Organic Banana Spoke Body (tapered and rounded)
                 const spokeMesh = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.026, 0.035, spLen, 14),
+                    new THREE.CylinderGeometry(0.024, 0.034, spLen, 14),
                     rimMat
                 );
                 spokeMesh.scale.set(1.0, 1.0, 0.72); // Elliptical cross section
@@ -5312,12 +5304,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 spokeMesh.rotation.z = isLeft ? 0.12 : -0.12;
                 spGroup.add(spokeMesh);
 
-                // Prominent Face Highlight Rib
+                // Face Highlight Crest Rib
                 const ribMesh = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.016, 0.024, spLen * 0.90, 10),
+                    new THREE.CylinderGeometry(0.014, 0.022, spLen * 0.90, 10),
                     rimMat
                 );
-                ribMesh.position.set(inwardSign * -0.006, spLen * 0.50 + rimHoleRadius * 0.18, 0);
+                ribMesh.position.set(inwardSign * -0.005, spLen * 0.50 + rimHoleRadius * 0.18, 0);
                 ribMesh.rotation.z = isLeft ? 0.12 : -0.12;
                 spGroup.add(ribMesh);
 
@@ -5326,40 +5318,48 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             }
 
             // 4-Lug PCD 114.3 with Chrome Nuts
-            addLugNutPattern(dishDepth * 0.70, rimHoleRadius * 0.16, 4);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.16, 4, 0xffffff, Math.PI / 4);
 
         // ---------------------------------------------------------------------
         // 2. FD3S: Mazdaspeed MS-01 (Racing Gold 5-Spoke, 24 Studs & Hex Center Lock)
         // ---------------------------------------------------------------------
         } else if (style === 'ms01') {
             const spokeCount = 5;
-            const dishDepth = 0.020;
+            const dishDepth = 0.022;
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
             // 24 Perimeter Titanium Assembly Studs on Polished Lip
-            addPierceBolts(rimHoleRadius * 0.91, 24, 0.005);
+            addPierceBolts(rimHoleRadius * 0.91, 24, faceX + inwardSign * 0.005);
 
-            // 5 Tapered Racing Gold Spokes with Chamfered Edges
+            // Recessed Center Hub Bowl
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.35, rimHoleRadius * 0.22, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
+            spokeGroup.add(hubBowl);
+
+            // 5 Tapered Racing Gold Spokes with 3D Chamfers & Concave Rake
             for (let i = 0; i < spokeCount; i++) {
                 const angle = (i / spokeCount) * Math.PI * 2;
                 const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.36);
+                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.34);
 
                 const spLen = rimHoleRadius * 0.83;
                 // Main Spoke Body
-                const spokeGeom = new THREE.BoxGeometry(0.025, spLen, 0.054);
+                const spokeGeom = new THREE.BoxGeometry(0.024, spLen, 0.052);
                 const spoke = new THREE.Mesh(spokeGeom, rimMat);
                 spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                spoke.rotation.z = isLeft ? 0.10 : -0.10;
+                spoke.rotation.z = isLeft ? 0.11 : -0.11;
                 spGroup.add(spoke);
 
                 // Chamfer Side Wings
-                for (let wing of [-0.017, 0.017]) {
+                for (let wing of [-0.016, 0.016]) {
                     const bevel = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.016, spLen * 0.88, 0.018),
+                        new THREE.BoxGeometry(0.015, spLen * 0.88, 0.016),
                         rimMat
                     );
                     bevel.position.set(inwardSign * -0.004, spLen * 0.50 + rimHoleRadius * 0.18, wing);
-                    bevel.rotation.z = isLeft ? 0.10 : -0.10;
+                    bevel.rotation.z = isLeft ? 0.11 : -0.11;
                     spGroup.add(bevel);
                 }
 
@@ -5369,38 +5369,39 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // Mazdaspeed Center Large Hexagon Lock Nut
             const hexCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.038, 0.038, 0.018, 6),
+                new THREE.CylinderGeometry(0.036, 0.036, 0.016, 6),
                 chromeNutMat
             );
             hexCap.rotateZ(Math.PI / 2);
-            hexCap.position.x = faceX + inwardSign * (dishDepth * 0.30 + 0.005);
+            hexCap.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(hexCap);
 
             // MS-01 Center Gold Rotor Ornament Disc
             const msDisc = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.022, 0.022, 0.020, 16),
+                new THREE.CylinderGeometry(0.020, 0.020, 0.018, 16),
                 rimMat
             );
             msDisc.rotateZ(Math.PI / 2);
-            msDisc.position.x = faceX + inwardSign * (dishDepth * 0.30 + 0.006);
+            msDisc.position.x = bowlFloorX + inwardSign * 0.004;
             spokeGroup.add(msDisc);
 
             // 5-Lug PCD 114.3
-            addLugNutPattern(dishDepth * 0.55, rimHoleRadius * 0.25, 5);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.24, 5, 0xffffff, Math.PI / 5);
 
         // ---------------------------------------------------------------------
         // 3. R32: BNR32 GT-R OEM Forged 16-inch 5-Spoke (Sharp Spine & GT-R Cap)
         // ---------------------------------------------------------------------
         } else if (style === 'bnr32_oem' || style === 'gtr') {
             const spokeCount = 5;
-            const dishDepth = 0.018;
+            const dishDepth = 0.024; // 24mm concave drop into hub bowl
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
-            // Recessed Center Hub
-            const hubGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.34, rimHoleRadius * 0.25, dishDepth + 0.004, 24);
-            hubGeom.rotateZ(Math.PI / 2);
-            const hub = new THREE.Mesh(hubGeom, rimMat);
-            hub.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hub);
+            // Recessed Center Hub Bowl
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.36, rimHoleRadius * 0.20, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
+            spokeGroup.add(hubBowl);
 
             // 5 Muscular Forged Spokes with Center Spine & Side Chamfers
             for (let i = 0; i < spokeCount; i++) {
@@ -5411,30 +5412,30 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 const spLen = rimHoleRadius * 0.83;
                 // Main Structural Spoke
                 const mainSpoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, spLen, 0.062),
+                    new THREE.BoxGeometry(0.025, spLen, 0.058),
                     rimMat
                 );
                 mainSpoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                mainSpoke.rotation.z = isLeft ? 0.10 : -0.10;
+                mainSpoke.rotation.z = isLeft ? 0.11 : -0.11;
                 spGroup.add(mainSpoke);
 
                 // Sharp Central Spine Ridge (runs along center of spoke face)
                 const ridgeSpoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.018, spLen * 0.94, 0.022),
+                    new THREE.BoxGeometry(0.016, spLen * 0.94, 0.018),
                     rimMat
                 );
                 ridgeSpoke.position.set(inwardSign * -0.006, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                ridgeSpoke.rotation.z = isLeft ? 0.10 : -0.10;
+                ridgeSpoke.rotation.z = isLeft ? 0.11 : -0.11;
                 spGroup.add(ridgeSpoke);
 
                 // Scalloped Side Chamfers
-                for (let side of [-0.022, 0.022]) {
+                for (let side of [-0.020, 0.020]) {
                     const chamfer = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.016, spLen * 0.85, 0.018),
+                        new THREE.BoxGeometry(0.014, spLen * 0.85, 0.016),
                         rimMat
                     );
                     chamfer.position.set(inwardSign * -0.003, spLen * 0.48 + rimHoleRadius * 0.18, side);
-                    chamfer.rotation.z = isLeft ? 0.10 : -0.10;
+                    chamfer.rotation.z = isLeft ? 0.11 : -0.11;
                     spGroup.add(chamfer);
                 }
 
@@ -5444,23 +5445,23 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // Authentic Nissan GT-R Center Cap (Red emblem medallion with chrome bezel)
             const gtrBezel = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.016, 20),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.012, 20),
                 chromeNutMat
             );
             gtrBezel.rotateZ(Math.PI / 2);
-            gtrBezel.position.x = faceX + inwardSign * (dishDepth * 0.45);
+            gtrBezel.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(gtrBezel);
 
             const gtrEmblem = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.11, rimHoleRadius * 0.11, 0.018, 20),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.11, rimHoleRadius * 0.11, 0.014, 20),
                 new THREE.MeshStandardMaterial({ color: 0xaa1818, roughness: 0.25, metalness: 0.40 })
             );
             gtrEmblem.rotateZ(Math.PI / 2);
-            gtrEmblem.position.x = faceX + inwardSign * (dishDepth * 0.45 + 0.001);
+            gtrEmblem.position.x = bowlFloorX + inwardSign * 0.004;
             spokeGroup.add(gtrEmblem);
 
             // 5-Lug PCD 114.3 with Chrome Nuts
-            addLugNutPattern(dishDepth * 0.65, rimHoleRadius * 0.22, 5);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
 
         // ---------------------------------------------------------------------
         // 4. S13: SSR Formula Mesh (Intricate Diamond Mesh & Deep Dish)
@@ -5468,9 +5469,10 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         } else if (style === 'ssr_mesh') {
             const meshCount = 16;
             const dishDepth = 0.026;
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
             // Deep Polished Mirror Step Lip with 24 Chrome Assembly Studs
-            addPierceBolts(rimHoleRadius * 0.90, 24, 0.006);
+            addPierceBolts(rimHoleRadius * 0.90, 24, faceX + inwardSign * 0.006);
 
             // Golden Center Lattice Hub
             const meshHub = new THREE.Mesh(
@@ -5518,7 +5520,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 chromeNutMat
             );
             ssrTower.rotateZ(Math.PI / 2);
-            ssrTower.position.x = faceX + inwardSign * (dishDepth * 0.30 + 0.006);
+            ssrTower.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(ssrTower);
 
             const ssrDisc = new THREE.Mesh(
@@ -5526,38 +5528,39 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 new THREE.MeshStandardMaterial({ color: 0xcc1818, roughness: 0.20, metalness: 0.40 })
             );
             ssrDisc.rotateZ(Math.PI / 2);
-            ssrDisc.position.x = faceX + inwardSign * (dishDepth * 0.30 + 0.007);
+            ssrDisc.position.x = bowlFloorX + inwardSign * 0.004;
             spokeGroup.add(ssrDisc);
 
             // 4-Lug PCD 114.3
-            addLugNutPattern(dishDepth * 0.65, rimHoleRadius * 0.22, 4);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 4, 0xffffff, Math.PI / 4);
 
         // ---------------------------------------------------------------------
         // 5. JZX100: Yokohama AVS Model 5 (Aggressive Concave Twin 5-Spoke)
         // ---------------------------------------------------------------------
         } else if (style === 'avs_model5' || style === 'avs5') {
             const spokePairs = 5;
-            const dishDepth = 0.026;
+            const dishDepth = 0.028; // 28mm aggressive concave drop
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
-            // Deep Recessed Center Hub
-            const hubGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.34, rimHoleRadius * 0.22, dishDepth + 0.004, 24);
-            hubGeom.rotateZ(Math.PI / 2);
-            const hub = new THREE.Mesh(hubGeom, rimMat);
-            hub.position.x = faceX + inwardSign * (dishDepth * 0.52);
-            spokeGroup.add(hub);
+            // Deep Recessed Center Hub Bowl
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.34, rimHoleRadius * 0.20, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.52);
+            spokeGroup.add(hubBowl);
 
             // 5 Pairs of Sleek Twin-Spokes with Dramatic CONCAVE Sweep
             for (let i = 0; i < spokePairs; i++) {
                 const pairAngle = (i / spokePairs) * Math.PI * 2;
                 const spLen = rimHoleRadius * 0.84;
 
-                for (let twin of [-0.075, 0.075]) {
+                for (let twin of [-0.070, 0.070]) {
                     const spGroup = new THREE.Group();
-                    spGroup.position.x = faceX + inwardSign * (dishDepth * 0.28);
+                    spGroup.position.x = faceX + inwardSign * (dishDepth * 0.30);
 
                     // Slender Aerodynamic Twin Spoke with Inward Concave Rake
                     const spoke = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.024, spLen, 0.028),
+                        new THREE.BoxGeometry(0.022, spLen, 0.026),
                         rimMat
                     );
                     spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
@@ -5566,7 +5569,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
                     // Chamfer Side Highlight
                     const bevel = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.016, spLen * 0.92, 0.012),
+                        new THREE.BoxGeometry(0.015, spLen * 0.92, 0.012),
                         rimMat
                     );
                     bevel.position.set(inwardSign * -0.004, spLen * 0.50 + rimHoleRadius * 0.18, 0);
@@ -5584,25 +5587,26 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 new THREE.MeshStandardMaterial({ color: 0x181a1e, roughness: 0.25, metalness: 0.70 })
             );
             avsCap.rotateZ(Math.PI / 2);
-            avsCap.position.x = faceX + inwardSign * (dishDepth * 0.45);
+            avsCap.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(avsCap);
 
             // 5-Lug PCD 114.3 with Dark Anodized Tuner Lug Nuts
-            addLugNutPattern(dishDepth * 0.65, rimHoleRadius * 0.22, 5, 0x222226);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0x222226, Math.PI / 5);
 
         // ---------------------------------------------------------------------
         // 6. CE9A: OZ Racing Chrono Rally 5-Spoke (Championship White Wide Rally Face)
         // ---------------------------------------------------------------------
         } else if (style === 'oz_chrono' || style === 'oz') {
             const spokeCount = 5;
-            const dishDepth = 0.018;
+            const dishDepth = 0.020;
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
-            // Center Hub
-            const hubGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.38, rimHoleRadius * 0.26, dishDepth + 0.004, 24);
-            hubGeom.rotateZ(Math.PI / 2);
-            const hub = new THREE.Mesh(hubGeom, rimMat);
-            hub.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hub);
+            // Center Hub Bowl
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.38, rimHoleRadius * 0.24, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
+            spokeGroup.add(hubBowl);
 
             // 5 Wide Flat-Face Structural Rally Spokes
             for (let i = 0; i < spokeCount; i++) {
@@ -5613,21 +5617,21 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 const spLen = rimHoleRadius * 0.83;
                 // Wide Rally Spoke
                 const spoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, spLen, 0.076),
+                    new THREE.BoxGeometry(0.024, spLen, 0.072),
                     rimMat
                 );
                 spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                spoke.rotation.z = isLeft ? 0.08 : -0.08;
+                spoke.rotation.z = isLeft ? 0.09 : -0.09;
                 spGroup.add(spoke);
 
                 // Beveled Draft Angles on Sides
-                for (let side of [-0.028, 0.028]) {
+                for (let side of [-0.026, 0.026]) {
                     const draft = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.015, spLen * 0.88, 0.020),
+                        new THREE.BoxGeometry(0.015, spLen * 0.88, 0.018),
                         rimMat
                     );
                     draft.position.set(inwardSign * -0.004, spLen * 0.48 + rimHoleRadius * 0.18, side);
-                    draft.rotation.z = isLeft ? 0.08 : -0.08;
+                    draft.rotation.z = isLeft ? 0.09 : -0.09;
                     spGroup.add(draft);
                 }
 
@@ -5637,37 +5641,38 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // Iconic OZ Racing Circular Center Cap (Red ring and carbon/white center)
             const ozRing = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.16, rimHoleRadius * 0.16, 0.016, 24),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.16, rimHoleRadius * 0.16, 0.014, 24),
                 new THREE.MeshStandardMaterial({ color: 0xcc1818, roughness: 0.20, metalness: 0.35 })
             );
             ozRing.rotateZ(Math.PI / 2);
-            ozRing.position.x = faceX + inwardSign * (dishDepth * 0.44);
+            ozRing.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(ozRing);
 
             const ozCore = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.12, rimHoleRadius * 0.12, 0.018, 20),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.12, rimHoleRadius * 0.12, 0.016, 20),
                 rimMat
             );
             ozCore.rotateZ(Math.PI / 2);
-            ozCore.position.x = faceX + inwardSign * (dishDepth * 0.44 + 0.001);
+            ozCore.position.x = bowlFloorX + inwardSign * 0.004;
             spokeGroup.add(ozCore);
 
             // 5-Lug PCD 114.3
-            addLugNutPattern(dishDepth * 0.65, rimHoleRadius * 0.23, 5);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.23, 5, 0xffffff, Math.PI / 5);
 
         // ---------------------------------------------------------------------
         // 7. EK9: Honda Civic Type R OEM 7-Spoke (Championship White & Red H Cap)
         // ---------------------------------------------------------------------
         } else if (style === 'ek9_typer' || style === 'type_r') {
             const spokeCount = 7;
-            const dishDepth = 0.018;
+            const dishDepth = 0.020;
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
-            // Recessed Center Hub
-            const hubGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.34, rimHoleRadius * 0.24, dishDepth + 0.004, 24);
-            hubGeom.rotateZ(Math.PI / 2);
-            const hub = new THREE.Mesh(hubGeom, rimMat);
-            hub.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hub);
+            // Recessed Center Hub Bowl
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.34, rimHoleRadius * 0.22, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
+            spokeGroup.add(hubBowl);
 
             // 7 Slender Aerodynamic Spokes with Convex Crown
             for (let i = 0; i < spokeCount; i++) {
@@ -5678,7 +5683,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 const spLen = rimHoleRadius * 0.83;
                 // Main Spoke Body
                 const spoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, spLen, 0.044),
+                    new THREE.BoxGeometry(0.024, spLen, 0.042),
                     rimMat
                 );
                 spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
@@ -5687,7 +5692,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
                 // Beveled Flank Facets
                 const crown = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.016, spLen * 0.90, 0.020),
+                    new THREE.BoxGeometry(0.015, spLen * 0.90, 0.018),
                     rimMat
                 );
                 crown.position.set(inwardSign * -0.004, spLen * 0.50 + rimHoleRadius * 0.18, 0);
@@ -5700,22 +5705,22 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // Authentic Championship White Center Cap with Red "H" Honda Badge
             const typeRCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.13, rimHoleRadius * 0.13, 0.016, 20),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.13, rimHoleRadius * 0.13, 0.014, 20),
                 rimMat
             );
             typeRCap.rotateZ(Math.PI / 2);
-            typeRCap.position.x = faceX + inwardSign * (dishDepth * 0.44);
+            typeRCap.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(typeRCap);
 
             const redHBadge = new THREE.Mesh(
-                new THREE.BoxGeometry(0.018, rimHoleRadius * 0.14, rimHoleRadius * 0.12),
+                new THREE.BoxGeometry(0.016, rimHoleRadius * 0.14, rimHoleRadius * 0.12),
                 new THREE.MeshStandardMaterial({ color: 0xcc1818, roughness: 0.20, metalness: 0.35 })
             );
-            redHBadge.position.set(faceX + inwardSign * (dishDepth * 0.44 + 0.001), 0, 0);
+            redHBadge.position.set(bowlFloorX + inwardSign * 0.004, 0, 0);
             spokeGroup.add(redHBadge);
 
             // 5-Lug PCD 114.3
-            addLugNutPattern(dishDepth * 0.65, rimHoleRadius * 0.22, 5);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
 
         // ---------------------------------------------------------------------
         // 8. RPS13: SSR Longchamp XR-4 (4 Cross Blades & Black Pockets)
@@ -5723,9 +5728,10 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         } else if (style === 'longchamp' || style === '5star') {
             const spokeCount = 4;
             const dishDepth = 0.026;
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
             // Deep-Dish Polished Rim with 16 Assembly Bolts
-            addPierceBolts(rimHoleRadius * 0.91, 16, 0.006);
+            addPierceBolts(rimHoleRadius * 0.91, 16, faceX + inwardSign * 0.006);
 
             // Deep Satin Black Hub Cavity
             const darkHub = new THREE.Mesh(
@@ -5745,7 +5751,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 const spLen = rimHoleRadius * 0.83;
                 // Polished Cross Blade
                 const blade = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, spLen, 0.078),
+                    new THREE.BoxGeometry(0.026, spLen, 0.076),
                     new THREE.MeshStandardMaterial({ color: 0xfafcff, roughness: 0.12, metalness: 0.70 })
                 );
                 blade.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
@@ -5754,7 +5760,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
                 // Central Highlight Bevel
                 const rib = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.016, spLen * 0.92, 0.032),
+                    new THREE.BoxGeometry(0.016, spLen * 0.92, 0.030),
                     chromeNutMat
                 );
                 rib.position.set(inwardSign * -0.006, spLen * 0.50 + rimHoleRadius * 0.18, 0);
@@ -5771,20 +5777,21 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 chromeNutMat
             );
             centerCap.rotateZ(Math.PI / 2);
-            centerCap.position.x = faceX + inwardSign * (dishDepth * 0.30 + 0.006);
+            centerCap.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(centerCap);
 
             // 4-Lug PCD 114.3
-            addLugNutPattern(dishDepth * 0.65, rimHoleRadius * 0.22, 4);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 4, 0xffffff, Math.PI / 4);
 
         // ---------------------------------------------------------------------
         // 9. CC72V: Suzuki Alto Works Aero Dish (Machined Face with 4 Cooling Slots)
         // ---------------------------------------------------------------------
         } else if (style === 'works_dish') {
-            const dishDepth = 0.016;
+            const dishDepth = 0.018;
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
             // Machined Silver Aerodynamic Dish Face
-            const dishGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.98, rimHoleRadius * 0.96, 0.020, 32);
+            const dishGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.98, rimHoleRadius * 0.96, 0.018, 32);
             dishGeom.rotateZ(Math.PI / 2);
             const dish = new THREE.Mesh(dishGeom, rimMat);
             dish.position.x = faceX + inwardSign * (dishDepth * 0.40);
@@ -5794,7 +5801,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             for (let s = 0; s < 4; s++) {
                 const sAngle = (s / 4) * Math.PI * 2 + Math.PI / 4;
                 const slot = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, rimHoleRadius * 0.26, 0.038),
+                    new THREE.BoxGeometry(0.024, rimHoleRadius * 0.26, 0.036),
                     darkPocketMat
                 );
                 slot.position.set(
@@ -5808,11 +5815,11 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // Authentic Suzuki "WORKS" Red & Chrome Center Badge
             const worksCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.22, rimHoleRadius * 0.22, 0.024, 20),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.22, rimHoleRadius * 0.22, 0.022, 20),
                 new THREE.MeshStandardMaterial({ color: 0xcc1818, roughness: 0.20, metalness: 0.40 })
             );
             worksCap.rotateZ(Math.PI / 2);
-            worksCap.position.x = faceX + inwardSign * (dishDepth * 0.35);
+            worksCap.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(worksCap);
 
             const worksRing = new THREE.Mesh(
@@ -5820,25 +5827,26 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 chromeNutMat
             );
             worksRing.rotateY(Math.PI / 2);
-            worksRing.position.x = faceX + inwardSign * (dishDepth * 0.35 + 0.002);
+            worksRing.position.x = bowlFloorX + inwardSign * 0.004;
             spokeGroup.add(worksRing);
 
             // 4-Lug PCD 100
-            addLugNutPattern(dishDepth * 0.60, rimHoleRadius * 0.20, 4);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.20, 4, 0xffffff, Math.PI / 4);
 
         // ---------------------------------------------------------------------
         // 10. JZA80: Toyota Supra RZ OEM 17-inch 5-Spoke (Dual-Channel Aerodynamic Face)
         // ---------------------------------------------------------------------
         } else if (style === 'supra_rz' || style === 'supra_5spoke') {
             const spokeCount = 5;
-            const dishDepth = 0.020;
+            const dishDepth = 0.024; // 24mm concave drop into hub bowl
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
-            // Recessed Center Hub
-            const hubGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.36, rimHoleRadius * 0.25, dishDepth + 0.004, 24);
-            hubGeom.rotateZ(Math.PI / 2);
-            const hub = new THREE.Mesh(hubGeom, rimMat);
-            hub.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hub);
+            // Recessed Center Hub Bowl
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.36, rimHoleRadius * 0.22, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
+            spokeGroup.add(hubBowl);
 
             // 5 Bold Aerodynamic Dual-Channel Contoured Spokes
             for (let i = 0; i < spokeCount; i++) {
@@ -5849,7 +5857,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 const spLen = rimHoleRadius * 0.83;
                 // Main Spoke Body
                 const spoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, spLen, 0.068),
+                    new THREE.BoxGeometry(0.026, spLen, 0.066),
                     rimMat
                 );
                 spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
@@ -5859,7 +5867,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 // Twin Rounded Contoured Flute Ridges along the Spoke Face
                 for (let flute of [-0.018, 0.018]) {
                     const ridge = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.011, 0.014, spLen * 0.92, 10),
+                        new THREE.CylinderGeometry(0.010, 0.013, spLen * 0.92, 10),
                         rimMat
                     );
                     ridge.position.set(inwardSign * -0.005, spLen * 0.50 + rimHoleRadius * 0.18, flute);
@@ -5873,11 +5881,11 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // Toyota Chrome Oval Emblem on Silver Center Cap
             const supraCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.016, 20),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.014, 20),
                 rimMat
             );
             supraCap.rotateZ(Math.PI / 2);
-            supraCap.position.x = faceX + inwardSign * (dishDepth * 0.44);
+            supraCap.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(supraCap);
 
             const toyotaRing = new THREE.Mesh(
@@ -5885,25 +5893,26 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 chromeNutMat
             );
             toyotaRing.rotateY(Math.PI / 2);
-            toyotaRing.position.x = faceX + inwardSign * (dishDepth * 0.44 + 0.002);
+            toyotaRing.position.x = bowlFloorX + inwardSign * 0.004;
             spokeGroup.add(toyotaRing);
 
             // 5-Lug PCD 114.3
-            addLugNutPattern(dishDepth * 0.65, rimHoleRadius * 0.22, 5);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
 
         // ---------------------------------------------------------------------
         // 11. S15: Nissan Silvia Spec-R OEM 16-inch 5-Spoke (Dual-Flute Longitudinal Groove)
         // ---------------------------------------------------------------------
         } else if (style === 's15_spec_r' || style === 's15_5spoke') {
             const spokeCount = 5;
-            const dishDepth = 0.018;
+            const dishDepth = 0.024; // 24mm concave drop into hub bowl
+            const bowlFloorX = faceX + inwardSign * dishDepth;
 
-            // Recessed Center Hub
-            const hubGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.35, rimHoleRadius * 0.24, dishDepth + 0.004, 24);
-            hubGeom.rotateZ(Math.PI / 2);
-            const hub = new THREE.Mesh(hubGeom, rimMat);
-            hub.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hub);
+            // Recessed Center Hub Bowl
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.35, rimHoleRadius * 0.20, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
+            spokeGroup.add(hubBowl);
 
             // 5 Sculpted Directional Spokes with Signature DUAL-FLUTE SPLIT Face
             for (let i = 0; i < spokeCount; i++) {
@@ -5914,21 +5923,21 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 const spLen = rimHoleRadius * 0.83;
                 // Main Spoke Body
                 const mainSpoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, spLen, 0.062),
+                    new THREE.BoxGeometry(0.026, spLen, 0.060),
                     rimMat
                 );
                 mainSpoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                mainSpoke.rotation.z = isLeft ? 0.10 : -0.10;
+                mainSpoke.rotation.z = isLeft ? 0.11 : -0.11;
                 spGroup.add(mainSpoke);
 
                 // Two Distinct Parallel Raised Flute Ridges along the spoke face
                 for (let flute of [-0.015, 0.015]) {
                     const ridge = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.016, spLen * 0.94, 0.014),
+                        new THREE.BoxGeometry(0.015, spLen * 0.94, 0.013),
                         rimMat
                     );
                     ridge.position.set(inwardSign * -0.005, spLen * 0.50 + rimHoleRadius * 0.18, flute);
-                    ridge.rotation.z = isLeft ? 0.10 : -0.10;
+                    ridge.rotation.z = isLeft ? 0.11 : -0.11;
                     spGroup.add(ridge);
                 }
 
@@ -5938,7 +5947,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                     darkPocketMat
                 );
                 trough.position.set(inwardSign * -0.002, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                trough.rotation.z = isLeft ? 0.10 : -0.10;
+                trough.rotation.z = isLeft ? 0.11 : -0.11;
                 spGroup.add(trough);
 
                 spGroup.rotation.x = -angle;
@@ -5947,11 +5956,11 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
             // Domed Nissan Center Emblem Badge
             const s15Cap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.13, rimHoleRadius * 0.13, 0.016, 20),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.13, rimHoleRadius * 0.13, 0.014, 20),
                 rimMat
             );
             s15Cap.rotateZ(Math.PI / 2);
-            s15Cap.position.x = faceX + inwardSign * (dishDepth * 0.44);
+            s15Cap.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(s15Cap);
 
             const nissanRing = new THREE.Mesh(
@@ -5959,11 +5968,11 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 chromeNutMat
             );
             nissanRing.rotateY(Math.PI / 2);
-            nissanRing.position.x = faceX + inwardSign * (dishDepth * 0.44 + 0.002);
+            nissanRing.position.x = bowlFloorX + inwardSign * 0.004;
             spokeGroup.add(nissanRing);
 
             // 5-Lug PCD 114.3
-            addLugNutPattern(dishDepth * 0.65, rimHoleRadius * 0.22, 5);
+            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
 
         // Fallback: Elegant 5-Spoke
         } else {
@@ -5985,7 +5994,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
                 spGroup.rotation.x = -angle;
                 spokeGroup.add(spGroup);
             }
-            addLugNutPattern(0.012, rimHoleRadius * 0.22, 5);
+            addLugNutPattern(faceX + inwardSign * 0.015, rimHoleRadius * 0.22, 5);
         }
 
         mesh.add(spokeGroup);
