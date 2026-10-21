@@ -24,7 +24,7 @@ class Game {
         this.cameraShakeTimer = 0;
         this.cameraShakeIntensity = 0;
 
-        // ★一人称視点（cameraMode === 3）ドリフト限界角での「カクッ」完全解消用C2連続スムージング状態変数
+        // ★一人称視点（cameraMode === 1）ドリフト限界角での「カクッ」完全解消用C2連続スムージング状態変数
         this.fpInitialized = false;
         this.fpSlipMid = 0;
         this.fpSlipSmooth = 0;
@@ -966,16 +966,14 @@ class Game {
         }
 
         if (this.input.changeView) {
-            this.cameraMode = (this.cameraMode + 1) % 4;
+            this.cameraMode = (this.cameraMode + 1) % 2;
             this.cameraModeChanged = true;
-            this.tpCamDir = null;
-            this.fpInitialized = false;
+            this.tpCamDir = null; // 三人称切り替え時に直前の向きへ即座にアライメント
+            this.fpInitialized = false; // 一人称視点スムージング状態のクリーンリセット
             if (this.hud && this.hud.showPopup) {
                 const modeNames = [
-                    'VIEW: STANDARD CHASE (標準三人称)',
-                    'VIEW: CLOSE CHASE (近接三人称)',
-                    'VIEW: DRIFT ACTION (横斜め追従)',
-                    'VIEW: IDAS NOSE / 1ST-PERSON (頭文字D 一人称ノーズ)'
+                    'VIEW: ARCADE CHASE (頭文字D 三人称視点)',
+                    'VIEW: ARCADE NOSE (頭文字D 一人称視点)'
                 ];
                 this.hud.showPopup(modeNames[this.cameraMode], '#00e5ff', 1.0);
             }
@@ -1385,11 +1383,11 @@ class Game {
 
         // ★頭文字D ARCADE STAGE 仕様：
         // 親グループ(meshGroup)は常に visible = true に保ち、内蔵されたヘッドライト(SpotLight/PointLight)を100%点灯維持！
-        // 一人称視点(cameraMode === 3)の時のみ、ポリゴンメッシュ(child.isMesh)だけを非表示にすることで、
+        // 一人称視点(cameraMode === 1)の時のみ、ポリゴンメッシュ(child.isMesh)だけを非表示にすることで、
         // 自車のボンネットやボディは一切画面に映らない100%クリアなアーケード主観視界と、煌々と路面を照らすヘッドライトを完全両立！
         if (this.playerCar && this.playerCar.meshGroup) {
             this.playerCar.meshGroup.visible = true;
-            const showBodyMesh = (this.cameraMode !== 3);
+            const showBodyMesh = (this.cameraMode !== 1);
             this.playerCar.meshGroup.traverse((child) => {
                 if (child.isMesh) {
                     child.visible = showBodyMesh;
@@ -1470,9 +1468,9 @@ class Game {
         }
 
         // =========================================================================
-        // ★【頭文字D ARCADE STAGE 完全再現：一人称主観ビュー】(cameraMode === 3)
+        // ★【頭文字D ARCADE STAGE 完全再現：一人称主観ビュー】(cameraMode === 1)
         // =========================================================================
-        if (this.cameraMode === 3) {
+        if (this.cameraMode === 1) {
             // 一人称視点時はヘッドライト照射角も滑らかなカメラ車体角(fpBodyYaw)に同期し、限界角でのライト揺れも防止
             if (this.playerCar && this.playerCar.meshGroup) {
                 this.playerCar.meshGroup.rotation.y = this.fpBodyYaw;
@@ -1565,23 +1563,10 @@ class Game {
         }
         const camDir = this.tpCamDir;
 
-        let targetDist = 4.95;
-        let targetHeight = 1.72;
-        let lookAheadDist = 8.4;
-
-        if (this.cameraMode === 0) { // ★頭文字D ARCADE STAGE 完全再現：標準チェイス（黄金比テールビュー）
-            targetDist = 4.95 + speedPull * 0.45;
-            targetHeight = 1.72 - speedPull * 0.12;
-            lookAheadDist = 8.4 + speedPull * 2.8;
-        } else if (this.cameraMode === 1) { // ★近接三人称チェイス（タイトテールビュー）
-            targetDist = 4.25 + speedPull * 0.35;
-            targetHeight = 1.54 - speedPull * 0.10;
-            lookAheadDist = 7.4 + speedPull * 2.5;
-        } else if (this.cameraMode === 2) { // ★ドリフト・サイドアクション視点（斜め追従）
-            targetDist = 5.20 + speedPull * 0.45;
-            targetHeight = 1.62 - speedPull * 0.12;
-            lookAheadDist = 6.8 + speedPull * 2.5;
-        }
+        // ★頭文字D ARCADE STAGE 完全再現：三人称チェイス（迫力のアーケード近接テールビュー）
+        const targetDist = 4.25 + speedPull * 0.35;
+        const targetHeight = 1.54 - speedPull * 0.10;
+        const lookAheadDist = 7.4 + speedPull * 2.5;
 
         // 2. 下り坂・勾配適応補正
         const slopeDown = -trackInfo.tangent.y;
@@ -1591,13 +1576,8 @@ class Game {
         const carRight = new THREE.Vector3(forward.z, 0, -forward.x);
         let lateralOffset = new THREE.Vector3();
 
-        if (this.cameraMode === 2) {
-            // ドリフト・サイドアクション視点：車体斜め外側からカウンター舵角とスライドを大胆に捉える
-            const sideSign = (this.playerPhysics.driftAngle !== 0) ? Math.sign(this.playerPhysics.driftAngle) : 1.0;
-            const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * 1.6;
-            lateralOffset = carRight.clone().multiplyScalar(sideSign * 1.25 + driftSwing);
-        } else if (this.playerPhysics.isDrifting) {
-            const swingScale = (this.cameraMode === 1 ? 1.45 : 1.38);
+        if (this.playerPhysics.isDrifting) {
+            const swingScale = 1.45;
             const driftSwing = Math.sin(this.playerPhysics.driftAngle || 0) * swingScale;
             lateralOffset = carRight.clone().multiplyScalar(driftSwing);
         }
@@ -1682,13 +1662,8 @@ class Game {
         }
         this.camera.lookAt(this.cameraLookTarget);
 
-        // 5. 速度に応じたダイナミックFOV＆スピード演出
-        let targetFov = 55 + speedRatio * 9;
-        if (this.cameraMode === 1) {
-            targetFov = 58 + speedRatio * 9;
-        } else if (this.cameraMode === 2) {
-            targetFov = 62 + speedRatio * 12;
-        }
+        // 5. 速度に応じたダイナミックFOV＆スピード演出（頭文字D アーケード準拠：58°〜67°）
+        let targetFov = 58 + speedRatio * 9;
 
         if (this.playerPhysics.isDrifting) {
             targetFov += Math.min(3, Math.abs(this.playerPhysics.driftAngle) * 5);
