@@ -138,11 +138,32 @@ class CarModelBuilder {
         // =========================================================================
         // 1. メインボディ造形（シャープなウェッジシェイプ・パンダツートン＆立体フェンダー）
         // =========================================================================
-        // 1.1 ロアアンダーボディ（ブラック：フロアベース）
-        const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.18, 3.88), secondaryMat);
-        lowerBody.position.set(0, 0.23, 0);
-        lowerBody.castShadow = true;
-        group.add(lowerBody);
+        // 1.1 ロアシャシー（前後タイヤ間に収まるスリムスパイン＋キャビンフロア）
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.16, 3.84), secondaryMat);
+        spineFloor.position.set(0, 0.22, 0);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.16, 1.48), secondaryMat);
+        cabinFloor.position.set(0, 0.22, 0.0);
+        group.add(cabinFloor);
+
+        const fTray = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.14, 0.45), secondaryMat);
+        fTray.position.set(0, 0.22, 1.75);
+        group.add(fTray);
+
+        const rTray = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.14, 0.45), secondaryMat);
+        rTray.position.set(0, 0.22, -1.75);
+        group.add(rTray);
+
+        // ダークインナーホイールハウスライナー（中身抜け・隙間完全解消）
+        for (let s of [-1, 1]) {
+            for (let z of [1.20, -1.20]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.58), meshDarkMat);
+                archLiner.position.set(s * 0.54, 0.42, z);
+                group.add(archLiner);
+            }
+        }
 
         // 1.2 ドア部ウエスト＆ブラックサイドステップ
         for (let s of [-1, 1]) {
@@ -167,6 +188,11 @@ class CarModelBuilder {
             const handle = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.032, 0.09), blackTrimMat);
             handle.position.set(s * 0.818, 0.58, -0.28);
             group.add(handle);
+
+            // ドアショルダー（ドアアウター天面とウインドウ下端をシームレス結合）
+            const doorShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 1.36), primaryMat);
+            doorShoulder.position.set(s * 0.70, 0.63, 0.02);
+            group.add(doorShoulder);
         }
 
                 // 1.3 フロントフェンダー＆ホイールアーチ（開口部を確保し車輪への干渉・埋没を完全解消）
@@ -231,10 +257,14 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 1.40), primar
             group.add(qVent);
         }
 
-        // 車体センターコア
-        const bodyCore = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.30, 3.82), primaryMat);
-        bodyCore.position.set(0, 0.47, 0);
-        group.add(bodyCore);
+        // 車体センターコア（スリムスパイン＋キャビンコア）
+        const spineCore = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.28, 3.82), primaryMat);
+        spineCore.position.set(0, 0.47, 0);
+        group.add(spineCore);
+
+        const cabinCore = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.28, 1.48), primaryMat);
+        cabinCore.position.set(0, 0.47, 0.0);
+        group.add(cabinCore);
 
         // =========================================================================
         // 2. スラントノーズ・リトラクタブル＆前期型GT-APEXフロントマスク
@@ -243,7 +273,7 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 1.40), primar
         cowl.position.set(0, 0.66, 0.54);
         group.add(cowl);
 
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.46, 0.035, 1.22), hoodMat);
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.20, 0.035, 1.22), hoodMat);
         hood.position.set(0, 0.635, 1.15);
         hood.rotation.x = 0.075;
         group.add(hood);
@@ -379,8 +409,8 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 1.40), primar
         // =========================================================================
         // 3. 隙間ゼロ・超高精度3ドアハッチバックキャビン（完全シームレス接合）
         // =========================================================================
-        const interiorCore = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.32, 1.48), interiorMat);
-        interiorCore.position.set(0, 0.68, -0.25);
+        const interiorCore = new THREE.Mesh(new THREE.BoxGeometry(1.20, 0.32, 1.24), interiorMat);
+        interiorCore.position.set(0, 0.68, -0.20);
         group.add(interiorCore);
 
         // リアパーセルシェルフ（トノデッキフロア：ハッチ下の空洞化を完全解消）
@@ -706,11 +736,32 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 1.40), primar
         // =========================================================================
         // 1. コークボトル・有機的流線型メインボディ
         // =========================================================================
-        // 1.1 ロアボディフロア（ホイールベース2.42m対応）
-        const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.22, 4.14), yellowBodyMat);
-        lowerBody.position.set(0, 0.26, 0);
-        lowerBody.castShadow = true;
-        group.add(lowerBody);
+        // 1.1 ロアシャシー（前後タイヤ間に収まるスリムスパイン＋キャビンフロア）
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.20, 0.20, 4.14), yellowBodyMat);
+        spineFloor.position.set(0, 0.25, 0);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.54, 0.20, 1.40), yellowBodyMat);
+        cabinFloor.position.set(0, 0.25, -0.05);
+        group.add(cabinFloor);
+
+        const fTray = new THREE.Mesh(new THREE.BoxGeometry(1.46, 0.18, 0.50), secondaryMat);
+        fTray.position.set(0, 0.24, 1.85);
+        group.add(fTray);
+
+        const rTray = new THREE.Mesh(new THREE.BoxGeometry(1.46, 0.18, 0.50), secondaryMat);
+        rTray.position.set(0, 0.24, -1.85);
+        group.add(rTray);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.25, -1.25]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.60), meshDarkMat);
+                archLiner.position.set(s * 0.56, 0.44, z);
+                group.add(archLiner);
+            }
+        }
 
         // 1.2 ドア部くびれ＆サイドスカート（幅1.70m、有機的なウエストライン）
         for (let s of [-1, 1]) {
@@ -728,6 +779,11 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 1.40), primar
             const sideFin = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.20, 0.24), yellowBodyMat);
             sideFin.position.set(s * 0.84, 0.32, -0.62);
             group.add(sideFin);
+
+            // ドアショルダー（ドア上端とサイドガラス下端の150mm隙間を完全密閉）
+            const doorShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.05, 1.24), yellowBodyMat);
+            doorShoulder.position.set(s * 0.70, 0.64, 0.02);
+            group.add(doorShoulder);
         }
 
                 // 1.3 フロントマッスルフェンダー（ホイール開口部を確保し車輪への干渉・埋没を完全解消）
@@ -795,7 +851,7 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 1.34), yellow
         group.add(cowl);
 
         // 2.2 スラントボンネット（13Bロータリーならではの超低重心・前下がりウェッジ）
-        const hoodGeom = new THREE.BoxGeometry(1.52, 0.035, 1.28);
+        const hoodGeom = new THREE.BoxGeometry(1.28, 0.035, 1.28);
         const hood = new THREE.Mesh(hoodGeom, yellowHoodMat);
         hood.position.set(0, 0.61, 1.20);
         hood.rotation.x = 0.115;
@@ -1297,11 +1353,32 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 1.34), yellow
         // =========================================================================
         // 2. シャシー＆引き締まったロアボディ
         // =========================================================================
-        // 2.1 メインアンダーフロア（ホイールベース2.70m、前輪z=1.35、後輪z=-1.35）
-        const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.20, 4.22), primaryMat);
-        lowerBody.position.set(0, 0.26, 0.0);
-        lowerBody.castShadow = true;
-        group.add(lowerBody);
+        // 2.1 メインシャシー（前後タイヤ間に収まるスリムスパイン＋キャビンフロア）
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.18, 4.22), primaryMat);
+        spineFloor.position.set(0, 0.25, 0.0);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.18, 1.65), primaryMat);
+        cabinFloor.position.set(0, 0.25, 0.0);
+        group.add(cabinFloor);
+
+        const fTray = new THREE.Mesh(new THREE.BoxGeometry(1.50, 0.16, 0.45), secondaryMat);
+        fTray.position.set(0, 0.24, 1.90);
+        group.add(fTray);
+
+        const rTray = new THREE.Mesh(new THREE.BoxGeometry(1.50, 0.16, 0.45), secondaryMat);
+        rTray.position.set(0, 0.24, -1.90);
+        group.add(rTray);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.35, -1.35]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.62), meshDarkMat);
+                archLiner.position.set(s * 0.58, 0.44, z);
+                group.add(archLiner);
+            }
+        }
 
         // 2.2 エンジンルーム隔壁（前方からの視線抜けを完全遮断）
         const radiatorBulkhead = new THREE.Mesh(new THREE.BoxGeometry(1.60, 0.44, 0.10), blackTrimMat);
@@ -1329,6 +1406,11 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 1.34), yellow
             const doorMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.02, 1.30), blackTrimMat);
             doorMoulding.position.set(s * 0.842, 0.45, 0.02);
             group.add(doorMoulding);
+
+            // ドアショルダー（ドア上端とサイドガラス下端の隙間を完全密閉）
+            const doorShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 1.30), primaryMat);
+            doorShoulder.position.set(s * 0.73, 0.69, 0.02);
+            group.add(doorShoulder);
         }
 
         // =========================================================================
@@ -1937,11 +2019,32 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // =====================================================================
         // 2. シャシー＆ライムグリーンツートン・彫刻的ボディ
         // =====================================================================
-        // 2.1 メインアンダーフロア（ホイールベース2.50m、前輪z=1.25、後輪z=-1.25）
-        const lowerFloor = new THREE.Mesh(new THREE.BoxGeometry(1.56, 0.18, 4.02), secondaryMat);
-        lowerFloor.position.set(0, 0.25, 0.0);
-        lowerFloor.castShadow = true;
-        group.add(lowerFloor);
+        // 2.1 メインシャシー（前後タイヤ間に収まるスリムスパイン＋キャビンフロア）
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.16, 4.02), secondaryMat);
+        spineFloor.position.set(0, 0.24, 0.0);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.16, 1.55), secondaryMat);
+        cabinFloor.position.set(0, 0.24, 0.0);
+        group.add(cabinFloor);
+
+        const fTray = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.14, 0.45), secondaryMat);
+        fTray.position.set(0, 0.24, 1.80);
+        group.add(fTray);
+
+        const rTray = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.14, 0.45), secondaryMat);
+        rTray.position.set(0, 0.24, -1.80);
+        group.add(rTray);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.25, -1.25]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.60), meshDarkMat);
+                archLiner.position.set(s * 0.54, 0.42, z);
+                group.add(archLiner);
+            }
+        }
 
         // エンジンルーム隔壁（高さを抑えてフード下y=0.58に収め、視線抜けを完全遮断）
         const radiatorBulkhead = new THREE.Mesh(new THREE.BoxGeometry(1.54, 0.30, 0.10), blackTrimMat);
@@ -1974,6 +2077,11 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             const handle = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.026, 0.085), blackTrimMat);
             handle.position.set(s * 0.814, 0.60, -0.22);
             group.add(handle);
+
+            // ドアショルダー（ドア上端とサイドガラス下端の隙間を完全密閉）
+            const doorShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 1.28), primaryMat);
+            doorShoulder.position.set(s * 0.70, 0.67, 0.0);
+            group.add(doorShoulder);
         }
 
         // 2.3 フロントフェンダー（ホイールハウス切り欠き＆ツートン）
@@ -2501,11 +2609,32 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 0.44), blac
         // 2. 威風堂々たる大型4ドアスポーツセダンシャシー＆ボディ
         // =========================================================================
         // ホイールベース: 2.73m (前輪 z=1.38, 後輪 z=-1.35)
-        // 2.1 メインアンダーフロア
-        const lowerFloor = new THREE.Mesh(new THREE.BoxGeometry(1.68, 0.18, 4.46), secondaryMat);
-        lowerFloor.position.set(0, 0.25, 0.02);
-        lowerFloor.castShadow = true;
-        group.add(lowerFloor);
+        // 2.1 メインシャシー（前後タイヤ間に収まるスリムスパイン＋キャビンフロア）
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.16, 4.46), secondaryMat);
+        spineFloor.position.set(0, 0.24, 0.02);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.16, 1.85), secondaryMat);
+        cabinFloor.position.set(0, 0.24, 0.02);
+        group.add(cabinFloor);
+
+        const fTray = new THREE.Mesh(new THREE.BoxGeometry(1.50, 0.14, 0.50), secondaryMat);
+        fTray.position.set(0, 0.24, 2.00);
+        group.add(fTray);
+
+        const rTray = new THREE.Mesh(new THREE.BoxGeometry(1.50, 0.14, 0.50), secondaryMat);
+        rTray.position.set(0, 0.24, -2.00);
+        group.add(rTray);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.38, -1.35]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.62), meshDarkMat);
+                archLiner.position.set(s * 0.58, 0.44, z);
+                group.add(archLiner);
+            }
+        }
 
         // エンジンルーム隔壁（視線抜けを完全遮断）
         const radiatorBulkhead = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.32, 0.10), blackTrimMat);
@@ -2557,6 +2686,11 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 0.44), blac
             const beltMould = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.022, 1.88), blackTrimMat);
             beltMould.position.set(s * 0.865, 0.705, 0.02);
             group.add(beltMould);
+
+            // ドアショルダー（ドア上端とサイドガラス下端の隙間を完全密閉）
+            const doorShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 1.88), primaryMat);
+            doorShoulder.position.set(s * 0.75, 0.70, 0.02);
+            group.add(doorShoulder);
         }
 
         // 2.3 フロントフェンダー（ホイールハウス切り欠き＆ワイドフレアアーチ：前後完全連続）
@@ -3133,10 +3267,32 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             roughness: 0.88
         });
 
-        // 1. シャシー＆アンダーフロア
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.08, 4.10), secondaryMat);
-        floor.position.set(0, 0.14, 0.0);
-        group.add(floor);
+        // 1. シャシー＆スリムスパインフロア
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 4.10), secondaryMat);
+        spineFloor.position.set(0, 0.14, 0.0);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.54, 0.08, 1.60), secondaryMat);
+        cabinFloor.position.set(0, 0.14, 0.0);
+        group.add(cabinFloor);
+
+        const fTray = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.08, 0.45), secondaryMat);
+        fTray.position.set(0, 0.14, 1.85);
+        group.add(fTray);
+
+        const rTray = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.08, 0.45), secondaryMat);
+        rTray.position.set(0, 0.14, -1.85);
+        group.add(rTray);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.25, -1.25]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.60), meshDarkMat);
+                archLiner.position.set(s * 0.54, 0.42, z);
+                group.add(archLiner);
+            }
+        }
 
         // 2. フロントバンパー＆アグレッシブエアロ（エボIII象徴の大開口部＆丸型フォグ）
         const fMainBumper = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.28, 0.36), primaryMat);
@@ -3262,10 +3418,15 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 1.55), blackTrimMat);
             rubStrip.position.set(s * 0.84, 0.44, 0.0);
             group.add(rubStrip);
+
+            // ドアショルダー（ドア上端とサイドガラス下端の隙間を完全密閉）
+            const doorShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 1.30), primaryMat);
+            doorShoulder.position.set(s * 0.70, 0.64, 0.0);
+            group.add(doorShoulder);
         }
 
         // 5. ボンネット（巨大中央排熱ルーバー＆非対称NACAダクト）
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.045, 1.28), hoodMat);
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.045, 1.28), hoodMat);
         hood.position.set(0, 0.63, 1.28);
         hood.rotation.x = 0.065;
         group.add(hood);
@@ -3288,7 +3449,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         group.add(naca);
 
         // 6. キャビン・グリーンハウス・ルーフ・ピラー（4ドアセダンシルエット）
-        const cabinLower = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.38, 2.25), primaryMat);
+        const cabinLower = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.38, 1.60), primaryMat);
         cabinLower.position.set(0, 0.44, -0.05);
         group.add(cabinLower);
 
@@ -3549,10 +3710,32 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             metalness: 0.85
         });
 
-        // 1. シャシー＆フロア
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.08, 3.96), secondaryMat);
-        floor.position.set(0, 0.14, 0.0);
-        group.add(floor);
+        // 1. シャシー＆スリムスパインフロア
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 3.96), secondaryMat);
+        spineFloor.position.set(0, 0.14, 0.0);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.54, 0.08, 1.45), secondaryMat);
+        cabinFloor.position.set(0, 0.14, 0.0);
+        group.add(cabinFloor);
+
+        const fTray = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.08, 0.45), secondaryMat);
+        fTray.position.set(0, 0.14, 1.75);
+        group.add(fTray);
+
+        const rTray = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.08, 0.45), secondaryMat);
+        rTray.position.set(0, 0.14, -1.75);
+        group.add(rTray);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.20, -1.20]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.60), meshDarkMat);
+                archLiner.position.set(s * 0.54, 0.42, z);
+                group.add(archLiner);
+            }
+        }
 
         // 2. フロントバンパー＆Type R チンスポイラー＆グリル（赤バッジ「赤H」）
         const fMainBumper = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.26, 0.34), primaryMat);
@@ -3648,16 +3831,21 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.035, 1.48), primaryMat);
             rubStrip.position.set(s * 0.84, 0.42, 0.0);
             group.add(rubStrip);
+
+            // ドアショルダー（ドア上端とサイドガラス下端の隙間を完全密閉）
+            const doorShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 1.20), primaryMat);
+            doorShoulder.position.set(s * 0.70, 0.62, 0.0);
+            group.add(doorShoulder);
         }
 
         // 5. ボンネット
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.04, 1.22), hoodMat);
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.04, 1.22), hoodMat);
         hood.position.set(0, 0.62, 1.24);
         hood.rotation.x = 0.078;
         group.add(hood);
 
         // 6. キャビン・グリーンハウス＆鮮烈な赤レカロシート内装
-        const cabinLower = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.36, 2.10), primaryMat);
+        const cabinLower = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.36, 1.45), primaryMat);
         cabinLower.position.set(0, 0.42, -0.05);
         group.add(cabinLower);
 
@@ -3723,7 +3911,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         // ハッチバック急傾斜リアウィンドウ＆一体化Cピラー
         // ルーフ後端（z = -0.94, y = 1.14）からテールゲート（z = -1.48, y = 0.70）へ美しい傾斜で直結
         const hSlope = 0.90;
-        const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(1.30, 0.70, 0.035), glassMat);
+        const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.70, 0.035), glassMat);
         rearGlass.position.set(0, 0.92, -1.205);
         rearGlass.rotation.x = hSlope;
         group.add(rearGlass);
@@ -4153,7 +4341,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
 
         // 5. ボンネット（低くスラントしたロングノーズ・リトラ連動分割造形）
         // リトラクタブル後方のメインフード
-        const hoodRear = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.035, 0.85), hoodMat);
+        const hoodRear = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.035, 0.85), hoodMat);
         hoodRear.position.set(0, 0.62, 1.025);
         hoodRear.rotation.x = 0.075;
         group.add(hoodRear);
@@ -4165,9 +4353,18 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         group.add(hoodCenter);
 
         // 6. キャビン・グリーンハウス・インテリア（ファストバッククーペシルエット）
-        const cabinLower = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.36, 2.25), primaryMat);
+        const cabinLower = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.36, 1.55), primaryMat);
         cabinLower.position.set(0, 0.40, -0.05);
         group.add(cabinLower);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.22, -1.25]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.60), meshDarkMat);
+                archLiner.position.set(s * 0.54, 0.42, z);
+                group.add(archLiner);
+            }
+        }
 
         const dash = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.20, 0.38), interiorMat);
         dash.position.set(0, 0.66, 0.42);
@@ -4469,10 +4666,32 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             roughness: 0.78
         });
 
-        // 2. シャシー＆アンダーフロア（軽規格 全長3.1m×全幅1.4m・ホイールベース2.18m）
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.34, 0.07, 2.96), secondaryMat);
-        floor.position.set(0, 0.13, -0.10);
-        group.add(floor);
+        // 2. シャシー＆スリムスパインアンダーフロア（軽規格スリム設計）
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(0.94, 0.07, 2.96), secondaryMat);
+        spineFloor.position.set(0, 0.13, -0.10);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.07, 1.25), secondaryMat);
+        cabinFloor.position.set(0, 0.13, -0.21);
+        group.add(cabinFloor);
+
+        const fTray = new THREE.Mesh(new THREE.BoxGeometry(1.20, 0.07, 0.24), secondaryMat);
+        fTray.position.set(0, 0.13, 1.30);
+        group.add(fTray);
+
+        const rTray = new THREE.Mesh(new THREE.BoxGeometry(1.20, 0.07, 0.20), secondaryMat);
+        rTray.position.set(0, 0.13, -1.72);
+        group.add(rTray);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [0.88, -1.30]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 0.50), meshDarkMat);
+                archLiner.position.set(s * 0.44, 0.34, z);
+                group.add(archLiner);
+            }
+        }
 
         // 3. 初代ワークス専用エアロフロントバンパー ＆ 大口径丸型フォグランプ ＆ 横長ウインカー
         // バンパー本体（シャンパンシルバー／ガンメタの2トーン）
@@ -4602,7 +4821,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         }
 
         // 5. ボンネットフード ＆ 流線型インタークーラーエアスクープ ＆ カウルルーバー
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.34, 0.032, 0.80), hoodMat);
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.032, 0.80), hoodMat);
         hood.position.set(0, 0.58, 0.94);
         hood.rotation.x = 0.06;
         group.add(hood);
@@ -4708,8 +4927,8 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         }
 
         // 7. キャビン・グリーンハウス・Cピラー3連ルーバー・インテリア
-        const cabinLower = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.36, 2.84), primaryMat);
-        cabinLower.position.set(0, 0.38, -0.10);
+        const cabinLower = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.36, 1.25), primaryMat);
+        cabinLower.position.set(0, 0.38, -0.21);
         group.add(cabinLower);
 
         // ダッシュボード
@@ -4879,7 +5098,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
 
         // 9. リアコンビネーションランプ＆リアバンパー＆エキゾースト
         const rHatchFace = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.24, 0.06), primaryMat);
-        rHatchFace.position.set(0, 0.52, -1.51);
+        rHatchFace.position.set(0, 0.52, -1.64);
         group.add(rHatchFace);
 
         const rTailTex = this.createAltoWorksTailTexture();
@@ -4887,20 +5106,20 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             new THREE.BoxGeometry(1.22, 0.13, 0.03),
             new THREE.MeshBasicMaterial({ map: rTailTex })
         );
-        tailMesh.position.set(0, 0.51, -1.545);
+        tailMesh.position.set(0, 0.51, -1.675);
         group.add(tailMesh);
 
-        // リアバンパー（ツートンアッパー＆ロアスカート）
-        const rBumper = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.24, 0.16), secondaryMat);
-        rBumper.position.set(0, 0.28, -1.53);
+        // リアバンパー（ツートンアッパー＆ロアスカート：リアタイヤ後端z=-1.58後方にジャスト配置）
+        const rBumper = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.24, 0.12), secondaryMat);
+        rBumper.position.set(0, 0.28, -1.66);
         group.add(rBumper);
 
-        const rSkirt = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.05, 0.18), blackTrimMat);
-        rSkirt.position.set(0, 0.13, -1.53);
+        const rSkirt = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.05, 0.12), blackTrimMat);
+        rSkirt.position.set(0, 0.13, -1.66);
         group.add(rSkirt);
 
         // ★軽自動車 黄色ナンバープレート（Yellow Plates）
-        this.addLicensePlates(group, '群馬 40 あ ・7 52', 1.515, -1.62, 0.28, 0.24, 0, true);
+        this.addLicensePlates(group, '群馬 40 あ ・7 52', 1.515, -1.71, 0.28, 0.24, 0, true);
 
         // 10. 初代ワークス専用 13インチ エアロディッシュホイール（ホイールベース2.18m：前0.88 / 後-1.30）
         const wheelRadius = 0.28;
@@ -8001,20 +8220,33 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         });
 
         // -------------------------------------------------------------------------
-        // 1. シャシーフロア（前後端はバンパー曲面の内側に収める）
+        // 1. シャシーフロア（スリムスパイン＋キャビンフロア）
         // -------------------------------------------------------------------------
-        const mainFloor = new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.16, 3.70), primaryMat);
-        mainFloor.position.set(0, 0.26, 0);
-        mainFloor.castShadow = true;
-        group.add(mainFloor);
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.16, 3.70), primaryMat);
+        spineFloor.position.set(0, 0.26, 0);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
 
-        const frontTray = new THREE.Mesh(new THREE.BoxGeometry(1.40, 0.10, 0.70), secondaryMat);
-        frontTray.position.set(0, 0.19, 1.62);
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.16, 1.60), primaryMat);
+        cabinFloor.position.set(0, 0.26, 0);
+        group.add(cabinFloor);
+
+        const frontTray = new THREE.Mesh(new THREE.BoxGeometry(1.40, 0.10, 0.45), secondaryMat);
+        frontTray.position.set(0, 0.19, 1.80);
         group.add(frontTray);
 
-        const rearDiffuserPan = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.10, 0.80), secondaryMat);
-        rearDiffuserPan.position.set(0, 0.20, -1.75);
+        const rearDiffuserPan = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.10, 0.45), secondaryMat);
+        rearDiffuserPan.position.set(0, 0.20, -1.82);
         group.add(rearDiffuserPan);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.25, -1.25]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.62), meshDarkMat);
+                archLiner.position.set(s * 0.56, 0.44, z);
+                group.add(archLiner);
+            }
+        }
 
         // -------------------------------------------------------------------------
         // 2. 【実車写真準拠】曲面フロントフェイシア
@@ -9268,20 +9500,33 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         });
 
         // -------------------------------------------------------------------------
-        // 1. シャシーフロア＆アンダーフロア（引き締まった全長＆軽量FRパッケージ）
+        // 1. シャシーフロア（スリムスパイン＋キャビンフロア）
         // -------------------------------------------------------------------------
-        const mainFloor = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.16, 3.86), primaryMat);
-        mainFloor.position.set(0, 0.23, 0);
-        mainFloor.castShadow = true;
-        group.add(mainFloor);
+        const spineFloor = new THREE.Mesh(new THREE.BoxGeometry(1.20, 0.16, 3.86), primaryMat);
+        spineFloor.position.set(0, 0.23, 0);
+        spineFloor.castShadow = true;
+        group.add(spineFloor);
 
-        const frontTray = new THREE.Mesh(new THREE.BoxGeometry(1.46, 0.10, 0.70), secondaryMat);
-        frontTray.position.set(0, 0.16, 1.50);
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.56, 0.16, 1.55), primaryMat);
+        cabinFloor.position.set(0, 0.23, 0);
+        group.add(cabinFloor);
+
+        const frontTray = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.10, 0.45), secondaryMat);
+        frontTray.position.set(0, 0.16, 1.75);
         group.add(frontTray);
 
-        const rearPan = new THREE.Mesh(new THREE.BoxGeometry(1.46, 0.10, 0.70), secondaryMat);
-        rearPan.position.set(0, 0.18, -1.52);
+        const rearPan = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.10, 0.45), secondaryMat);
+        rearPan.position.set(0, 0.18, -1.75);
         group.add(rearPan);
+
+        // ダークインナーホイールハウスライナー
+        for (let s of [-1, 1]) {
+            for (let z of [1.20, -1.20]) {
+                const archLiner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 0.60), meshDarkMat);
+                archLiner.position.set(s * 0.54, 0.42, z);
+                group.add(archLiner);
+            }
+        }
 
         // -------------------------------------------------------------------------
         // 2. 実車カタログ写真完全再現：曲面ラウンドノーズ＆純正バンパー造形
@@ -9494,7 +9739,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         // -------------------------------------------------------------------------
         // 4. ロングボンネット＆ツインプレスライン（伸びやかでスポーティな造形）
         // -------------------------------------------------------------------------
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.045, 1.20), hoodMat);
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.045, 1.20), hoodMat);
         hood.position.set(0, 0.565, 1.20);
         hood.rotation.x = 0.042;
         group.add(hood);
@@ -9810,7 +10055,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         group.add(parcelShelf);
 
         // トランクデッキ天面（パーセルシェルフからテールまで隙間なく連続）
-        const rDeck = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.040, 0.52), primaryMat);
+        const rDeck = new THREE.Mesh(new THREE.BoxGeometry(1.20, 0.040, 0.52), primaryMat);
         rDeck.position.set(0, 0.640, -1.62);
         group.add(rDeck);
 
