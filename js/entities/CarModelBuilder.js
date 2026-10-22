@@ -5592,46 +5592,56 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
     // =========================================================================
     // 6. メインホイールビルダー（高精度PBRマテリアル＋3Dポリゴン幾何学）
     // =========================================================================
+    // =========================================================================
+    // 200％極限再現：ハイパーリアル・レーシングホイール＆ホイール回り完全体システム
+    // （物理的3Dトレッド溝・車高調サスペンション・ダストシールド・高解像度PBRテクスチャ）
+    // =========================================================================
+
     static createDetailedWheels(parentGroup, wheelPositions, rimMat, tireMat, style, radius, width, caliperColor = null) {
         const wheels = [];
         let frontWheelL = null;
         let frontWheelR = null;
 
-        // タイヤ基本ラバーマテリアル
+        // タイヤ基本ラバーマテリアル（本物のマット微細ゴム質感）
         const realTireMat = (tireMat && tireMat.isMaterial) ? tireMat : new THREE.MeshStandardMaterial();
-        realTireMat.color.setHex(0x1a1a1e);
+        realTireMat.color.setHex(0x191a1d);
         realTireMat.roughness = 0.85;
-        realTireMat.metalness = 0.06;
+        realTireMat.metalness = 0.05;
         realTireMat.side = THREE.DoubleSide;
 
-        // タイヤトレッドマテリアル（非対称スポーツパターン）
-        const treadTex = this.createTireTreadTexture();
-        const tireTreadMat = new THREE.MeshStandardMaterial({
-            map: treadTex,
-            roughness: 0.88,
-            metalness: 0.05,
-            side: THREE.DoubleSide
+        // タイヤ溝底（深い影・ピッチブラックラバー）
+        const tireGrooveBaseMat = new THREE.MeshStandardMaterial({
+            color: 0x07080a,
+            roughness: 0.98,
+            metalness: 0.02
         });
 
-        // タイヤサイドウォールマテリアル（ブランド刻印リング）
+        // 3Dトレッドリブ表面マテリアル（路面コンパウンド微細テクスチャ）
+        const treadRibMat = new THREE.MeshStandardMaterial({
+            color: 0x1c1d22,
+            roughness: 0.82,
+            metalness: 0.06
+        });
+
+        // タイヤサイドウォールマテリアル（専用高解像度ブランド刻印）
         const sidewallTex = this.createTireSidewallTexture(style, radius);
         const sidewallMat = new THREE.MeshStandardMaterial({
             map: sidewallTex,
-            roughness: 0.76,
-            metalness: 0.10,
+            roughness: 0.74,
+            metalness: 0.08,
             side: THREE.DoubleSide
         });
 
         // ポリッシュド・ミラーリップマテリアル
         const mirrorLipMat = new THREE.MeshStandardMaterial({
             color: 0xf8fafc,
-            roughness: 0.08,
-            metalness: 0.85
+            roughness: 0.07,
+            metalness: 0.88
         });
 
         // インナーリムバレル（陽極酸化アルミ・ダーク質感）
         const stepBarrelMat = new THREE.MeshStandardMaterial({
-            color: 0x22242a,
+            color: 0x1e2026,
             roughness: 0.38,
             metalness: 0.55,
             side: THREE.DoubleSide
@@ -5641,49 +5651,74 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         const rotorTex = this.createBrakeRotorTexture();
         const rotorMat = new THREE.MeshStandardMaterial({
             map: rotorTex,
-            roughness: 0.24,
-            metalness: 0.72,
+            roughness: 0.22,
+            metalness: 0.74,
             side: THREE.DoubleSide
         });
 
         // 冷却ベンチレーションフィン
         const rotorVaneMat = new THREE.MeshStandardMaterial({
-            color: 0x30343a,
+            color: 0x2e3238,
             roughness: 0.65,
             metalness: 0.40
         });
 
         // フローティングベルハウジング（ローターハット）
         const bellHousingMat = new THREE.MeshStandardMaterial({
-            color: 0x202226,
+            color: 0x1d1f23,
             roughness: 0.35,
             metalness: 0.60
         });
 
-        // クローム／チタン金具
+        // クローム／チタン金具マテリアル
         const chromeNutMat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
-            roughness: 0.10,
-            metalness: 0.88
+            roughness: 0.08,
+            metalness: 0.90
         });
 
-        // バランスウェイト（鉛・亜鉛合金）
+        // バランスウェイト（亜鉛・鉛合金）
         const balanceWeightMat = new THREE.MeshStandardMaterial({
-            color: 0xa0a8b2,
+            color: 0x9ca4ad,
             roughness: 0.35,
-            metalness: 0.80
+            metalness: 0.82
+        });
+
+        // サスペンション用PBRマテリアル
+        const damperRodMat = new THREE.MeshStandardMaterial({ color: 0xe8ecf2, roughness: 0.08, metalness: 0.92 });
+        const shockBodyMat = new THREE.MeshStandardMaterial({ color: 0xb89228, roughness: 0.28, metalness: 0.75 }); // アノダイズドゴールド
+        const lockCollarMat = new THREE.MeshStandardMaterial({ color: 0xcc1414, roughness: 0.22, metalness: 0.82 }); // 鮮紅アジャスターブラケット
+        let springColor = 0x22c55e; // TEINレーシンググリーン
+        if (style === 'bnr32_oem' || style === 'gtr' || style === 's15_spec_r') springColor = 0xb81818; // NISMOレッド
+        else if (style === 'jzx100' || style === 's13' || style === 'rps13') springColor = 0x7c3aed; // HKSハイパーマックスパープル
+        else if (style === 'supra_5spoke' || style === 'supra_rz') springColor = 0xeab308; // ビルシュタインイエロー
+        const coilSpringMat = new THREE.MeshStandardMaterial({ color: springColor, roughness: 0.25, metalness: 0.60 });
+
+        // ブレーキダストシールド（プレス成形ブラック防熱板）
+        const dustShieldMat = new THREE.MeshStandardMaterial({
+            color: 0x14161a,
+            roughness: 0.55,
+            metalness: 0.60,
+            side: THREE.DoubleSide
+        });
+
+        // インナーフェンダーライナー（ホイールハウス遮光カバー）
+        const archLinerMat = new THREE.MeshStandardMaterial({
+            color: 0x090a0c,
+            roughness: 0.96,
+            side: THREE.BackSide
         });
 
         const isModularLip = (style === 'watanabe' || style === 'ms01' || style === 'ssr_mesh' || style === 'longchamp' || style === '5star');
 
-        // レーシングキャリパーカラー設定
+        // キャリパーカラー設定
         let defaultCaliperCol = 0x282a2e;
-        if (style === 'bnr32_oem' || style === 'gtr') defaultCaliperCol = 0xd8a020; // Brembo Gold
-        else if (style === 'ms01' || style === 'oz' || style === 'oz_chrono') defaultCaliperCol = 0xcc1818; // Racing Red
-        else if (style === 'avs_model5' || style === 'avs5') defaultCaliperCol = 0xb81818; // Crimson Red
-        else if (style === 'ek9_typer' || style === 'type_r') defaultCaliperCol = 0x343840; // Graphite
-        else if (style === 'supra_5spoke' || style === 'supra_rz') defaultCaliperCol = 0x16161a; // Gloss Black
-        else if (style === 's15_spec_r' || style === 's15_5spoke') defaultCaliperCol = 0x383a42; // Gunmetal
+        if (style === 'bnr32_oem' || style === 'gtr') defaultCaliperCol = 0xd8a020;
+        else if (style === 'ms01' || style === 'oz' || style === 'oz_chrono') defaultCaliperCol = 0xcc1818;
+        else if (style === 'avs_model5' || style === 'avs5') defaultCaliperCol = 0xb81818;
+        else if (style === 'ek9_typer' || style === 'type_r') defaultCaliperCol = 0x343840;
+        else if (style === 'supra_5spoke' || style === 'supra_rz') defaultCaliperCol = 0x16161a;
+        else if (style === 's15_spec_r' || style === 's15_5spoke') defaultCaliperCol = 0x383a42;
         const finalCaliperColor = caliperColor !== null ? caliperColor : defaultCaliperCol;
 
         const caliperTex = this.createCaliperTexture(style, finalCaliperColor);
@@ -5706,32 +5741,100 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         wheelPositions.forEach((wp) => {
             const pivot = new THREE.Group();
             pivot.position.set(wp.x, wp.y, wp.z);
+            const inwardSign = wp.isLeft ? 1 : -1;
 
             // =====================================================================
-            // 1. Stationary Brake System (車輪回転軸に固定・キャリパー剛性ブリッジ)
+            // 1. Stationary Wheel Surround & Brake Assembly (車体側静止パーツ群)
             // =====================================================================
-            const brakeGroup = new THREE.Group();
+            const surroundGroup = new THREE.Group();
             const rotorRadius = rimHoleRadius * 0.77;
             const rotorThick = 0.024;
 
+            // 1.1 インナーフェンダー・ホイールハウスライナー（遮光＆泥除け曲面チューブ）
+            const archLinerGeom = new THREE.CylinderGeometry(radius * 1.15, radius * 1.15, width * 1.30, 24, 1, true, -Math.PI * 0.82, Math.PI * 0.64);
+            archLinerGeom.rotateZ(Math.PI / 2);
+            const archLiner = new THREE.Mesh(archLinerGeom, archLinerMat);
+            archLiner.position.set(inwardSign * 0.02, 0, 0);
+            surroundGroup.add(archLiner);
+
+            // 1.2 車高調サスペンションシステム（倒立式モノチューブダンパー＋直巻スプリング）
+            const suspGroup = new THREE.Group();
+            suspGroup.position.set(inwardSign * 0.045, 0.12, 0);
+
+            // ダンパーロッド
+            const damperRod = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.015, 0.015, 0.28, 14),
+                damperRodMat
+            );
+            damperRod.position.y = 0.04;
+            suspGroup.add(damperRod);
+
+            // アノダイズドゴールド ダンパーシリンダー
+            const shockBody = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.024, 0.024, 0.18, 14),
+                shockBodyMat
+            );
+            shockBody.position.y = -0.06;
+            suspGroup.add(shockBody);
+
+            // アジャスタブル車高調整ロックシート（ダブルシート）
+            for (let c of [-0.015, 0.0]) {
+                const lockRing = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.029, 0.005, 8, 20),
+                    lockCollarMat
+                );
+                lockRing.rotateX(Math.PI / 2);
+                lockRing.position.y = c;
+                suspGroup.add(lockRing);
+            }
+
+            // 直巻レーシングコイルスプリング（6段ヘリカルコイル）
+            for (let sp = 0; sp < 6; sp++) {
+                const coil = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.028, 0.0055, 8, 22),
+                    coilSpringMat
+                );
+                coil.rotateX(Math.PI / 2);
+                coil.position.y = 0.025 + sp * 0.024;
+                suspGroup.add(coil);
+            }
+            surroundGroup.add(suspGroup);
+
+            // 1.3 ナックルハブ・アップライト（鍛造鋳鉄スピンドルキャリア）
+            const knuckle = new THREE.Mesh(
+                new THREE.BoxGeometry(0.036, 0.13, 0.064),
+                new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.85, metalness: 0.35 })
+            );
+            knuckle.position.set(inwardSign * 0.038, 0, 0);
+            surroundGroup.add(knuckle);
+
+            // 1.4 ブレーキバックプレート・防熱ダストシールド（ローター背面の黒色プレス鋼板）
+            const dustShieldGeom = new THREE.RingGeometry(rotorRadius * 0.38, rotorRadius * 1.05, 36);
+            dustShieldGeom.rotateY(wp.isLeft ? -Math.PI / 2 : Math.PI / 2);
+            const dustShield = new THREE.Mesh(dustShieldGeom, dustShieldMat);
+            dustShield.position.x = inwardSign * 0.020;
+            surroundGroup.add(dustShield);
+
+            // 1.5 対向ピストン・レーシングブレーキキャリパー
             const caliperGroup = new THREE.Group();
-            // キャリパーメインボディ
             const caliperBody = new THREE.Mesh(
                 new THREE.BoxGeometry(width * 0.32, rotorRadius * 0.44, 0.082),
                 caliperMat
             );
             caliperGroup.add(caliperBody);
 
-            // キャリパーアウターフェイス（高解像度ブランドロゴプレート）
+            // 高精細キャリパーロゴプレート
             const caliperFaceGeom = new THREE.PlaneGeometry(width * 0.31, rotorRadius * 0.43);
             caliperFaceGeom.rotateY(wp.isLeft ? -Math.PI / 2 : Math.PI / 2);
             const caliperFace = new THREE.Mesh(caliperFaceGeom, caliperFaceMat);
             caliperFace.position.x = (wp.isLeft ? -1 : 1) * (width * 0.16 + 0.001);
             caliperGroup.add(caliperFace);
 
-            // キャリパーブリッジ補強アーチ（ディスク外周を跨ぐ高剛性ブリッジ）
-            const bridgeGeom = new THREE.BoxGeometry(width * 0.34, 0.022, 0.068);
-            const caliperBridge = new THREE.Mesh(bridgeGeom, caliperMat);
+            // 剛性強化外周ブリッジアーチ
+            const caliperBridge = new THREE.Mesh(
+                new THREE.BoxGeometry(width * 0.34, 0.022, 0.068),
+                caliperMat
+            );
             caliperBridge.position.set(0, rotorRadius * 0.22, -0.016);
             caliperGroup.add(caliperBridge);
 
@@ -5746,7 +5849,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 caliperGroup.add(piston);
             }
 
-            // ブレーキパッドリテーナースプリングプレート＆クロスピン
+            // パッドスプリング＆ピン
             const padSpring = new THREE.Mesh(
                 new THREE.BoxGeometry(width * 0.26, 0.012, 0.038),
                 chromeNutMat
@@ -5761,7 +5864,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             retainerPin.position.set(0, 0, 0.040);
             caliperGroup.add(retainerPin);
 
-            // ブリーダーニップル（ゴムキャップ付き）
+            // ブリーダーニップル＆ゴムキャップ
             const bleeder = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.003, 0.003, 0.016, 8),
                 chromeNutMat
@@ -5775,7 +5878,22 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             bleederCap.position.set(0, rotorRadius * 0.20 + 0.008, 0.036);
             caliperGroup.add(bleederCap);
 
-            // キャリパー搭載角度：105度（スポーツカー標準のトップフォワード配置）
+            // ステンメッシュブレーキホース＆バンジョー金具
+            const banjo = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.006, 0.006, 0.014, 6),
+                chromeNutMat
+            );
+            banjo.position.set(inwardSign * 0.04, -rotorRadius * 0.15, 0.030);
+            caliperGroup.add(banjo);
+
+            const brakeHose = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.0032, 0.0032, 0.12, 8),
+                new THREE.MeshStandardMaterial({ color: 0x9098a2, roughness: 0.38, metalness: 0.75 })
+            );
+            brakeHose.position.set(inwardSign * 0.045, -rotorRadius * 0.08, 0.045);
+            brakeHose.rotation.x = 0.45;
+            caliperGroup.add(brakeHose);
+
             const calAngle = Math.PI * 0.58;
             caliperGroup.position.set(
                 wp.isLeft ? -0.018 : 0.018,
@@ -5783,11 +5901,11 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 Math.cos(calAngle) * (rotorRadius * 0.82)
             );
             caliperGroup.rotation.x = -calAngle + Math.PI / 2;
-            brakeGroup.add(caliperGroup);
-            pivot.add(brakeGroup);
+            surroundGroup.add(caliperGroup);
+            pivot.add(surroundGroup);
 
             // =====================================================================
-            // 2. Rotating Wheel Assembly (車輪とともにリアルに高速回転)
+            // 2. Rotating Wheel Assembly (車輪とともに超精密3D回転)
             // =====================================================================
             const mesh = new THREE.Group();
 
@@ -5801,7 +5919,6 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 disc.position.x = side * discOffset;
                 mesh.add(disc);
 
-                // ローター外周エッジ（厚み）
                 const edgeGeom = new THREE.CylinderGeometry(rotorRadius, rotorRadius, discThick, 48, 1, true);
                 edgeGeom.rotateZ(Math.PI / 2);
                 const edgeMesh = new THREE.Mesh(edgeGeom, stepBarrelMat);
@@ -5809,7 +5926,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 mesh.add(edgeMesh);
             }
 
-            // 12枚のラジアル方向内部冷却フィン
+            // 12枚の内部冷却フィン
             for (let v = 0; v < 12; v++) {
                 const vAngle = (v / 12) * Math.PI * 2;
                 const vaneMesh = new THREE.Mesh(
@@ -5825,14 +5942,13 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 mesh.add(vaneMesh);
             }
 
-            // フローティングベルハウジング（ローターハット）
+            // フローティングベルハウジング＆10個のボビンピン
             const bellRadius = rotorRadius * 0.44;
             const bellGeom = new THREE.CylinderGeometry(bellRadius, bellRadius, rotorThick + 0.008, 32);
             bellGeom.rotateZ(Math.PI / 2);
             const bell = new THREE.Mesh(bellGeom, bellHousingMat);
             mesh.add(bell);
 
-            // 10個のステンレス製フローティングドライブボビン（結合ピン）
             for (let b = 0; b < 10; b++) {
                 const bAngle = (b / 10) * Math.PI * 2;
                 const bobbin = new THREE.Mesh(
@@ -5844,7 +5960,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 mesh.add(bobbin);
             }
 
-            // センターハブスピンドル 32mmキャッスルナット＆割りピン
+            // 32mmスピンドルキャッスルナット
             const spindleNut = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.016, 0.016, 0.016, 6),
                 chromeNutMat
@@ -5853,17 +5969,20 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             spindleNut.position.x = (wp.isLeft ? -1 : 1) * 0.015;
             mesh.add(spindleNut);
 
-            // 2.2 ハイグリップスポーツタイヤ
-            // (a) 連続3D回転体タイヤボディ
+            // =====================================================================
+            // 2.2 ★200％極限再現：物理的3Dトレッド溝＆非対称ブロック構造スポーツタイヤ
+            // =====================================================================
+            // (a) タイヤベースカーカス（有機的曲面サイドウォール＆溝底）
+            const carcassRadius = radius - 0.0075; // 溝の深さ 7.5mm
             const tirePoints = [
                 new THREE.Vector2(-halfW + 0.010, rimHoleRadius),
                 new THREE.Vector2(-tireHalfW, rimHoleRadius + (radius - rimHoleRadius) * 0.28),
                 new THREE.Vector2(-tireHalfW - 0.004, rimHoleRadius + (radius - rimHoleRadius) * 0.55),
-                new THREE.Vector2(-halfW + 0.012, radius - 0.008),
-                new THREE.Vector2(-halfW * 0.5, radius),
-                new THREE.Vector2(0, radius + 0.002),
-                new THREE.Vector2(halfW * 0.5, radius),
-                new THREE.Vector2(halfW - 0.012, radius - 0.008),
+                new THREE.Vector2(-halfW + 0.012, carcassRadius),
+                new THREE.Vector2(-halfW * 0.5, carcassRadius),
+                new THREE.Vector2(0, carcassRadius),
+                new THREE.Vector2(halfW * 0.5, carcassRadius),
+                new THREE.Vector2(halfW - 0.012, carcassRadius),
                 new THREE.Vector2(tireHalfW + 0.004, rimHoleRadius + (radius - rimHoleRadius) * 0.55),
                 new THREE.Vector2(tireHalfW, rimHoleRadius + (radius - rimHoleRadius) * 0.28),
                 new THREE.Vector2(halfW - 0.010, rimHoleRadius)
@@ -5883,11 +6002,63 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             outerSwMesh.position.x = (wp.isLeft ? -1 : 1) * (tireHalfW + 0.001);
             mesh.add(outerSwMesh);
 
-            // (c) 非対称スポーツトレッドパターン層
-            const treadCylinderGeom = new THREE.CylinderGeometry(radius + 0.0005, radius + 0.0005, width * 0.88, 48, 1, true);
-            treadCylinderGeom.rotateZ(Math.PI / 2);
-            const treadMesh = new THREE.Mesh(treadCylinderGeom, tireTreadMat);
-            mesh.add(treadMesh);
+            // (c) ★【物理的3Dトレッド溝】4列の独立した立体トレッドリブブロック群
+            // トレッド幅全体に3本の物理的縦溝（主排水チャンネル）を刻み込み
+            const treadTopRadius = radius + 0.0008;
+            const ribConfigs = [
+                { xCenter: -width * 0.35, ribW: width * 0.17 }, // 外側ショルダーリブ
+                { xCenter: -width * 0.12, ribW: width * 0.15 }, // 外側インナーリブ
+                { xCenter: width * 0.12,  ribW: width * 0.15 }, // 内側インナーリブ
+                { xCenter: width * 0.35,  ribW: width * 0.17 }  // 内側ショルダーリブ
+            ];
+
+            ribConfigs.forEach((cfg) => {
+                // 立体リブ天面バンド
+                const ribGeom = new THREE.CylinderGeometry(treadTopRadius, treadTopRadius, cfg.ribW, 48, 1, true);
+                ribGeom.rotateZ(Math.PI / 2);
+                const ribMesh = new THREE.Mesh(ribGeom, treadRibMat);
+                ribMesh.position.x = cfg.xCenter;
+                mesh.add(ribMesh);
+
+                // リブ側壁エッジ（溝の内壁面・陰影を形成するステップリング）
+                for (let s of [-cfg.ribW * 0.5, cfg.ribW * 0.5]) {
+                    const wallGeom = new THREE.RingGeometry(carcassRadius, treadTopRadius, 48);
+                    wallGeom.rotateY(s < 0 ? -Math.PI / 2 : Math.PI / 2);
+                    const wallMesh = new THREE.Mesh(wallGeom, tireGrooveBaseMat);
+                    wallMesh.position.x = cfg.xCenter + s;
+                    mesh.add(wallMesh);
+                }
+            });
+
+            // (d) ★【物理的3D横溝・サイプ】ショルダーリブ外周に刻まれた24個の立体トラクション切り欠き
+            for (let notch = 0; notch < 24; notch++) {
+                const nAngle = (notch / 24) * Math.PI * 2;
+                // 外側ショルダーブロック横溝
+                const sipeOuter = new THREE.Mesh(
+                    new THREE.BoxGeometry(width * 0.175, 0.0085, 0.0055),
+                    tireGrooveBaseMat
+                );
+                sipeOuter.position.set(
+                    -width * 0.35,
+                    Math.cos(nAngle) * (radius - 0.0035),
+                    Math.sin(nAngle) * (radius - 0.0035)
+                );
+                sipeOuter.rotation.x = -nAngle + 0.18; // 斜め方向性トラクションアングル
+                mesh.add(sipeOuter);
+
+                // 内側ショルダーブロック横溝
+                const sipeInner = new THREE.Mesh(
+                    new THREE.BoxGeometry(width * 0.175, 0.0085, 0.0055),
+                    tireGrooveBaseMat
+                );
+                sipeInner.position.set(
+                    width * 0.35,
+                    Math.cos(nAngle) * (radius - 0.0035),
+                    Math.sin(nAngle) * (radius - 0.0035)
+                );
+                sipeInner.rotation.x = -nAngle - 0.18;
+                mesh.add(sipeInner);
+            }
 
             // 2.3 アルミホイールバレル＆アウターリムフランジ
             const barrelGeom = new THREE.CylinderGeometry(rimHoleRadius - 0.002, rimHoleRadius * 0.94, width * 0.90, 48, 1, true);
@@ -5919,13 +6090,13 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             dropCenter.position.x = rimLipX + (wp.isLeft ? 0.012 : -0.012);
             mesh.add(dropCenter);
 
-            // ★実車のディテール：インナーバレル貼付式ホイールバランサーウェイト（5g/10g 亜鉛ブロック6連）
-            for (let wIdx = 0; wIdx < 6; wIdx++) {
+            // インナーバレル貼付式ホイールバランサーウェイト（8連亜鉛ブロック）
+            for (let wIdx = 0; wIdx < 8; wIdx++) {
                 const bw = new THREE.Mesh(
                     new THREE.BoxGeometry(0.007, 0.011, 0.009),
                     balanceWeightMat
                 );
-                const bAngle = 0.42 + (wIdx * 0.038);
+                const bAngle = 0.38 + (wIdx * 0.038);
                 const bwR = rimHoleRadius * 0.938;
                 bw.position.set(
                     rimLipX + (wp.isLeft ? 0.040 : -0.040),
@@ -5963,7 +6134,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             valveCap.rotation.z = wp.isLeft ? 0.35 : -0.35;
             mesh.add(valveCap);
 
-            // 2.4 車種専用スポーク造形、ハブボウル、PCDボルト＆専用エンブレム
+            // 2.4 車種別専用スポーク造形、ハブボウル、PCDボルト＆専用エンブレム
             this.addWheelSpokes(mesh, style, rimMat, radius, width, wp.isLeft, rimHoleRadius, rimLipX);
 
             pivot.add(mesh);
@@ -5977,796 +6148,6 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         });
 
         return { wheels, frontWheelL, frontWheelR };
-    }
-
-    // =========================================================================
-    // 車種別・高精度3Dスポーク造形、コンケーブハブ＆実車エンブレム
-    // =========================================================================
-    static addWheelSpokes(mesh, style, rimMat, radius, width, isLeft, rimHoleRadius, rimLipX) {
-        const spokeGroup = new THREE.Group();
-        const inwardSign = isLeft ? 1 : -1;
-        const faceX = rimLipX + inwardSign * 0.002;
-
-        const chromeNutMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.10,
-            metalness: 0.88
-        });
-        const darkPocketMat = new THREE.MeshStandardMaterial({
-            color: 0x121214,
-            roughness: 0.92,
-            metalness: 0.15
-        });
-
-        // 貫通オープンレーシングナット・スタッドボルト生成
-        const addLugNutPattern = (bowlFloorX, pcdRadius, numLugs, nutColor = 0xffffff, startAngle = 0) => {
-            const nutMat = (nutColor === 0xffffff) ? chromeNutMat : new THREE.MeshStandardMaterial({
-                color: nutColor,
-                roughness: 0.14,
-                metalness: 0.88
-            });
-            for (let i = 0; i < numLugs; i++) {
-                const angle = (i / numLugs) * Math.PI * 2 + startAngle;
-                const ly = Math.cos(angle) * pcdRadius;
-                const lz = Math.sin(angle) * pcdRadius;
-
-                // 深型テーパー座面カウンターサンクポケット
-                const pocket = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.013, 0.009, 0.012, 12),
-                    darkPocketMat
-                );
-                pocket.rotateZ(Math.PI / 2);
-                pocket.position.set(bowlFloorX - inwardSign * 0.002, ly, lz);
-                spokeGroup.add(pocket);
-
-                // 高精度六角レーシングナット
-                const nut = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.0068, 0.0068, 0.014, 6),
-                    nutMat
-                );
-                nut.rotateZ(Math.PI / 2);
-                nut.position.set(bowlFloorX + inwardSign * 0.005, ly, lz);
-                spokeGroup.add(nut);
-
-                // ナット中心から覗くネジ山付きスタッドボルト芯
-                const stud = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.0036, 0.0036, 0.015, 8),
-                    new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.40, metalness: 0.75 })
-                );
-                stud.rotateZ(Math.PI / 2);
-                stud.position.set(bowlFloorX + inwardSign * 0.007, ly, lz);
-                spokeGroup.add(stud);
-            }
-        };
-
-        // マルチピース組み立てピアスボルト（円周ボルト）
-        const addPierceBolts = (circleRadius, boltCount, boltX) => {
-            for (let b = 0; b < boltCount; b++) {
-                const bAngle = (b / boltCount) * Math.PI * 2;
-                const by = Math.cos(bAngle) * circleRadius;
-                const bz = Math.sin(bAngle) * circleRadius;
-                const bolt = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.0045, 0.0045, 0.008, 6),
-                    chromeNutMat
-                );
-                bolt.rotateZ(Math.PI / 2);
-                bolt.position.set(boltX, by, bz);
-                spokeGroup.add(bolt);
-            }
-        };
-
-        // スポーク付け根とアウターリムを自然に繋ぐフィレットガセット
-        const addSpokeRimGusset = (spLen, angle, widthFront, widthRear) => {
-            const gusset = new THREE.Mesh(
-                new THREE.BoxGeometry(0.022, spLen * 0.22, widthFront * 1.25),
-                rimMat
-            );
-            gusset.position.y = spLen + rimHoleRadius * 0.06;
-            return gusset;
-        };
-
-        // 車種エンブレムテクスチャの取得
-        const emblemTex = this.createCenterEmblemTexture(style);
-        const emblemMat = new THREE.MeshStandardMaterial({
-            map: emblemTex,
-            roughness: 0.18,
-            metalness: 0.55
-        });
-
-        // ---------------------------------------------------------------------
-        // 1. AE86: RS Watanabe Eight Spoke F8 (8本バナナスポーク＆鶴マーク)
-        // ---------------------------------------------------------------------
-        if (style === 'watanabe') {
-            const spokeCount = 8;
-            const dishDepth = 0.024;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.32, rimHoleRadius * 0.20, dishDepth + 0.004, 32, 1, true);
-            hubBowlGeom.rotateZ(Math.PI / 2);
-            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
-            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hubBowl);
-
-            // ワタナベ高精細エンブレムディスク
-            const centerBadge = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.12, rimHoleRadius * 0.12, 0.008, 24),
-                emblemMat
-            );
-            centerBadge.rotateZ(Math.PI / 2);
-            centerBadge.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(centerBadge);
-
-            // 8本オーガニックバナナスポーク（断面楕円＋リブ＋リム結合ガセット）
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.32);
-
-                const spLen = rimHoleRadius * 0.84;
-                const spokeMesh = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.024, 0.034, spLen, 14),
-                    rimMat
-                );
-                spokeMesh.scale.set(1.0, 1.0, 0.72);
-                spokeMesh.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                spokeMesh.rotation.z = isLeft ? 0.12 : -0.12;
-                spGroup.add(spokeMesh);
-
-                const ribMesh = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.014, 0.022, spLen * 0.90, 10),
-                    rimMat
-                );
-                ribMesh.position.set(inwardSign * -0.005, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                ribMesh.rotation.z = isLeft ? 0.12 : -0.12;
-                spGroup.add(ribMesh);
-
-                // リム結合部ガセット
-                const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.020, 0.038, 0.048),
-                    rimMat
-                );
-                gusset.position.set(0, spLen * 0.95 + rimHoleRadius * 0.18, 0);
-                spGroup.add(gusset);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.16, 4, 0xffffff, Math.PI / 4);
-
-        // ---------------------------------------------------------------------
-        // 2. FD3S: Mazdaspeed MS-01 (ゴールド5本スポーク、24ピアスボルト＆センターロック)
-        // ---------------------------------------------------------------------
-        } else if (style === 'ms01') {
-            const spokeCount = 5;
-            const dishDepth = 0.022;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            addPierceBolts(rimHoleRadius * 0.91, 24, faceX + inwardSign * 0.005);
-
-            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.35, rimHoleRadius * 0.22, dishDepth + 0.004, 32, 1, true);
-            hubBowlGeom.rotateZ(Math.PI / 2);
-            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
-            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hubBowl);
-
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.34);
-
-                const spLen = rimHoleRadius * 0.83;
-                const spoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, spLen, 0.052),
-                    rimMat
-                );
-                spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                spoke.rotation.z = isLeft ? 0.11 : -0.11;
-                spGroup.add(spoke);
-
-                for (let wing of [-0.016, 0.016]) {
-                    const bevel = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.015, spLen * 0.88, 0.016),
-                        rimMat
-                    );
-                    bevel.position.set(inwardSign * -0.004, spLen * 0.50 + rimHoleRadius * 0.18, wing);
-                    bevel.rotation.z = isLeft ? 0.11 : -0.11;
-                    spGroup.add(bevel);
-                }
-
-                // リム結合ガセット
-                const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.022, 0.035, 0.065),
-                    rimMat
-                );
-                gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
-                spGroup.add(gusset);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-
-            // センター大口径六角ロックナット
-            const hexCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.036, 0.036, 0.016, 6),
-                chromeNutMat
-            );
-            hexCap.rotateZ(Math.PI / 2);
-            hexCap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(hexCap);
-
-            // マツダスピードエンブレム
-            const msDisc = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.020, 0.020, 0.018, 20),
-                emblemMat
-            );
-            msDisc.rotateZ(Math.PI / 2);
-            msDisc.position.x = bowlFloorX + inwardSign * 0.004;
-            spokeGroup.add(msDisc);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.24, 5, 0xffffff, Math.PI / 5);
-
-        // ---------------------------------------------------------------------
-        // 3. R32: BNR32 GT-R 純正鍛造16インチ 5本ツインスポーク (中央背骨リブ＆GT-Rバッジ)
-        // ---------------------------------------------------------------------
-        } else if (style === 'bnr32_oem' || style === 'gtr') {
-            const spokeCount = 5;
-            const dishDepth = 0.024;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.36, rimHoleRadius * 0.20, dishDepth + 0.004, 32, 1, true);
-            hubBowlGeom.rotateZ(Math.PI / 2);
-            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
-            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hubBowl);
-
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.32);
-
-                const spLen = rimHoleRadius * 0.83;
-                const mainSpoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.025, spLen, 0.058),
-                    rimMat
-                );
-                mainSpoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                mainSpoke.rotation.z = isLeft ? 0.11 : -0.11;
-                spGroup.add(mainSpoke);
-
-                // 中央シャープ背骨リブ
-                const ridgeSpoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.016, spLen * 0.94, 0.018),
-                    rimMat
-                );
-                ridgeSpoke.position.set(inwardSign * -0.006, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                ridgeSpoke.rotation.z = isLeft ? 0.11 : -0.11;
-                spGroup.add(ridgeSpoke);
-
-                for (let side of [-0.020, 0.020]) {
-                    const chamfer = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.014, spLen * 0.85, 0.016),
-                        rimMat
-                    );
-                    chamfer.position.set(inwardSign * -0.003, spLen * 0.48 + rimHoleRadius * 0.18, side);
-                    chamfer.rotation.z = isLeft ? 0.11 : -0.11;
-                    spGroup.add(chamfer);
-                }
-
-                // リム結合ガセット
-                const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, 0.038, 0.072),
-                    rimMat
-                );
-                gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
-                spGroup.add(gusset);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-
-            // GT-R高精細エンブレムセンターキャップ
-            const gtrCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.014, 24),
-                emblemMat
-            );
-            gtrCap.rotateZ(Math.PI / 2);
-            gtrCap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(gtrCap);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
-
-        // ---------------------------------------------------------------------
-        // 4. S13: SSR Formula Mesh (ダイヤモンド交差メッシュ＆深リム)
-        // ---------------------------------------------------------------------
-        } else if (style === 'ssr_mesh') {
-            const meshCount = 16;
-            const dishDepth = 0.026;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            addPierceBolts(rimHoleRadius * 0.90, 24, faceX + inwardSign * 0.006);
-
-            const meshHub = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.36, rimHoleRadius * 0.26, dishDepth + 0.004, 24),
-                rimMat
-            );
-            meshHub.rotateZ(Math.PI / 2);
-            meshHub.position.x = faceX + inwardSign * (dishDepth * 0.52);
-            spokeGroup.add(meshHub);
-
-            const innerRing = new THREE.Mesh(
-                new THREE.TorusGeometry(rimHoleRadius * 0.55, 0.009, 8, 28),
-                rimMat
-            );
-            innerRing.rotateY(Math.PI / 2);
-            innerRing.position.x = faceX + inwardSign * (dishDepth * 0.38);
-            spokeGroup.add(innerRing);
-
-            for (let i = 0; i < meshCount; i++) {
-                const angle = (i / meshCount) * Math.PI * 2;
-                const spLen = rimHoleRadius * 0.83;
-
-                for (let cross of [-0.32, 0.32]) {
-                    const spGroup = new THREE.Group();
-                    spGroup.position.x = faceX + inwardSign * (dishDepth * 0.36);
-
-                    const blade = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.012, spLen, 0.016),
-                        rimMat
-                    );
-                    blade.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                    blade.rotation.z = cross;
-                    spGroup.add(blade);
-
-                    spGroup.rotation.x = -angle;
-                    spokeGroup.add(spGroup);
-                }
-            }
-
-            // SSR Speed Starセンタータワー
-            const ssrTower = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.034, 0.036, 0.018, 6),
-                chromeNutMat
-            );
-            ssrTower.rotateZ(Math.PI / 2);
-            ssrTower.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(ssrTower);
-
-            const ssrDisc = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.020, 0.020, 0.020, 20),
-                emblemMat
-            );
-            ssrDisc.rotateZ(Math.PI / 2);
-            ssrDisc.position.x = bowlFloorX + inwardSign * 0.004;
-            spokeGroup.add(ssrDisc);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 4, 0xffffff, Math.PI / 4);
-
-        // ---------------------------------------------------------------------
-        // 5. JZX100: Yokohama AVS Model 5 (アグレッシブディープコンケイブ ツイン5スポーク)
-        // ---------------------------------------------------------------------
-        } else if (style === 'avs_model5' || style === 'avs5') {
-            const spokePairs = 5;
-            const dishDepth = 0.028;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.34, rimHoleRadius * 0.20, dishDepth + 0.004, 32, 1, true);
-            hubBowlGeom.rotateZ(Math.PI / 2);
-            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
-            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.52);
-            spokeGroup.add(hubBowl);
-
-            for (let i = 0; i < spokePairs; i++) {
-                const pairAngle = (i / spokePairs) * Math.PI * 2;
-                const spLen = rimHoleRadius * 0.84;
-
-                for (let twin of [-0.070, 0.070]) {
-                    const spGroup = new THREE.Group();
-                    spGroup.position.x = faceX + inwardSign * (dishDepth * 0.30);
-
-                    const spoke = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.022, spLen, 0.026),
-                        rimMat
-                    );
-                    spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                    spoke.rotation.z = isLeft ? 0.14 : -0.14;
-                    spGroup.add(spoke);
-
-                    const bevel = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.015, spLen * 0.92, 0.012),
-                        rimMat
-                    );
-                    bevel.position.set(inwardSign * -0.004, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                    bevel.rotation.z = isLeft ? 0.14 : -0.14;
-                    spGroup.add(bevel);
-
-                    const gusset = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.020, 0.035, 0.036),
-                        rimMat
-                    );
-                    gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
-                    spGroup.add(gusset);
-
-                    spGroup.rotation.x = -(pairAngle + twin);
-                    spokeGroup.add(spGroup);
-                }
-            }
-
-            const avsCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.13, rimHoleRadius * 0.13, 0.014, 24),
-                emblemMat
-            );
-            avsCap.rotateZ(Math.PI / 2);
-            avsCap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(avsCap);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0x222226, Math.PI / 5);
-
-        // ---------------------------------------------------------------------
-        // 6. CE9A: OZ Racing Chrono Rally 5本スポーク (コンペホワイト＆OZロゴ)
-        // ---------------------------------------------------------------------
-        } else if (style === 'oz_chrono' || style === 'oz') {
-            const spokeCount = 5;
-            const dishDepth = 0.020;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.38, rimHoleRadius * 0.24, dishDepth + 0.004, 32, 1, true);
-            hubBowlGeom.rotateZ(Math.PI / 2);
-            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
-            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hubBowl);
-
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.32);
-
-                const spLen = rimHoleRadius * 0.83;
-                const spoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, spLen, 0.072),
-                    rimMat
-                );
-                spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                spoke.rotation.z = isLeft ? 0.09 : -0.09;
-                spGroup.add(spoke);
-
-                for (let side of [-0.026, 0.026]) {
-                    const draft = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.015, spLen * 0.88, 0.018),
-                        rimMat
-                    );
-                    draft.position.set(inwardSign * -0.004, spLen * 0.48 + rimHoleRadius * 0.18, side);
-                    draft.rotation.z = isLeft ? 0.09 : -0.09;
-                    spGroup.add(draft);
-                }
-
-                const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.022, 0.038, 0.084),
-                    rimMat
-                );
-                gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
-                spGroup.add(gusset);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-
-            const ozCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.15, rimHoleRadius * 0.15, 0.014, 24),
-                emblemMat
-            );
-            ozCap.rotateZ(Math.PI / 2);
-            ozCap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(ozCap);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.23, 5, 0xffffff, Math.PI / 5);
-
-        // ---------------------------------------------------------------------
-        // 7. EK9: Honda Civic Type R OEM 7本スポーク (チャンピオンシップホワイト＆赤H)
-        // ---------------------------------------------------------------------
-        } else if (style === 'ek9_typer' || style === 'type_r') {
-            const spokeCount = 7;
-            const dishDepth = 0.020;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.34, rimHoleRadius * 0.22, dishDepth + 0.004, 32, 1, true);
-            hubBowlGeom.rotateZ(Math.PI / 2);
-            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
-            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hubBowl);
-
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.30);
-
-                const spLen = rimHoleRadius * 0.83;
-                const spoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, spLen, 0.042),
-                    rimMat
-                );
-                spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                spoke.rotation.z = isLeft ? 0.09 : -0.09;
-                spGroup.add(spoke);
-
-                const crown = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.015, spLen * 0.90, 0.018),
-                    rimMat
-                );
-                crown.position.set(inwardSign * -0.004, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                crown.rotation.z = isLeft ? 0.09 : -0.09;
-                spGroup.add(crown);
-
-                const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.022, 0.035, 0.054),
-                    rimMat
-                );
-                gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
-                spGroup.add(gusset);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-
-            const typeRCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.014, 24),
-                emblemMat
-            );
-            typeRCap.rotateZ(Math.PI / 2);
-            typeRCap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(typeRCap);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
-
-        // ---------------------------------------------------------------------
-        // 8. RPS13: SSR Longchamp XR-4 (4本クロスブレード＆ブラックポケット)
-        // ---------------------------------------------------------------------
-        } else if (style === 'longchamp' || style === '5star') {
-            const spokeCount = 4;
-            const dishDepth = 0.026;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            addPierceBolts(rimHoleRadius * 0.91, 16, faceX + inwardSign * 0.006);
-
-            const darkHub = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.36, rimHoleRadius * 0.26, dishDepth + 0.004, 24),
-                darkPocketMat
-            );
-            darkHub.rotateZ(Math.PI / 2);
-            darkHub.position.x = faceX + inwardSign * (dishDepth * 0.52);
-            spokeGroup.add(darkHub);
-
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.34);
-
-                const spLen = rimHoleRadius * 0.83;
-                const blade = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, spLen, 0.076),
-                    new THREE.MeshStandardMaterial({ color: 0xfafcff, roughness: 0.12, metalness: 0.70 })
-                );
-                blade.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                blade.rotation.z = isLeft ? 0.12 : -0.12;
-                spGroup.add(blade);
-
-                const rib = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.016, spLen * 0.92, 0.030),
-                    chromeNutMat
-                );
-                rib.position.set(inwardSign * -0.006, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                rib.rotation.z = isLeft ? 0.12 : -0.12;
-                spGroup.add(rib);
-
-                const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, 0.038, 0.090),
-                    chromeNutMat
-                );
-                gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
-                spGroup.add(gusset);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-
-            const centerCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.032, 0.034, 0.018, 20),
-                emblemMat
-            );
-            centerCap.rotateZ(Math.PI / 2);
-            centerCap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(centerCap);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 4, 0xffffff, Math.PI / 4);
-
-        // ---------------------------------------------------------------------
-        // 9. CC72V: Suzuki Alto Works Aero Dish (削り出しディッシュ＆4スリット)
-        // ---------------------------------------------------------------------
-        } else if (style === 'works_dish') {
-            const dishDepth = 0.018;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            const dishGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.98, rimHoleRadius * 0.96, 0.018, 32);
-            dishGeom.rotateZ(Math.PI / 2);
-            const dish = new THREE.Mesh(dishGeom, rimMat);
-            dish.position.x = faceX + inwardSign * (dishDepth * 0.40);
-            spokeGroup.add(dish);
-
-            for (let s = 0; s < 4; s++) {
-                const sAngle = (s / 4) * Math.PI * 2 + Math.PI / 4;
-                const slot = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, rimHoleRadius * 0.26, 0.036),
-                    darkPocketMat
-                );
-                slot.position.set(
-                    faceX + inwardSign * (dishDepth * 0.40),
-                    Math.cos(sAngle) * (rimHoleRadius * 0.68),
-                    Math.sin(sAngle) * (rimHoleRadius * 0.68)
-                );
-                slot.rotation.x = -sAngle;
-                spokeGroup.add(slot);
-            }
-
-            const worksCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.22, rimHoleRadius * 0.22, 0.022, 24),
-                emblemMat
-            );
-            worksCap.rotateZ(Math.PI / 2);
-            worksCap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(worksCap);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.20, 4, 0xffffff, Math.PI / 4);
-
-        // ---------------------------------------------------------------------
-        // 10. JZA80: Toyota Supra RZ OEM 17-inch 5本スポーク (流体リブ＆トヨタエンブレム)
-        // ---------------------------------------------------------------------
-        } else if (style === 'supra_rz' || style === 'supra_5spoke') {
-            const spokeCount = 5;
-            const dishDepth = 0.024;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.36, rimHoleRadius * 0.22, dishDepth + 0.004, 32, 1, true);
-            hubBowlGeom.rotateZ(Math.PI / 2);
-            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
-            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hubBowl);
-
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.32);
-
-                const spLen = rimHoleRadius * 0.83;
-                const spoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, spLen, 0.066),
-                    rimMat
-                );
-                spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                spoke.rotation.z = isLeft ? 0.11 : -0.11;
-                spGroup.add(spoke);
-
-                for (let flute of [-0.018, 0.018]) {
-                    const ridge = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.010, 0.013, spLen * 0.92, 10),
-                        rimMat
-                    );
-                    ridge.position.set(inwardSign * -0.005, spLen * 0.50 + rimHoleRadius * 0.18, flute);
-                    ridge.rotation.z = isLeft ? 0.11 : -0.11;
-                    spGroup.add(ridge);
-                }
-
-                const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, 0.038, 0.078),
-                    rimMat
-                );
-                gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
-                spGroup.add(gusset);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-
-            const supraCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.014, 24),
-                emblemMat
-            );
-            supraCap.rotateZ(Math.PI / 2);
-            supraCap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(supraCap);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
-
-        // ---------------------------------------------------------------------
-        // 11. S15: Nissan Silvia Spec-R OEM 16-inch 5本スポーク (ツインフルート溝＆Sエンブレム)
-        // ---------------------------------------------------------------------
-        } else if (style === 's15_spec_r' || style === 's15_5spoke') {
-            const spokeCount = 5;
-            const dishDepth = 0.024;
-            const bowlFloorX = faceX + inwardSign * dishDepth;
-
-            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.35, rimHoleRadius * 0.20, dishDepth + 0.004, 32, 1, true);
-            hubBowlGeom.rotateZ(Math.PI / 2);
-            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
-            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.5);
-            spokeGroup.add(hubBowl);
-
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.32);
-
-                const spLen = rimHoleRadius * 0.83;
-                const mainSpoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, spLen, 0.060),
-                    rimMat
-                );
-                mainSpoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                mainSpoke.rotation.z = isLeft ? 0.11 : -0.11;
-                spGroup.add(mainSpoke);
-
-                for (let flute of [-0.015, 0.015]) {
-                    const ridge = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.015, spLen * 0.94, 0.013),
-                        rimMat
-                    );
-                    ridge.position.set(inwardSign * -0.005, spLen * 0.50 + rimHoleRadius * 0.18, flute);
-                    ridge.rotation.z = isLeft ? 0.11 : -0.11;
-                    spGroup.add(ridge);
-                }
-
-                const trough = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.004, spLen * 0.88, 0.006),
-                    darkPocketMat
-                );
-                trough.position.set(inwardSign * -0.002, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                trough.rotation.z = isLeft ? 0.11 : -0.11;
-                spGroup.add(trough);
-
-                const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, 0.038, 0.072),
-                    rimMat
-                );
-                gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
-                spGroup.add(gusset);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-
-            const s15Cap = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.014, 24),
-                emblemMat
-            );
-            s15Cap.rotateZ(Math.PI / 2);
-            s15Cap.position.x = bowlFloorX - inwardSign * 0.002;
-            spokeGroup.add(s15Cap);
-
-            addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
-
-        // フォールバック
-        } else {
-            const spokeCount = 5;
-            for (let i = 0; i < spokeCount; i++) {
-                const angle = (i / spokeCount) * Math.PI * 2;
-                const spGroup = new THREE.Group();
-                spGroup.position.x = faceX;
-
-                const spLen = rimHoleRadius * 0.83;
-                const spoke = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, spLen, 0.050),
-                    rimMat
-                );
-                spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                spoke.rotation.z = isLeft ? 0.10 : -0.10;
-                spGroup.add(spoke);
-
-                spGroup.rotation.x = -angle;
-                spokeGroup.add(spGroup);
-            }
-            addLugNutPattern(faceX + inwardSign * 0.015, rimHoleRadius * 0.22, 5);
-        }
-
-        mesh.add(spokeGroup);
     }
     static addSideMirrors(group, posX, posY, posZ, mirrorMat) {
         for (let s of [-1, 1]) {
