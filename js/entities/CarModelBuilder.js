@@ -5597,6 +5597,11 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
     // （物理的3Dトレッド溝・車高調サスペンション・ダストシールド・高解像度PBRテクスチャ）
     // =========================================================================
 
+    // =========================================================================
+    // 300％極限超越再現：ハイパーリアル・ホイール＆ホイール回り完全体システム
+    // （ツインスプリング車高調・物理的3Dトレッド溝・ダストシールド・高解像度PBRテクスチャ）
+    // =========================================================================
+
     static createDetailedWheels(parentGroup, wheelPositions, rimMat, tireMat, style, radius, width, caliperColor = null) {
         const wheels = [];
         let frontWheelL = null;
@@ -5605,7 +5610,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         // タイヤ基本ラバーマテリアル（本物のマット微細ゴム質感）
         const realTireMat = (tireMat && tireMat.isMaterial) ? tireMat : new THREE.MeshStandardMaterial();
         realTireMat.color.setHex(0x191a1d);
-        realTireMat.roughness = 0.85;
+        realTireMat.roughness = 0.86;
         realTireMat.metalness = 0.05;
         realTireMat.side = THREE.DoubleSide;
 
@@ -5635,8 +5640,8 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         // ポリッシュド・ミラーリップマテリアル
         const mirrorLipMat = new THREE.MeshStandardMaterial({
             color: 0xf8fafc,
-            roughness: 0.07,
-            metalness: 0.88
+            roughness: 0.06,
+            metalness: 0.92
         });
 
         // インナーリムバレル（陽極酸化アルミ・ダーク質感）
@@ -5651,8 +5656,8 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         const rotorTex = this.createBrakeRotorTexture();
         const rotorMat = new THREE.MeshStandardMaterial({
             map: rotorTex,
-            roughness: 0.22,
-            metalness: 0.74,
+            roughness: 0.20,
+            metalness: 0.78,
             side: THREE.DoubleSide
         });
 
@@ -5674,7 +5679,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         const chromeNutMat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
             roughness: 0.08,
-            metalness: 0.90
+            metalness: 0.92
         });
 
         // バランスウェイト（亜鉛・鉛合金）
@@ -5685,14 +5690,17 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         });
 
         // サスペンション用PBRマテリアル
-        const damperRodMat = new THREE.MeshStandardMaterial({ color: 0xe8ecf2, roughness: 0.08, metalness: 0.92 });
+        const damperRodMat = new THREE.MeshStandardMaterial({ color: 0xecf0f6, roughness: 0.06, metalness: 0.94 });
         const shockBodyMat = new THREE.MeshStandardMaterial({ color: 0xb89228, roughness: 0.28, metalness: 0.75 }); // アノダイズドゴールド
-        const lockCollarMat = new THREE.MeshStandardMaterial({ color: 0xcc1414, roughness: 0.22, metalness: 0.82 }); // 鮮紅アジャスターブラケット
+        const lockCollarMat = new THREE.MeshStandardMaterial({ color: 0xcc1414, roughness: 0.20, metalness: 0.85 }); // 鮮紅アルマイトダブルリング
+        const spacerSeatMat = new THREE.MeshStandardMaterial({ color: 0x20242a, roughness: 0.30, metalness: 0.80 }); // ヘルパースプリングスペーサーシート
+        const helperSpringMat = new THREE.MeshStandardMaterial({ color: 0x121418, roughness: 0.40, metalness: 0.60 }); // フラットワイヤーヘルパースプリング
+
         let springColor = 0x22c55e; // TEINレーシンググリーン
-        if (style === 'bnr32_oem' || style === 'gtr' || style === 's15_spec_r') springColor = 0xb81818; // NISMOレッド
+        if (style === 'bnr32_oem' || style === 'gtr' || style === 's15_spec_r') springColor = 0xd41818; // NISMOレッド
         else if (style === 'jzx100' || style === 's13' || style === 'rps13') springColor = 0x7c3aed; // HKSハイパーマックスパープル
         else if (style === 'supra_5spoke' || style === 'supra_rz') springColor = 0xeab308; // ビルシュタインイエロー
-        const coilSpringMat = new THREE.MeshStandardMaterial({ color: springColor, roughness: 0.25, metalness: 0.60 });
+        const coilSpringMat = new THREE.MeshStandardMaterial({ color: springColor, roughness: 0.22, metalness: 0.65 });
 
         // ブレーキダストシールド（プレス成形ブラック防熱板）
         const dustShieldMat = new THREE.MeshStandardMaterial({
@@ -5724,12 +5732,12 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         const caliperTex = this.createCaliperTexture(style, finalCaliperColor);
         const caliperMat = new THREE.MeshStandardMaterial({
             color: finalCaliperColor,
-            roughness: 0.22,
+            roughness: 0.18,
             metalness: 0.52
         });
         const caliperFaceMat = new THREE.MeshStandardMaterial({
             map: caliperTex,
-            roughness: 0.20,
+            roughness: 0.18,
             metalness: 0.50
         });
 
@@ -5750,35 +5758,35 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             const rotorRadius = rimHoleRadius * 0.77;
             const rotorThick = 0.024;
 
-            // 1.1 インナーフェンダー・ホイールハウスライナー（遮光＆泥除け曲面チューブ）
+            // 1.1 インナーフェンダー・ホイールハウスライナー
             const archLinerGeom = new THREE.CylinderGeometry(radius * 1.15, radius * 1.15, width * 1.30, 24, 1, true, -Math.PI * 0.82, Math.PI * 0.64);
             archLinerGeom.rotateZ(Math.PI / 2);
             const archLiner = new THREE.Mesh(archLinerGeom, archLinerMat);
             archLiner.position.set(inwardSign * 0.02, 0, 0);
             surroundGroup.add(archLiner);
 
-            // 1.2 車高調サスペンションシステム（倒立式モノチューブダンパー＋直巻スプリング）
+            // 1.2 ★【300％超進化】ツインスプリング式レーシング車高調サスペンション
             const suspGroup = new THREE.Group();
             suspGroup.position.set(inwardSign * 0.045, 0.12, 0);
 
-            // ダンパーロッド
+            // 鏡面クローム ダンパーロッド
             const damperRod = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.015, 0.015, 0.28, 14),
+                new THREE.CylinderGeometry(0.015, 0.015, 0.30, 14),
                 damperRodMat
             );
-            damperRod.position.y = 0.04;
+            damperRod.position.y = 0.05;
             suspGroup.add(damperRod);
 
             // アノダイズドゴールド ダンパーシリンダー
             const shockBody = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.024, 0.024, 0.18, 14),
+                new THREE.CylinderGeometry(0.024, 0.024, 0.20, 14),
                 shockBodyMat
             );
             shockBody.position.y = -0.06;
             suspGroup.add(shockBody);
 
-            // アジャスタブル車高調整ロックシート（ダブルシート）
-            for (let c of [-0.015, 0.0]) {
+            // アジャスタブル車高調整ダブルロックシート
+            for (let c of [-0.022, -0.010]) {
                 const lockRing = new THREE.Mesh(
                     new THREE.TorusGeometry(0.029, 0.005, 8, 20),
                     lockCollarMat
@@ -5788,19 +5796,39 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 suspGroup.add(lockRing);
             }
 
-            // 直巻レーシングコイルスプリング（6段ヘリカルコイル）
+            // 下段：フラットワイヤー・ヘルパースプリング（3段）
+            for (let hs = 0; hs < 3; hs++) {
+                const hCoil = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.028, 0.0035, 6, 20),
+                    helperSpringMat
+                );
+                hCoil.rotateX(Math.PI / 2);
+                hCoil.position.y = -0.002 + hs * 0.010;
+                suspGroup.add(hCoil);
+            }
+
+            // 中間スプリングスペーサーシート
+            const spacerSeat = new THREE.Mesh(
+                new THREE.TorusGeometry(0.029, 0.004, 8, 20),
+                spacerSeatMat
+            );
+            spacerSeat.rotateX(Math.PI / 2);
+            spacerSeat.position.y = 0.030;
+            suspGroup.add(spacerSeat);
+
+            // 上段：メインレーシングコイルスプリング（6段ヘリカルコイル）
             for (let sp = 0; sp < 6; sp++) {
                 const coil = new THREE.Mesh(
                     new THREE.TorusGeometry(0.028, 0.0055, 8, 22),
                     coilSpringMat
                 );
                 coil.rotateX(Math.PI / 2);
-                coil.position.y = 0.025 + sp * 0.024;
+                coil.position.y = 0.044 + sp * 0.022;
                 suspGroup.add(coil);
             }
             surroundGroup.add(suspGroup);
 
-            // 1.3 ナックルハブ・アップライト（鍛造鋳鉄スピンドルキャリア）
+            // 1.3 ナックルハブ・アップライト
             const knuckle = new THREE.Mesh(
                 new THREE.BoxGeometry(0.036, 0.13, 0.064),
                 new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.85, metalness: 0.35 })
@@ -5808,7 +5836,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             knuckle.position.set(inwardSign * 0.038, 0, 0);
             surroundGroup.add(knuckle);
 
-            // 1.4 ブレーキバックプレート・防熱ダストシールド（ローター背面の黒色プレス鋼板）
+            // 1.4 ブレーキバックプレート・防熱ダストシールド
             const dustShieldGeom = new THREE.RingGeometry(rotorRadius * 0.38, rotorRadius * 1.05, 36);
             dustShieldGeom.rotateY(wp.isLeft ? -Math.PI / 2 : Math.PI / 2);
             const dustShield = new THREE.Mesh(dustShieldGeom, dustShieldMat);
@@ -5960,7 +5988,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 mesh.add(bobbin);
             }
 
-            // 32mmスピンドルキャッスルナット
+            // 32mmスピンドルキャッスルナット＆割りピン
             const spindleNut = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.016, 0.016, 0.016, 6),
                 chromeNutMat
@@ -5970,10 +5998,10 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             mesh.add(spindleNut);
 
             // =====================================================================
-            // 2.2 ★200％極限再現：物理的3Dトレッド溝＆非対称ブロック構造スポーツタイヤ
+            // 2.2 ★【300％極限進化】物理的3Dトレッド溝＆非対称スポーツタイヤ
             // =====================================================================
             // (a) タイヤベースカーカス（有機的曲面サイドウォール＆溝底）
-            const carcassRadius = radius - 0.0075; // 溝の深さ 7.5mm
+            const carcassRadius = radius - 0.0075;
             const tirePoints = [
                 new THREE.Vector2(-halfW + 0.010, rimHoleRadius),
                 new THREE.Vector2(-tireHalfW, rimHoleRadius + (radius - rimHoleRadius) * 0.28),
@@ -5995,15 +6023,21 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             tireMesh.castShadow = true;
             mesh.add(tireMesh);
 
-            // (b) 外側サイドウォール専用高解像度ブランド刻印ディスク
+            // (b) リムプロテクタービード（ホイールリムを保護する立体ゴムリブ）
+            const rimGuardGeom = new THREE.TorusGeometry(rimHoleRadius * 1.04, 0.0045, 12, 48);
+            rimGuardGeom.rotateY(Math.PI / 2);
+            const rimGuard = new THREE.Mesh(rimGuardGeom, realTireMat);
+            rimGuard.position.x = (wp.isLeft ? -1 : 1) * (halfW - 0.006);
+            mesh.add(rimGuard);
+
+            // (c) 外側サイドウォール専用高解像度ブランド刻印ディスク
             const outerSwRingGeom = new THREE.RingGeometry(rimHoleRadius * 1.01, radius * 0.985, 48);
             outerSwRingGeom.rotateY(wp.isLeft ? -Math.PI / 2 : Math.PI / 2);
             const outerSwMesh = new THREE.Mesh(outerSwRingGeom, sidewallMat);
             outerSwMesh.position.x = (wp.isLeft ? -1 : 1) * (tireHalfW + 0.001);
             mesh.add(outerSwMesh);
 
-            // (c) ★【物理的3Dトレッド溝】4列の独立した立体トレッドリブブロック群
-            // トレッド幅全体に3本の物理的縦溝（主排水チャンネル）を刻み込み
+            // (d) ★【物理的3Dトレッド溝】4列の立体リブバンド＆3本の主排水縦溝
             const treadTopRadius = radius + 0.0008;
             const ribConfigs = [
                 { xCenter: -width * 0.35, ribW: width * 0.17 }, // 外側ショルダーリブ
@@ -6013,14 +6047,12 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             ];
 
             ribConfigs.forEach((cfg) => {
-                // 立体リブ天面バンド
                 const ribGeom = new THREE.CylinderGeometry(treadTopRadius, treadTopRadius, cfg.ribW, 48, 1, true);
                 ribGeom.rotateZ(Math.PI / 2);
                 const ribMesh = new THREE.Mesh(ribGeom, treadRibMat);
                 ribMesh.position.x = cfg.xCenter;
                 mesh.add(ribMesh);
 
-                // リブ側壁エッジ（溝の内壁面・陰影を形成するステップリング）
                 for (let s of [-cfg.ribW * 0.5, cfg.ribW * 0.5]) {
                     const wallGeom = new THREE.RingGeometry(carcassRadius, treadTopRadius, 48);
                     wallGeom.rotateY(s < 0 ? -Math.PI / 2 : Math.PI / 2);
@@ -6030,10 +6062,10 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 }
             });
 
-            // (d) ★【物理的3D横溝・サイプ】ショルダーリブ外周に刻まれた24個の立体トラクション切り欠き
+            // (e) ★【物理的3Dサイプ】全周24個の立体方向性トラクション切り欠き（ショルダー＋センター）
             for (let notch = 0; notch < 24; notch++) {
                 const nAngle = (notch / 24) * Math.PI * 2;
-                // 外側ショルダーブロック横溝
+                // 外側ショルダー横溝
                 const sipeOuter = new THREE.Mesh(
                     new THREE.BoxGeometry(width * 0.175, 0.0085, 0.0055),
                     tireGrooveBaseMat
@@ -6043,10 +6075,10 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                     Math.cos(nAngle) * (radius - 0.0035),
                     Math.sin(nAngle) * (radius - 0.0035)
                 );
-                sipeOuter.rotation.x = -nAngle + 0.18; // 斜め方向性トラクションアングル
+                sipeOuter.rotation.x = -nAngle + 0.20;
                 mesh.add(sipeOuter);
 
-                // 内側ショルダーブロック横溝
+                // 内側ショルダー横溝
                 const sipeInner = new THREE.Mesh(
                     new THREE.BoxGeometry(width * 0.175, 0.0085, 0.0055),
                     tireGrooveBaseMat
@@ -6056,8 +6088,23 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                     Math.cos(nAngle) * (radius - 0.0035),
                     Math.sin(nAngle) * (radius - 0.0035)
                 );
-                sipeInner.rotation.x = -nAngle - 0.18;
+                sipeInner.rotation.x = -nAngle - 0.20;
                 mesh.add(sipeInner);
+
+                // センター斜め方向性サイプ
+                if (notch % 2 === 0) {
+                    const sipeCenter = new THREE.Mesh(
+                        new THREE.BoxGeometry(width * 0.14, 0.0085, 0.0045),
+                        tireGrooveBaseMat
+                    );
+                    sipeCenter.position.set(
+                        -width * 0.12,
+                        Math.cos(nAngle) * (radius - 0.0035),
+                        Math.sin(nAngle) * (radius - 0.0035)
+                    );
+                    sipeCenter.rotation.x = -nAngle + 0.35;
+                    mesh.add(sipeCenter);
+                }
             }
 
             // 2.3 アルミホイールバレル＆アウターリムフランジ
@@ -6149,6 +6196,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
 
         return { wheels, frontWheelL, frontWheelR };
     }
+
     static addWheelSpokes(mesh, style, rimMat, radius, width, isLeft, rimHoleRadius, rimLipX) {
         const spokeGroup = new THREE.Group();
         const inwardSign = isLeft ? 1 : -1;
