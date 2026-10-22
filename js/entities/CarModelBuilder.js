@@ -159,8 +159,9 @@ class CarModelBuilder {
             doorUpper.castShadow = true;
             group.add(doorUpper);
 
-            const sideMolding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.038, 3.84), blackTrimMat);
-            sideMolding.position.set(s * 0.812, 0.44, 0);
+            // サイドモールディング（前後ホイール開口部に干渉しないドア部のみ配置）
+            const sideMolding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.038, 1.48), blackTrimMat);
+            sideMolding.position.set(s * 0.812, 0.44, -0.05);
             group.add(sideMolding);
 
             const handle = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.032, 0.09), blackTrimMat);
@@ -171,8 +172,8 @@ class CarModelBuilder {
                 // 1.3 フロントフェンダー＆ホイールアーチ（開口部を確保し車輪への干渉・埋没を完全解消）
         for (let s of [-1, 1]) {
             // フロントフェンダー上部アーチフレア（車輪上部y=0.58）
-            const fArchLip = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.12, 0.84), primaryMat);
-            fArchLip.position.set(s * 0.815, 0.58, 1.20);
+            const fArchLip = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.05, 0.66), primaryMat);
+            fArchLip.position.set(s * 0.815, 0.645, 1.20);
             group.add(fArchLip);
 
             // 車輪前方フェンダー
@@ -197,8 +198,8 @@ class CarModelBuilder {
         // 1.4 リアフェンダー＆リアホイールアーチ（開口部を確保し車輪への干渉・埋没を完全解消）
         for (let s of [-1, 1]) {
             // リアフェンダー上部アーチフレア（車輪上部y=0.58）
-            const rArchLip = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.12, 0.86), primaryMat);
-            rArchLip.position.set(s * 0.815, 0.58, -1.18);
+            const rArchLip = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.05, 0.66), primaryMat);
+            rArchLip.position.set(s * 0.815, 0.645, -1.20);
             group.add(rArchLip);
 
             // 車輪前方リアフェンダー
@@ -219,8 +220,8 @@ class CarModelBuilder {
             rFenderLowerRear.position.set(s * 0.76, 0.26, -1.66);
             group.add(rFenderLowerRear);
 
-const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 1.40), primaryMat);
-            rShoulder.position.set(s * 0.74, 0.67, -1.16);
+const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 1.40), primaryMat);
+            rShoulder.position.set(s * 0.74, 0.69, -1.16);
             group.add(rShoulder);
 
             // クォーターベント（黒いエアルーバーバッジ）
@@ -536,7 +537,7 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 1.40), primar
         // 6. ★本物志向：RSワタナベ 8スポーク深リムホイール
         // =========================================================================
         const wheelPositions = [
-            { x: -0.71, y: 0.305, z: 1.20, isFront: true, isLeft: true },
+            { x: -0.70, y: 0.305, z: 1.20, isFront: true, isLeft: true },
             { x: 0.70, y: 0.305, z: 1.20, isFront: true, isLeft: false },
             { x: -0.70, y: 0.305, z: -1.20, isFront: false, isLeft: true },
             { x: 0.70, y: 0.305, z: -1.20, isFront: false, isLeft: false }
@@ -732,8 +733,8 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 1.40), primar
                 // 1.3 フロントマッスルフェンダー（ホイール開口部を確保し車輪への干渉・埋没を完全解消）
         for (let s of [-1, 1]) {
             // フェンダーアーチフレア（前輪上部y=0.63の力強い膨らみ）
-            const fArchLip = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.12, 0.88), yellowBodyMat);
-            fArchLip.position.set(s * 0.855, 0.63, 1.25);
+            const fArchLip = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.05, 0.68), yellowBodyMat);
+            fArchLip.position.set(s * 0.855, 0.66, 1.25);
             group.add(fArchLip);
 
             // 車輪前方フェンダー
@@ -765,8 +766,8 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 1.40), primar
         // 1.4 リアマッスルワイドフェンダー（リアホイール開口部を確保し車輪への干渉・埋没を完全解消）
         for (let s of [-1, 1]) {
             // リアアーチ上部フレア（車輪上部y=0.64）
-            const rFlare = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.12, 0.94), yellowBodyMat);
-            rFlare.position.set(s * 0.865, 0.64, -1.25);
+            const rFlare = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.05, 0.70), yellowBodyMat);
+            rFlare.position.set(s * 0.865, 0.665, -1.25);
             group.add(rFlare);
 
             // 車輪前方リアフェンダー
@@ -780,8 +781,8 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 1.40), primar
             group.add(rHipRear);
 
             // リアショルダー（上面）
-const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 1.34), yellowBodyMat);
-            rShoulder.position.set(s * 0.74, 0.64, -1.18);
+const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 1.34), yellowBodyMat);
+            rShoulder.position.set(s * 0.74, 0.69, -1.18);
             group.add(rShoulder);
         }
 
@@ -1335,8 +1336,8 @@ const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 1.34), yellow
         // =========================================================================
                 for (let s of [-1, 1]) {
             // 3.1 フロントフェンダーアーチ上部フレア（車輪上部y=0.64）
-            const fFlare = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.12, 0.90), primaryMat);
-            fFlare.position.set(s * 0.865, 0.64, 1.35);
+            const fFlare = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.05, 0.68), primaryMat);
+            fFlare.position.set(s * 0.865, 0.655, 1.35);
             group.add(fFlare);
 
             // 車輪前方ブリスターフェンダー
@@ -1377,13 +1378,22 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(gtBadgeTrim);
 
             // 3.2 リア・ブリスターフェンダー（GT-Rならではの肉厚なスクエアショルダー）
-            const rBlister = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.42, 1.38), primaryMat);
-            rBlister.position.set(s * 0.845, 0.50, -1.24);
-            group.add(rBlister);
+            // 3.2 リア・ブリスターフェンダー（ホイール開口部を完全にくり抜いたリアル構造）
+            const rBlisterFront = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.34, 0.34), primaryMat);
+            rBlisterFront.position.set(s * 0.845, 0.47, -0.74);
+            group.add(rBlisterFront);
 
-            // リアアーチフレア
-            const rFlare = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.37, 1.04), primaryMat);
-            rFlare.position.set(s * 0.895, 0.495, -1.26);
+            const rBlisterRear = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.34, 0.36), primaryMat);
+            rBlisterRear.position.set(s * 0.845, 0.47, -1.84);
+            group.add(rBlisterRear);
+
+            const rBlisterTop = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.08, 0.66), primaryMat);
+            rBlisterTop.position.set(s * 0.845, 0.67, -1.35);
+            group.add(rBlisterTop);
+
+            // リアアーチフレア（タイヤ上部に美しく沿う薄型アーチリップ）
+            const rFlare = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.05, 0.70), primaryMat);
+            rFlare.position.set(s * 0.895, 0.655, -1.35);
             group.add(rFlare);
 
             // リアショルダー稜線（テールランプへと繋がる力強い水平ライン）
@@ -1969,13 +1979,13 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // 2.3 フロントフェンダー（ホイールハウス切り欠き＆ツートン）
         for (let s of [-1, 1]) {
             // フロントフェンダー上部（プライマリカラー、タイヤ上部y=0.62を美しく包む）
-            const fFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 1.18), primaryMat);
-            fFenderUpper.position.set(s * 0.78, 0.56, 1.22);
+            const fFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.66), primaryMat);
+            fFenderUpper.position.set(s * 0.78, 0.65, 1.25);
             group.add(fFenderUpper);
 
             // ホイールアーチフレア（タイヤハウス輪郭）
-            const fArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 0.88), primaryMat);
-            fArchFlare.position.set(s * 0.825, 0.56, 1.25);
+            const fArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.68), primaryMat);
+            fArchFlare.position.set(s * 0.825, 0.645, 1.25);
             group.add(fArchFlare);
 
             // フロントフェンダー下部・前方（ツートン下部）
@@ -1989,21 +1999,21 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(fFenderLowerRear);
 
             // フェンダー側面のブラックプロテクションモール（前方延長）
-            const fMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 0.60), blackTrimMat);
-            fMoulding.position.set(s * 0.812, 0.44, 1.68);
+const fMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 0.36), blackTrimMat);
+            fMoulding.position.set(s * 0.812, 0.44, 1.82);
             group.add(fMoulding);
         }
 
         // 2.4 リアフェンダー（流麗な5ナンバークーペヒップ＆ツートン）
         for (let s of [-1, 1]) {
             // リアフェンダー上部（プライマリカラー）
-            const rFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 1.24), primaryMat);
-            rFenderUpper.position.set(s * 0.78, 0.565, -1.22);
+            const rFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.66), primaryMat);
+            rFenderUpper.position.set(s * 0.78, 0.65, -1.25);
             group.add(rFenderUpper);
 
             // リアアーチフレア
-            const rArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 0.92), primaryMat);
-            rArchFlare.position.set(s * 0.825, 0.565, -1.25);
+            const rArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.68), primaryMat);
+            rArchFlare.position.set(s * 0.825, 0.645, -1.25);
             group.add(rArchFlare);
 
             // リアフェンダー下部・前方（ドア直後）
@@ -2017,8 +2027,8 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(rFenderLowerRear);
 
             // フェンダー側面のブラックプロテクションモール（後方延長）
-            const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 0.68), blackTrimMat);
-            rMoulding.position.set(s * 0.812, 0.44, -1.74);
+const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 0.44), blackTrimMat);
+            rMoulding.position.set(s * 0.812, 0.44, -1.86);
             group.add(rMoulding);
         }
 
@@ -2552,13 +2562,13 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // 2.3 フロントフェンダー（ホイールハウス切り欠き＆ワイドフレアアーチ：前後完全連続）
         for (let s of [-1, 1]) {
             // フロントフェンダー上部（前ドアからライトまで隙間なく連続カバー）
-            const fFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 1.50), primaryMat);
-            fFenderUpper.position.set(s * 0.83, 0.58, 1.52);
+            const fFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.68), primaryMat);
+            fFenderUpper.position.set(s * 0.83, 0.675, 1.38);
             group.add(fFenderUpper);
 
             // フロントワイドブリスターアーチフレア
-            const fArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.22, 0.94), primaryMat);
-            fArchFlare.position.set(s * 0.875, 0.58, 1.38);
+            const fArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.05, 0.70), primaryMat);
+            fArchFlare.position.set(s * 0.875, 0.665, 1.38);
             group.add(fArchFlare);
 
             // フロントフェンダー下部・前方（バンパー結合部）
@@ -2572,21 +2582,21 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(fFenderLowerRear);
 
             // フェンダー側面のブラックモール（前方延長）
-            const fMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.72), blackTrimMat);
-            fMoulding.position.set(s * 0.872, 0.48, 1.88);
+const fMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.38), blackTrimMat);
+            fMoulding.position.set(s * 0.872, 0.48, 2.05);
             group.add(fMoulding);
         }
 
         // 2.4 リアフェンダー（大型セダン特有のスクエアショルダー＆ワイドリアアーチ：後ドアからテールまで完全連続）
         for (let s of [-1, 1]) {
             // リアフェンダー上部（後ドアからテールランプまで隙間なく完全カバー）
-            const rFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 1.52), primaryMat);
-            rFenderUpper.position.set(s * 0.83, 0.59, -1.48);
+            const rFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.68), primaryMat);
+            rFenderUpper.position.set(s * 0.83, 0.68, -1.35);
             group.add(rFenderUpper);
 
             // リアワイドブリスターアーチフレア
-            const rArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.22, 0.96), primaryMat);
-            rArchFlare.position.set(s * 0.875, 0.59, -1.35);
+            const rArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.040, 0.05, 0.70), primaryMat);
+            rArchFlare.position.set(s * 0.875, 0.67, -1.35);
             group.add(rArchFlare);
 
             // リアフェンダー下部・前方（後ドア直後）
@@ -2600,8 +2610,8 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(rFenderLowerRear);
 
             // フェンダー側面のブラックモール（後方延長）
-            const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.74), blackTrimMat);
-            rMoulding.position.set(s * 0.872, 0.48, -1.88);
+const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blackTrimMat);
+            rMoulding.position.set(s * 0.872, 0.48, -2.00);
             group.add(rMoulding);
         }
 
@@ -3216,13 +3226,13 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // 4. フロントフェンダー（ホイールアーチ上部・側面を完全にカバー）
         for (let s of [-1, 1]) {
             // フロントフェンダー上部（フード側面からヘッドライト、ドアまで完全に埋める）
-            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 1.25), primaryMat);
-            fFenderTop.position.set(s * 0.75, 0.53, 1.25);
+            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.66), primaryMat);
+            fFenderTop.position.set(s * 0.75, 0.66, 1.25);
             group.add(fFenderTop);
 
             // ホイールアーチフレア
-            const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.20, 0.86), primaryMat);
-            fArch.position.set(s * 0.83, 0.52, 1.25);
+            const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.68), primaryMat);
+            fArch.position.set(s * 0.83, 0.645, 1.25);
             group.add(fArch);
 
             // ドアパネル
@@ -3231,12 +3241,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(doorSide);
 
             // リアフェンダー
-            const rFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.24, 1.40), primaryMat);
-            rFenderTop.position.set(s * 0.75, 0.53, -1.30);
+            const rFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.66), primaryMat);
+            rFenderTop.position.set(s * 0.75, 0.66, -1.25);
             group.add(rFenderTop);
 
-            const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.20, 0.88), primaryMat);
-            rArch.position.set(s * 0.83, 0.52, -1.25);
+            const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.68), primaryMat);
+            rArch.position.set(s * 0.83, 0.645, -1.25);
             group.add(rArch);
 
             const rQuarter = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.30, 0.26), primaryMat);
@@ -3249,7 +3259,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(sideSkirt);
 
             // モール
-            const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 2.50), blackTrimMat);
+            const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 1.55), blackTrimMat);
             rubStrip.position.set(s * 0.84, 0.44, 0.0);
             group.add(rubStrip);
         }
@@ -3604,12 +3614,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // 4. フロントフェンダー＆サイドボディ（ホイールアーチとボディ隙間を完全に埋める）
         for (let s of [-1, 1]) {
             // フロントフェンダー上部
-            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 1.20), primaryMat);
-            fFenderTop.position.set(s * 0.75, 0.52, 1.20);
+            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.66), primaryMat);
+            fFenderTop.position.set(s * 0.75, 0.66, 1.20);
             group.add(fFenderTop);
 
-            const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.18, 0.82), primaryMat);
-            fArch.position.set(s * 0.82, 0.51, 1.20);
+            const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.68), primaryMat);
+            fArch.position.set(s * 0.82, 0.645, 1.20);
             group.add(fArch);
 
             // ドアパネル
@@ -3618,12 +3628,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(doorSide);
 
             // リアフェンダー
-            const rFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.24, 1.30), primaryMat);
-            rFenderTop.position.set(s * 0.75, 0.52, -1.25);
+            const rFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.66), primaryMat);
+            rFenderTop.position.set(s * 0.75, 0.66, -1.20);
             group.add(rFenderTop);
 
-            const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.18, 0.84), primaryMat);
-            rArch.position.set(s * 0.82, 0.51, -1.20);
+            const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.68), primaryMat);
+            rArch.position.set(s * 0.82, 0.645, -1.20);
             group.add(rArch);
 
             const rQuarter = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.30, 0.24), primaryMat);
@@ -3635,7 +3645,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             sideSkirt.position.set(s * 0.80, 0.15, 0.0);
             group.add(sideSkirt);
 
-            const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.035, 1.75), primaryMat);
+            const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.035, 1.48), primaryMat);
             rubStrip.position.set(s * 0.84, 0.42, 0.0);
             group.add(rubStrip);
         }
@@ -4040,12 +4050,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // 4. フロントフェンダー＆サイドボディ＆モール
         for (let s of [-1, 1]) {
             // フロントフェンダー上部（ホイールアーチとフードの間を完全に埋める）
-            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.24, 1.25), primaryMat);
-            fFenderTop.position.set(s * 0.75, 0.52, 1.22);
+            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.66), primaryMat);
+            fFenderTop.position.set(s * 0.75, 0.65, 1.22);
             group.add(fFenderTop);
 
-            const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 0.86), primaryMat);
-            fArch.position.set(s * 0.825, 0.52, 1.22);
+            const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.68), primaryMat);
+            fArch.position.set(s * 0.825, 0.64, 1.22);
             group.add(fArch);
 
             // ドアパネル下部（サイドシル〜プロテクションモール）
@@ -4064,12 +4074,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(handle);
 
             // リアフェンダー下部
-            const rFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.24, 1.30), primaryMat);
-            rFenderTop.position.set(s * 0.75, 0.52, -1.25);
+            const rFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.66), primaryMat);
+            rFenderTop.position.set(s * 0.75, 0.65, -1.25);
             group.add(rFenderTop);
 
-            const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 0.88), primaryMat);
-            rArch.position.set(s * 0.825, 0.52, -1.25);
+            const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.68), primaryMat);
+            rArch.position.set(s * 0.825, 0.64, -1.25);
             group.add(rArch);
 
             const rQuarter = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.30, 0.35), primaryMat);
@@ -4087,7 +4097,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(sideSkirt);
 
             // サイドモール（ブラックプロテクションストリップ）
-            const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 2.50), blackTrimMat);
+            const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 1.50), blackTrimMat);
             rubStrip.position.set(s * 0.815, 0.44, -0.05);
             group.add(rubStrip);
 
@@ -4585,12 +4595,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
 
         for (let s of [-1, 1]) {
             // フロントフェンダー上部
-            const fFender = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 0.80), primaryMat);
-            fFender.position.set(s * 0.62, 0.52, 0.94);
+            const fFender = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.58), primaryMat);
+            fFender.position.set(s * 0.62, 0.605, 0.88);
             group.add(fFender);
 
-            const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.20, 0.68), primaryMat);
-            fArch.position.set(s * 0.68, 0.50, 0.88);
+            const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.04, 0.58), primaryMat);
+            fArch.position.set(s * 0.68, 0.595, 0.88);
             group.add(fArch);
 
             // ドアパネル下部（ツートン下部）
@@ -4604,17 +4614,21 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(doorUpper);
 
             // リアフェンダー下部（後端はリアハッチ・バンパーに綺麗に収束）
-            const rFenderLower = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 1.12), secondaryMat);
-            rFenderLower.position.set(s * 0.62, 0.40, -0.96);
-            group.add(rFenderLower);
+            const rFenderLowerFront = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.32), secondaryMat);
+            rFenderLowerFront.position.set(s * 0.62, 0.40, -0.84);
+            group.add(rFenderLowerFront);
+
+            const rFenderLowerRear = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.22), secondaryMat);
+            rFenderLowerRear.position.set(s * 0.62, 0.40, -1.64);
+            group.add(rFenderLowerRear);
 
             // リアフェンダー上部
-            const rFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 1.12), primaryMat);
-            rFenderUpper.position.set(s * 0.62, 0.63, -0.96);
+            const rFenderUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.58), primaryMat);
+            rFenderUpper.position.set(s * 0.62, 0.605, -1.30);
             group.add(rFenderUpper);
 
-            const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.20, 0.68), primaryMat);
-            rArch.position.set(s * 0.68, 0.50, -1.30);
+            const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.04, 0.58), primaryMat);
+            rArch.position.set(s * 0.68, 0.595, -1.30);
             group.add(rArch);
 
             // フロントフェンダー側面 アンバーサイドターンシグナル
@@ -4628,8 +4642,8 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             group.add(sideSkirt);
 
             // ブラックプロテクションモール
-            const sideMould = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 2.75), blackTrimMat);
-            sideMould.position.set(s * 0.685, 0.48, -0.10);
+            const sideMould = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 1.30), blackTrimMat);
+            sideMould.position.set(s * 0.685, 0.48, -0.15);
             group.add(sideMould);
 
             // ウインドウ下部ベルトモール
@@ -5170,6 +5184,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             const lipBead = new THREE.Mesh(lipBeadGeom, activeLipMat);
             lipBead.position.x = rimLipX;
             mesh.add(lipBead);
+            // Stepped Inner Drop-Center Channel (giving authentic multi-level depth to the rim)
+            const dropCenterGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.985, rimHoleRadius * 0.935, 0.020, 48, 1, true);
+            dropCenterGeom.rotateZ(Math.PI / 2);
+            const dropCenter = new THREE.Mesh(dropCenterGeom, isModularLip ? mirrorLipMat : stepBarrelMat);
+            dropCenter.position.x = rimLipX + (wp.isLeft ? 0.012 : -0.012);
+            mesh.add(dropCenter);
 
             // 3D Angled Metal Tire Air Valve Stem
             const valveStem = new THREE.Mesh(
@@ -5184,6 +5204,18 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             valveStem.rotation.x = -0.55;
             valveStem.rotation.z = wp.isLeft ? 0.35 : -0.35;
             mesh.add(valveStem);
+            const valveCap = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.0048, 0.0048, 0.008, 10),
+                new THREE.MeshStandardMaterial({ color: 0x18181c, roughness: 0.35, metalness: 0.80 })
+            );
+            valveCap.position.set(
+                rimLipX - (wp.isLeft ? -0.013 : 0.013),
+                Math.cos(0.55) * (rimHoleRadius * 0.93),
+                Math.sin(0.55) * (rimHoleRadius * 0.93)
+            );
+            valveCap.rotation.x = -0.55;
+            valveCap.rotation.z = wp.isLeft ? 0.35 : -0.35;
+            mesh.add(valveCap);
 
             // 2.4 Vehicle-Specific Sculpted Spokes, Recessed Center Hub & PCD Lug System
             this.addWheelSpokes(mesh, style, rimMat, radius, width, wp.isLeft, rimHoleRadius, rimLipX);
@@ -7179,13 +7211,13 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // フロントフェンダー（ボンネット面と同じ傾斜、前端はフェイシア裏に収める）
         const hoodSlope = Math.atan(0.06 / 1.44);
         for (let s of [-1, 1]) {
-            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.15, 1.14), primaryMat);
-            fFenderTop.position.set(s * 0.76, 0.582, 1.17);
+            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.66), primaryMat);
+            fFenderTop.position.set(s * 0.76, 0.675, 1.25);
             fFenderTop.rotation.x = hoodSlope;
             group.add(fFenderTop);
 
-            const fArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.90), primaryMat);
-            fArchFlare.position.set(s * 0.835, 0.58, 1.25);
+            const fArchFlare = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.68), primaryMat);
+            fArchFlare.position.set(s * 0.835, 0.665, 1.25);
             fArchFlare.rotation.x = hoodSlope;
             group.add(fArchFlare);
 
@@ -7391,13 +7423,12 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // -------------------------------------------------------------------------
         for (let s of [-1, 1]) {
             // (1) リアホイールアーチ上部（天面y=0.70mでタイヤy=0.64mを美しくカバー）
-            const rHipTop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.18, 1.34), primaryMat);
-            rHipTop.position.set(s * 0.80, 0.61, -1.25);
+            const rHipTop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.68), primaryMat);
+            rHipTop.position.set(s * 0.80, 0.68, -1.25);
             group.add(rHipTop);
 
-            // 1,810mm ワイドボディフレア
-            const rFlare = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.16, 0.96), primaryMat);
-            rFlare.position.set(s * 0.875, 0.61, -1.25);
+            const rFlare = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.70), primaryMat);
+            rFlare.position.set(s * 0.88, 0.67, -1.25);
             group.add(rFlare);
 
             // (2) リアホイールアーチ前部（ドア・サイドスクープ後方）
@@ -8473,12 +8504,20 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // 5. フロントフェンダー＆サイドマーカー・バッジ
         // -------------------------------------------------------------------------
         for (let s of [-1, 1]) {
-            const fFender = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.28, 1.25), primaryMat);
-            fFender.position.set(s * 0.74, 0.46, 1.15);
-            group.add(fFender);
+            const fFenderFront = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.32, 0.30), primaryMat);
+            fFenderFront.position.set(s * 0.74, 0.44, 1.62);
+            group.add(fFenderFront);
 
-            const fArchLip = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.26, 0.84), primaryMat);
-            fArchLip.position.set(s * 0.795, 0.46, 1.17);
+            const fFenderRear = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.28, 0.28), primaryMat);
+            fFenderRear.position.set(s * 0.74, 0.46, 0.76);
+            group.add(fFenderRear);
+
+            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.66), primaryMat);
+            fFenderTop.position.set(s * 0.74, 0.65, 1.20);
+            group.add(fFenderTop);
+
+            const fArchLip = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.05, 0.68), primaryMat);
+            fArchLip.position.set(s * 0.795, 0.645, 1.20);
             group.add(fArchLip);
 
             const sideRepeater = new THREE.Mesh(
@@ -8726,12 +8765,20 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         //    ・純正カタログ仕様の流麗なクーペデッキ＆一体型ダックテールスポイラー
         // -------------------------------------------------------------------------
         for (let s of [-1, 1]) {
-            const rHip = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.30, 1.30), primaryMat);
-            rHip.position.set(s * 0.75, 0.44, -1.15);
-            group.add(rHip);
+            const rHipFront = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.32, 0.36), primaryMat);
+            rHipFront.position.set(s * 0.75, 0.45, -0.72);
+            group.add(rHipFront);
 
-            const rFlare = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.28, 0.90), primaryMat);
-            rFlare.position.set(s * 0.815, 0.44, -1.18);
+            const rHipRear = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.32, 0.36), primaryMat);
+            rHipRear.position.set(s * 0.75, 0.45, -1.68);
+            group.add(rHipRear);
+
+            const rHipTop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.66), primaryMat);
+            rHipTop.position.set(s * 0.75, 0.655, -1.20);
+            group.add(rHipTop);
+
+            const rFlare = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.05, 0.68), primaryMat);
+            rFlare.position.set(s * 0.815, 0.645, -1.20);
             group.add(rFlare);
         }
 
@@ -8880,10 +8927,10 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
         // 13. 純正16インチ 5本スポークアルミホイール
         // -------------------------------------------------------------------------
         const wheelPositions = [
-            { x: -0.74, y: 0.305, z: 1.20, isFront: true, isLeft: true },
-            { x: 0.74, y: 0.305, z: 1.20, isFront: true, isLeft: false },
-            { x: -0.75, y: 0.305, z: -1.20, isFront: false, isLeft: true },
-            { x: 0.75, y: 0.305, z: -1.20, isFront: false, isLeft: false }
+            { x: -0.730, y: 0.305, z: 1.20, isFront: true, isLeft: true },
+            { x: 0.730, y: 0.305, z: 1.20, isFront: true, isLeft: false },
+            { x: -0.735, y: 0.305, z: -1.20, isFront: false, isLeft: true },
+            { x: 0.735, y: 0.305, z: -1.20, isFront: false, isLeft: false }
         ];
 
         const { wheels, frontWheelL, frontWheelR } = this.createDetailedWheels(
@@ -8893,7 +8940,7 @@ const fShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 1.26), prima
             tireMat,
             's15_5spoke',
             0.305,
-            0.22,
+            0.21,
             0x242426
         );
 
