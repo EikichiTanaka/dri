@@ -3915,9 +3915,9 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             metalness: 0.10
         });
         const wheelMat = new THREE.MeshStandardMaterial({
-            color: (col && col.rim) || 0xd0d4d8,
-            roughness: 0.22,
-            metalness: 0.50
+            color: (col && col.rim) || 0xdcdfe4,
+            roughness: 0.14,
+            metalness: 0.65
         });
         const tireMat = new THREE.MeshStandardMaterial({
             color: 0x1a1a1c,
@@ -3932,10 +3932,14 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             roughness: 0.88
         });
 
-        // 1. シャシー＆アンダーフロア
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.08, 4.25), secondaryMat);
+        // 1. シャシー＆アンダーフロア（ホイールハウス干渉完全解消：前後タイヤ間に収まるスリムフロア）
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.08, 4.10), secondaryMat);
         floor.position.set(0, 0.14, 0.0);
         group.add(floor);
+
+        const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.06, 1.55), secondaryMat);
+        cabinFloor.position.set(0, 0.14, 0.0);
+        group.add(cabinFloor);
 
         // 2. Type X フロントバンパー＆リップ＆インテーク（ウェッジシェイプ）
         const fMainBumper = new THREE.Mesh(new THREE.BoxGeometry(1.68, 0.26, 0.30), primaryMat);
@@ -4047,25 +4051,34 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             });
         }
 
-        // 4. フロントフェンダー＆サイドボディ＆モール
+        // 4. フロント・リアフェンダー＆サイドボディ＆連続プロテクションモール（完全立体造形）
         for (let s of [-1, 1]) {
-            // フロントフェンダー上部（ホイールアーチとフードの間を完全に埋める）
-            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.66), primaryMat);
-            fFenderTop.position.set(s * 0.75, 0.65, 1.22);
+            // (a) フロントフェンダー上部（ホイールアーチとフードの間を流麗に覆う）
+            const fFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.66), primaryMat);
+            fFenderTop.position.set(s * 0.75, 0.64, 1.22);
             group.add(fFenderTop);
 
             const fArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.68), primaryMat);
             fArch.position.set(s * 0.825, 0.64, 1.22);
             group.add(fArch);
 
-            // ドアパネル下部（サイドシル〜プロテクションモール）
+            // (b) フロントフェンダー前方（アーチ前方 z=1.55 からフロントバンパー z=1.84 へ直結）
+            const fFenderFront = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.36), primaryMat);
+            fFenderFront.position.set(s * 0.76, 0.44, 1.73);
+            group.add(fFenderFront);
+
+            // (c) フロントフェンダー後方（アーチ後方 z=0.89 からドア前端 z=0.625 へ直結）
+            const fFenderRear = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.27), primaryMat);
+            fFenderRear.position.set(s * 0.76, 0.44, 0.76);
+            group.add(fFenderRear);
+
+            // (d) ドアパネル（下部＆上部：サイドシルからベルトラインまで完璧なフラッシュサーフェス）
             const doorLower = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.24, 1.25), primaryMat);
-            doorLower.position.set(s * 0.77, 0.42, 0.0);
+            doorLower.position.set(s * 0.77, 0.32, 0.0);
             group.add(doorLower);
 
-            // ドアパネル上部（プロテクションモール〜ベルトライン：空洞化を完全解消）
             const doorUpper = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.24, 1.25), primaryMat);
-            doorUpper.position.set(s * 0.77, 0.66, 0.0);
+            doorUpper.position.set(s * 0.77, 0.56, 0.0);
             group.add(doorUpper);
 
             // ドアハンドル
@@ -4073,33 +4086,64 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             handle.position.set(s * 0.812, 0.70, -0.22);
             group.add(handle);
 
-            // リアフェンダー下部
-            const rFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.66), primaryMat);
-            rFenderTop.position.set(s * 0.75, 0.65, -1.25);
+            // (e) リアフェンダー前方（ドア後端 z=-0.625 からリアアーチ前端 z=-0.92 へ直結）
+            const rFenderFront = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.30), primaryMat);
+            rFenderFront.position.set(s * 0.76, 0.44, -0.77);
+            group.add(rFenderFront);
+
+            // (f) リアフェンダー上部＆アーチフレア
+            const rFenderTop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.66), primaryMat);
+            rFenderTop.position.set(s * 0.75, 0.64, -1.25);
             group.add(rFenderTop);
 
             const rArch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.68), primaryMat);
             rArch.position.set(s * 0.825, 0.64, -1.25);
             group.add(rArch);
 
+            // (g) リアフェンダー後方（リアアーチ後端 z=-1.58 からリアバンパー z=-1.84 へ直結）
+            const rFenderRear = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.28), primaryMat);
+            rFenderRear.position.set(s * 0.76, 0.44, -1.71);
+            group.add(rFenderRear);
+
             const rQuarter = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.30, 0.35), primaryMat);
             rQuarter.position.set(s * 0.75, 0.46, -1.92);
             group.add(rQuarter);
 
-            // リアクォーターショルダー（フェンダー上端からハッチガラス脇を埋める水平デッキ）
+            // (h) リアクォーターショルダー（フェンダー上端からハッチガラス脇を埋める水平デッキ）
             const rShoulder = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 1.35), primaryMat);
             rShoulder.position.set(s * 0.74, 0.72, -1.28);
             group.add(rShoulder);
 
-            // サイドステップ
-            const sideSkirt = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 1.85), primaryMat);
+            // (i) サイドステップエアロスカート（タイヤ干渉完全解消：ホイールベース内にジャスト配置）
+            const sideSkirt = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 1.68), primaryMat);
             sideSkirt.position.set(s * 0.81, 0.15, 0.0);
             group.add(sideSkirt);
 
-            // サイドモール（ブラックプロテクションストリップ）
-            const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 1.50), blackTrimMat);
-            rubStrip.position.set(s * 0.815, 0.44, -0.05);
+            // (j) 180SX象徴：全周連続ブラックプロテクションサイドモール
+            // フロントフェンダー前方モール
+            const fMouldFront = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.028, 0.36), blackTrimMat);
+            fMouldFront.position.set(s * 0.815, 0.44, 1.73);
+            group.add(fMouldFront);
+
+            // フロントフェンダー後方モール
+            const fMouldRear = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.028, 0.27), blackTrimMat);
+            fMouldRear.position.set(s * 0.815, 0.44, 0.76);
+            group.add(fMouldRear);
+
+            // ドアパネルモール
+            const rubStrip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.028, 1.25), blackTrimMat);
+            rubStrip.position.set(s * 0.815, 0.44, 0.0);
             group.add(rubStrip);
+
+            // リアフェンダー前方モール
+            const rMouldFront = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.028, 0.30), blackTrimMat);
+            rMouldFront.position.set(s * 0.815, 0.44, -0.77);
+            group.add(rMouldFront);
+
+            // リアフェンダー後方モール
+            const rMouldRear = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.028, 0.28), blackTrimMat);
+            rMouldRear.position.set(s * 0.815, 0.44, -1.71);
+            group.add(rMouldRear);
 
             // ウインドウ下部ベルトラインモール
             const beltMould = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.022, 1.25), blackTrimMat);
@@ -4282,7 +4326,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
 
         this.addLicensePlates(group, '群馬 55 お 26-937', 2.21, -2.13, 0.31, 0.36, 0);
 
-        // 9. SSR ロンシャン XR-4 4本十字スポークホイール＆ブレーキ（ツライチ・ハミタイ完全解消）
+        // 9. 180SX Type X 深リム 5本スポーツホイール＆日産4ポッドブレーキ（ツライチ・ハミタイ完全解消）
         const wheelRadius = 0.305;
         const wheelWidth = 0.20;
         const wheelPositions = [
@@ -4297,7 +4341,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             wheelPositions,
             wheelMat,
             tireMat,
-            '5star',
+            '180sx_5spoke',
             wheelRadius,
             wheelWidth,
             0x222228
@@ -4967,7 +5011,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
         } else if (style === 'ek9_typer' || style === 'type_r') {
             brandText = 'POTENZA  RE-71RS';
             specText = '195/55R15 85V  RADIAL TUBELESS';
-        } else if (style === 'longchamp' || style === '5star') {
+        } else if (style === 'longchamp' || style === '5star' || style === '180sx_5spoke') {
             brandText = 'ADVAN  NEOVA  AD08R';
             specText = '205/55R15 88V  STEEL BELTED';
         } else if (style === 'works_dish') {
@@ -5368,7 +5412,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             ctx.fillStyle = '#cccccc';
             ctx.font = 'bold 36px "Arial Black", sans-serif';
             ctx.fillText('TOYOTA', 128, 48);
-        } else if (style === 'ssr_mesh' || style === 'longchamp' || style === '5star') {
+        } else if (style === 'ssr_mesh' || style === 'longchamp' || style === '5star' || style === '180sx_5spoke') {
             ctx.fillStyle = '#dcdfe4';
             ctx.font = 'bold 36px "Arial Black", sans-serif';
             ctx.fillText('NISSAN', 128, 48);
@@ -5514,21 +5558,45 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             ctx.fillStyle = '#cc1212';
             ctx.font = 'bold 110px "Arial Black", "Impact", sans-serif';
             ctx.fillText('H', cx, cy - 4);
-        } else if (style === 'longchamp' || style === '5star') {
-            ctx.fillStyle = '#d8dee6';
+        } else if (style === 'longchamp' || style === '5star' || style === '180sx_5spoke') {
+            // 180SX Type X：チタンブラック地にレッドレーシングストライプ＆「180SX」クロームエンブレム
+            ctx.fillStyle = '#121418';
             ctx.beginPath();
             ctx.arc(cx, cy, 116, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.strokeStyle = '#181a1e';
-            ctx.lineWidth = 4;
+            // 外周クロームベゼルリング
+            ctx.strokeStyle = '#d8dee6';
+            ctx.lineWidth = 6;
             ctx.beginPath();
-            ctx.arc(cx, cy, 85, 0, Math.PI * 2);
+            ctx.arc(cx, cy, 108, 0, Math.PI * 2);
             ctx.stroke();
 
-            ctx.fillStyle = '#111214';
-            ctx.font = 'bold 32px "Arial Black", sans-serif';
-            ctx.fillText('XR-4', cx, cy);
+            // 内周ダークリング
+            ctx.strokeStyle = '#08090b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 96, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // レッドレーシングアクセントバー
+            ctx.fillStyle = '#d01212';
+            ctx.fillRect(cx - 72, cy + 22, 144, 9);
+            ctx.fillStyle = '#ff4d4d';
+            ctx.fillRect(cx - 72, cy + 22, 144, 2);
+
+            // 180SX ドロップシャドウ
+            ctx.fillStyle = '#050608';
+            ctx.font = 'italic bold 54px "Arial Black", "Impact", sans-serif';
+            ctx.fillText('180SX', cx + 3, cy - 6);
+
+            // 180SX クロームメインタイポグラフィ
+            ctx.fillStyle = '#f2f6fc';
+            ctx.fillText('180SX', cx, cy - 8);
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.strokeText('180SX', cx, cy - 8);
         } else if (style === 'works_dish') {
             ctx.fillStyle = '#b81438';
             ctx.beginPath();
@@ -5717,7 +5785,7 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             side: THREE.BackSide
         });
 
-        const isModularLip = (style === 'watanabe' || style === 'ms01' || style === 'ssr_mesh' || style === 'longchamp' || style === '5star');
+        const isModularLip = (style === 'watanabe' || style === 'ms01' || style === 'ssr_mesh' || style === 'longchamp' || style === '5star' || style === '180sx_5spoke');
 
         // キャリパーカラー設定
         let defaultCaliperCol = 0x282a2e;
@@ -6734,48 +6802,63 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
             addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 5, 0xffffff, Math.PI / 5);
 
         // ---------------------------------------------------------------------
-        // 8. RPS13: SSR Longchamp XR-4 (4本クロスブレード＆ブラックポケット)
+        // 8. RPS13: 180SX Type X 深リム 5本スポーク (深リムステップ・20本ピアスボルト＆180SXエンブレム)
         // ---------------------------------------------------------------------
-        } else if (style === 'longchamp' || style === '5star') {
-            const spokeCount = 4;
+        } else if (style === 'longchamp' || style === '5star' || style === '180sx_5spoke') {
+            const spokeCount = 5;
             const dishDepth = 0.026;
             const bowlFloorX = faceX + inwardSign * dishDepth;
 
-            addPierceBolts(rimHoleRadius * 0.91, 16, faceX + inwardSign * 0.006);
+            // 20本チタンピアスボルト（深リム外周に均等配置）
+            addPierceBolts(rimHoleRadius * 0.905, 20, faceX + inwardSign * 0.006);
 
-            const darkHub = new THREE.Mesh(
-                new THREE.CylinderGeometry(rimHoleRadius * 0.36, rimHoleRadius * 0.26, dishDepth + 0.004, 24),
-                darkPocketMat
-            );
-            darkHub.rotateZ(Math.PI / 2);
-            darkHub.position.x = faceX + inwardSign * (dishDepth * 0.52);
-            spokeGroup.add(darkHub);
+            // コンケイブセンターハブボウル
+            const hubBowlGeom = new THREE.CylinderGeometry(rimHoleRadius * 0.35, rimHoleRadius * 0.22, dishDepth + 0.004, 32, 1, true);
+            hubBowlGeom.rotateZ(Math.PI / 2);
+            const hubBowl = new THREE.Mesh(hubBowlGeom, rimMat);
+            hubBowl.position.x = faceX + inwardSign * (dishDepth * 0.50);
+            spokeGroup.add(hubBowl);
 
+            // 5本の力強いテーパード・スポーツスポーク（立体面取り＋コンケイブ傾斜＋中央稜線＋リム結合ガセット）
             for (let i = 0; i < spokeCount; i++) {
                 const angle = (i / spokeCount) * Math.PI * 2;
                 const spGroup = new THREE.Group();
-                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.34);
+                spGroup.position.x = faceX + inwardSign * (dishDepth * 0.32);
 
                 const spLen = rimHoleRadius * 0.83;
-                const blade = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, spLen, 0.076),
-                    new THREE.MeshStandardMaterial({ color: 0xfafcff, roughness: 0.12, metalness: 0.70 })
+                // メインスポークボディ
+                const spoke = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.025, spLen, 0.056),
+                    rimMat
                 );
-                blade.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
-                blade.rotation.z = isLeft ? 0.12 : -0.12;
-                spGroup.add(blade);
+                spoke.position.y = spLen * 0.5 + rimHoleRadius * 0.18;
+                spoke.rotation.z = isLeft ? 0.11 : -0.11;
+                spGroup.add(spoke);
 
-                const rib = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.016, spLen * 0.92, 0.030),
-                    chromeNutMat
+                // スポーク両サイド面取りベベル
+                for (let side of [-0.018, 0.018]) {
+                    const bevel = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.016, spLen * 0.90, 0.016),
+                        rimMat
+                    );
+                    bevel.position.set(inwardSign * -0.004, spLen * 0.50 + rimHoleRadius * 0.18, side);
+                    bevel.rotation.z = isLeft ? 0.11 : -0.11;
+                    spGroup.add(bevel);
+                }
+
+                // スポーク中央のシャープな背骨稜線（ハイライトリブ）
+                const ridge = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.012, spLen * 0.92, 0.014),
+                    rimMat
                 );
-                rib.position.set(inwardSign * -0.006, spLen * 0.50 + rimHoleRadius * 0.18, 0);
-                rib.rotation.z = isLeft ? 0.12 : -0.12;
-                spGroup.add(rib);
+                ridge.position.set(inwardSign * -0.005, spLen * 0.50 + rimHoleRadius * 0.18, 0);
+                ridge.rotation.z = isLeft ? 0.11 : -0.11;
+                spGroup.add(ridge);
 
+                // スポーク外端とアウターリムを接続するフィレットガセット
                 const gusset = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.024, 0.038, 0.090),
-                    chromeNutMat
+                    new THREE.BoxGeometry(0.024, 0.038, 0.075),
+                    rimMat
                 );
                 gusset.position.set(0, spLen * 0.94 + rimHoleRadius * 0.18, 0);
                 spGroup.add(gusset);
@@ -6784,14 +6867,16 @@ const rMoulding = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.028, 0.48), blac
                 spokeGroup.add(spGroup);
             }
 
+            // 180SX 専用センターキャップ
             const centerCap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.032, 0.034, 0.018, 20),
+                new THREE.CylinderGeometry(rimHoleRadius * 0.14, rimHoleRadius * 0.14, 0.016, 24),
                 emblemMat
             );
             centerCap.rotateZ(Math.PI / 2);
             centerCap.position.x = bowlFloorX - inwardSign * 0.002;
             spokeGroup.add(centerCap);
 
+            // 4穴 PCD 114.3
             addLugNutPattern(bowlFloorX, rimHoleRadius * 0.22, 4, 0xffffff, Math.PI / 4);
 
         // ---------------------------------------------------------------------
